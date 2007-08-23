@@ -1,0 +1,60 @@
+import "paraview.met"
+import "elemlist.met"
+import "std_elements.met"
+import "make_rect.met"
+
+#~ ~#
+class Node[ T, dim, ST ]
+    pos := Vec[ T, dim ]()
+    number := ST( 0 )
+
+#~ ~#
+class NodeList[ Tnode ]
+    static const tensor_order := 1
+    static const TSubBlock := SplittedVec[ Tnode, 256 ]
+    
+    sub_blocks := Vec[ PtrWithCptUse[ LazyObject[ TSubBlock ] ] ]()
+    prefere_bs := 1e4
+
+    def __for__( block )
+        for d in data
+            lazy_collection.update( [ d ] )
+            for v in d->data
+                block( v )
+
+#~ ~#
+class ElemListOfType[ TE, ST ]
+    static const tensor_order := 1
+    static const TSubBlock := SplittedVec[ TE, 256 ]
+    
+    sub_blocks := Vec[ PtrWithCptUse[ LazyObject[ TSubBlock ] ] ]()
+    
+    def __for__( block )
+        for d in data
+            lazy_collection.update( [ d ] )
+            for v in d->data
+                block( v )
+
+#~ ~#
+class ElemList[ ST ]
+    static const tensor_order := 1
+    
+    data := VarArgs() # ElemListOfType[ Triangle, ST ], ElemListOfType[ Quad, ST ]...
+    prefere_bs := 1e4
+    
+    def __for__( block )
+        for d in data
+            for e in d
+                block( e )
+    
+
+#~
+
+~#
+class Mesh[ T = Float64, dim = 3, ST = SizeType ]
+    static const Tnode := Node[ T, dim ]
+
+    elem_list := ElemList[ ST ]()
+    node_list := NodeList[ Tnode ]()
+    
+

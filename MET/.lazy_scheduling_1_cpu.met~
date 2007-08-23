@@ -1,0 +1,174 @@
+#~
+    @see LazyScheduleCpp
+~#
+class LazyScheduleCppGraphItem
+    children      := Vec[ Ptr[LazyScheduleCppGraphItem] ]()
+    parents       := Vec[ Ptr[LazyScheduleCppGraphItem] ]()
+    lop           := MultiPtr()
+    next_in_strip := Ptr[LazyScheduleCppGraphItem]( NULL )
+    prev_in_strip := Ptr[LazyScheduleCppGraphItem]( NULL )
+    nb_da         := Float64( 0 )
+    nb_rw         := Float64( 0 )
+    nb_op         := Float64( 0 )
+    done          := false
+    
+#~
+    Experimental
+~#
+class LazyScheduleCpp
+    #~ ~#
+    class GraphItemSchedulerCpp
+        def get_src( stream ) 
+            stream <<< "#include \"lazy_sched.h\""
+        def get_wanted_functions
+            return [ LCppFunctionDescription( name = "lazy_scheduler", ret_type = Vec[Ptr[LazyScheduleCppGraphItem]], parameter_types = [ LazyComputerPool, Vec[Ptr[LazyScheduleCppGraphItem]] ] ) ]
+        def get_md5_sum
+            return get_type_md5_sum( partial_instanciation LazyScheduleCppGraphItem ) + last_modification_time_or_zero_of_file_named( "lazy_sched.h" )
+    static func := LCppCompiledFunctionSet[ GraphItemSchedulerCpp ]::get_func("lazy_scheduler")
+    static PL   := Ptr[LazyScheduleCppGraphItem]
+    
+    sch_data    := SplittedVec[LazyScheduleCppGraphItem,256]()
+    
+    #~ ~#
+    def init( lst_lazy_obj, computer_pool, current_operation_id )
+        init_using_default_values( self )
+        
+        current_operation_id++
+        front := Vec[Ptr[LazyScheduleCppGraphItem]]()
+        for l in lst_lazy_obj
+            init_ops_rec( l, sch_data, front, current_operation_id )
+        
+        # call cpp scheduler
+        v := Vec[Ptr[LazyScheduleCppGraphItem]]( lst_lazy_obj.map( x => x->sch_data ) )
+        func( &v, Vec[Int64](), computer_pool, front )
+        
+
+    #~ ~#
+    static def init_ops_rec( lop, sch_data, front, current_operation_id )
+        if lop->op_id == current_operation_id
+            return none # already registered ?
+        lop->op_id = current_operation_id
+        
+        # room in sch_data
+        sd := &sch_data.push_back()
+        lop->sch_data.init( sd )
+        sd->lop = lop
+        
+        # data in sch_data
+        sd->nb_da = get_byte_size( lop->T )
+        if lop->func
+            sd->nb_da += lop->func->produced_data_estimation( lop->T, lop->args )
+            sd->nb_rw = lop->func->nb_mem_rw_estimation( lop->T, lop->args )
+            sd->nb_op = lop->func->nb_flop_estimation  ( lop->T, lop->args )
+        
+        # rec
+        in_front := true
+        for a in lop->args
+            if not a->done
+                in_front = false
+                init_ops_rec( a, sch_data, front, current_operation_id )
+                sd->children.push_back( PL( a->sch_data ) )
+                PL( a->sch_data )->parents.push_back( sd )
+        if in_front
+            front.push_back( sd )
+
+
+#~
+    @see LazyScheduleOneCpu
+~#
+class LazyScheduleOneCpuLObData
+    children                 := Vec[ Ptr[LazyScheduleOneCpuLObData] ]()
+    parents                  := Vec[ Ptr[LazyScheduleOneCpuLObData] ]()
+    produced_data_estimation := Float64( 0 )
+    best_timing              := Float64( 0 )
+    sum_timing               := Float64( 0 )
+    nb_times_used            := 0
+    lop                      := MultiPtr() # ptr on lazy object self is attached
+    registered_in_instr      := false # already in instructions of a particular cpu
+    serialized_on            := Ptr[ LazyComputerInfo::ExternalMemory ]( NULL ) # in hard disk
+    next_in_strip            := UntypedPtr( NULL ) # PL
+    prev_in_strip            := UntypedPtr( NULL ) # PL
+#~
+    Experimental
+~#
+class LazyScheduleOneCpu
+    static const PL := Ptr[LazyScheduleOneCpuLObData]
+    sch_data        := SplittedVec[LazyScheduleOneCpuLObData,256]()
+    
+    #~ ~#
+    def init( lst_lazy_obj, computer_pool, current_operation_id )
+        init_using_default_values( self )
+        
+        current_operation_id++
+        for l in lst_lazy_obj
+            init_ops_rec( l, sch_data, computer_pool.cpus[0], current_operation_id )
+        
+        propagate_from_top_level( lst_lazy_obj )
+        
+        display( x => " " + x.sum_timing )
+        
+    #~ ~#
+    static def init_ops_rec( lop, sch_data, cpu, current_operation_id )
+        if lop->op_id == current_operation_id
+            return none # already registered ?
+        lop->op_id = current_operation_id
+        
+        # room in sch_data
+        sd := &sch_data.push_back()
+        lop->sch_data.init( sd )
+        sd->lop = lop
+        
+        # data in sch_data
+        sd->produced_data_estimation = get_byte_size( lop->T )
+        if lop->func
+            sd->produced_data_estimation += lop->func->produced_data_estimation( lop->T, lop->args )
+        sd->best_timing = lop->timing_estimation( cpu )
+        sd->sum_timing = sd->best_timing
+        
+        # rec
+        # in_front := true
+        for a in lop->args
+            if not a->done
+                # in_front = false
+                init_ops_rec( a, sch_data, cpu, current_operation_id )
+                sd->children.push_back( PL( a->sch_data ) )
+                PL( a->sch_data )->parents.push_back( sd )
+                sd->sum_timing += PL( a->sch_data )->sum_timing
+        # if in_front front.push_back( sd )
+        
+    #~ ~#
+    static def propagate_from_top_level( lst_lazy_obj )
+        front := Vec[ PL ]( lst_lazy_obj.map( x => x->sch_data ) )
+        front.remove_unordered_if( x => x->parents.size )
+        while front.size
+            o := front.pop_back()
+            o->done = true
+            
+            # find children to put in front
+            possible_children := SplittedVec[PL,8]()
+            for c in o->children
+                if all( c->parents.map( x => x->done ) )
+                    possible_children.push_back( c )
+            # sort children
+            # push in front
+            for c in possible_children
+                front.push_back( c )
+        
+        
+    #~ ~#
+    def write_graph( function, f )
+        #
+        f <<< "digraph \"popo\" {"
+        for n in sch_data
+            fc := ["grey","yellow","green","orange","violet","gold","blue","cyan","aliceblue","darkolivegreen1","coral2"][ 0 ]
+            f <<< "    node$(n.lop.ptr) [label=\"$(n.lop->repr)$(function(n))\",fontsize=14,fillcolor=$fc,style=filled];"
+            for d in n.lop->args
+                f <<< "    node$(n.lop.ptr) -> node$(d.ptr);"
+        f <<< "}"
+    
+    #~ ~#
+    def display( function, fn = "res_cpr.dot", x = true )
+        write_graph( function, File( fn, "w" ) )
+        system( "dot -Tps $fn > $fn.eps && epstopdf $fn.eps" )
+        if x system( "gv $fn.eps" )
+        

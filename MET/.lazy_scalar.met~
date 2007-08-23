@@ -1,0 +1,87 @@
+import "lazy_stream.met"
+
+#~
+~#
+class LazyScalar[ T ]
+    property is_a_LazyScalar, is_lazy
+    static const LO := LazyObject[ T ]
+    value := PtrWithCptUse[ LO ]()
+    
+    def init( v ) when v.is_a_LazyScalar
+        value.init( v.value )
+    
+    def init( v ) 
+        value.init( new LO( value = v ) )
+        
+    def init( function ) pertinence -2
+        value.init( new LO( function = function ) )
+        
+    # mul( v, u )...
+    def init( operand_0, operand_1, function ) pertinence -2
+        value.init( new LO( function = new LazyScalarOp[ function ] ) )
+        value->add_child( operand_0.value )
+        value->add_child( operand_1.value )
+    
+    # sub( v )...
+    def init( operand_0, function ) pertinence -2
+        value.init( new LO( function = new LazyScalarOp[ function ] ) )
+        value->add_child( operand_0.value )
+    
+    def write_to_stream( stream )
+        lazy_collection.update( [value] )
+        stream << @value->data
+
+#
+class LazyScalarOp[ op ] inherits LazyFunc
+    property has_repr
+    def apply( data, args )
+        if args.size == 0
+            @data = op()
+        else if args.size == 1
+            @data = op( @args[0]->data )
+        else if args.size == 2
+            # info @args[0]->data, args[1]->data
+            @data = op( @args[0]->data, @args[1]->data )
+        else
+            assert( 0, "TODO" )
+    def nb_flop_estimation( T, args )
+        return 1
+    def repr
+        return "$op"
+
+def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyScalar and b.tensor_order <= 0 # and not b.is_lazy
+    return op( a, LazyScalar[ type_promote( partial_instanciation a.T, b, op ) ]( v = b ) )
+def op_with_ret_using_type_promote( b, a, op ) when a.is_a_LazyScalar and b.tensor_order <= 0 # and not b.is_lazy
+    return op( LazyScalar[ type_promote( partial_instanciation a.T, b, op ) ]( v = b ), a )
+
+def lazy_scalar_binary_op( a, b, op )
+    return LazyScalar[ type_promote( partial_instanciation a.T, partial_instanciation b.T, op ) ]( operand_0 = a, operand_1 = b, function = op )
+def lazy_scalar_unary_op( a, op )
+    return LazyScalar[ type_promote( partial_instanciation a.T, op ) ]( operand_0 = a, function = op )
+
+def add( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10 return lazy_scalar_binary_op( a, b, add )
+def sub( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10 return lazy_scalar_binary_op( a, b, sub )
+def mul( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10 return lazy_scalar_binary_op( a, b, mul )
+def div( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10 return lazy_scalar_binary_op( a, b, div )
+def pow( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10 return lazy_scalar_binary_op( a, b, pow )
+
+
+def log      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, log       )
+def heaviside( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, heaviside )
+def abs      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, abs       )
+def eqz      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, eqz       )
+def exp      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, exp       )
+def sin      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, sin       )
+def cos      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, cos       )
+def tan      ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, tan       )
+def asin     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, asin      )
+def acos     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, acos      )
+def atan     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, atan      )
+def sinh     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, sinh      )
+def cosh     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, cosh      )
+def tanh     ( a ) when a.is_a_LazyScalar pertinence 10 return lazy_scalar_unary_op( a, tanh      )
+
+
+
+
+

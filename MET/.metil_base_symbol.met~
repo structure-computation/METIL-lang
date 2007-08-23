@@ -1,0 +1,431 @@
+
+## 
+    make an unknown variable of type T
+##
+def symbol( cpp_name, tex_name = cpp_name )
+    return symbol( String(cpp_name), String(tex_name) )
+    
+## 
+    display symbolic graph of variable v
+##
+def display_graphviz( self )
+    f := File("res.dot","w")
+    f << "digraph popoterie {\n"
+    f << self.graphviz_string()
+    f << "}\n"
+    f.close()
+    
+    system( "dot -Tps res.dot > res.eps && gv res.eps" )
+
+## 
+    make a .tex file and display corresponding .eps
+##
+def launch_and_display_tex_with_str( str, filename="res" )
+    f := File("$filename.tex","w")
+    f << "\\documentclass{article}\n\\usepackage[latin1]{inputenc}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    f << str << "\n"
+    f << "\\end{document}\n"
+    f.close()
+
+    display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
+    if system( "latex $filename.tex > /dev/null 2> /dev/null && dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
+            "&& epstopdf $filename.eps && ( $display_command ) 2> /dev/null" )
+        stderr << "erroneous symbol in the formula.\n"
+
+## 
+    display symbolic formual of variable v
+##
+def display_tex( self, filename="res" )
+    launch_and_display_tex_with_str( "$$" + self.tex_string() + "$$", filename )
+
+## 
+    display symbolic formual of variable v
+##
+def display_tex( self, filename="res" ) when self.tensor_order == 1
+    str := StringStream()
+    str <<< "$$\\left[\\begin{array}{c}"
+    for i in self.values
+        str << i.tex_string() <<< "\\\\"
+    str <<< "\\end{array}\\right]$$"
+    launch_and_display_tex_with_str( str, filename )
+
+## 
+    display symbolic formual of variable v
+##
+def display_tex( self, filename="res" ) when self.tensor_order == 2
+    str := StringStream()
+    str <<< "$$\\left[\\begin{array}{$("c"*self.nb_cols)}"
+    for r in 0 .. self.nb_rows
+        for c in 0 .. self.nb_cols
+            str << self[r,c].tex_string() <<< "&" * ( c != self.nb_cols-1 )
+        str <<< "\\\\" * ( r != self.nb_rows-1 )
+    str <<< "\\end{array}\\right]$$"
+    # info str.str
+    launch_and_display_tex_with_str( str, filename )
+
+# -----------------------------------------------------------------------------------
+## differenciation ( toto.diff(tata) ) ##
+def diff( self, var ) when __is_a_Property__( self ) or __is_a_Property__( var )
+    _self := self
+    _var  := var
+    return _self.diff( _var )
+
+## differenciation ( [toto pouet].diff(tata) ) ##
+def diff( self, var ) when self.tensor_order == 1
+    return self.map( _0.diff( _1 ), var )
+
+# -----------------------------------------------------------------------------------
+## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
+def subs( self, from, to ) when from.tensor_order == 1 and to.tensor_order == 1 and not ( is_of_type_VarArgs(from) or is_of_type_VarArgs(to) )
+    if __is_a_Property__( self )
+        toto := self
+        return toto.subs( from, to )
+    f := VarArgs(); t := VarArgs()
+    for i_f, i_t in from, to
+        f.push_unnamed( i_f )
+        t.push_unnamed( Op(i_t) )
+    return self.subs( f, t )
+
+## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2 ##
+def subs( self, from, to ) when is_of_type_Op( from )
+    return self.subs( make_varargs(from), make_varargs(Op(to)) )
+
+def subs( self, from, to ) when self.tensor_order == 1 and self.sub_types==[Op] pertinence 20
+    res := Vec[ Op, self.static_size ]( size = self.size )
+    for r in 0 .. self.size
+        res[r].init( self[r].subs( from, to ) )
+    return res
+
+def subs( self, from, to ) when self.is_a_matrix pertinence 20
+    res := Mat[ Op, self.Structure, self.Storage, self.ST ]( nb_rows = self.nb_rows, nb_rows = self.nb_cols )
+    for r in 0 .. res.nb_rows
+        for c in 0 .. res.nb_cols
+            res[r,c].init( self[r,c].subs( from, to ) )
+    return res
+
+def depends_on( self, val ) when is_of_type_Op( self ) and val.tensor_order > 0
+    # return any( val.map( x => self.depends_on(x) ) )
+    for v in val
+        if self.depends_on( v )
+            return true
+    return false
+
+# -----------------------------------------------------------------------------------
+## perform simplification on symbolic expression ##
+# def simplify( self, level = 10 ) when self.is_a_number return symbolic_simplifications( self, level )
+
+## perform simplification on symbolic expression ##
+# def simplify( self, level = 10 ) return self.map( symbolic_simplifications( _0, level ) )
+
+#
+def greek_letter( num )
+    l := ( "\\alpha","\\beta","\\gamma","\\delta","\\epsilon","\\zeta","\\eta","\\theta",
+           "\\vartheta","\\iota","\\kappa","\\lambda","\\mu","\\nu","\\xi","\\pi","\\varpi",
+           "\\rho","\\varrho","\\sigma","\\varsigma","\\tau","\\upsilon","\\phi","\\varphi",
+           "\\chi","\\psi","\\omega" )
+    return l[num]
+    
+##
+
+##
+class CodeWriter
+    cw ~= CodeWriter_
+    
+    def init( T = "double" ) when T.type == String
+        cw.init( T )
+        
+    def destroy
+        cw.destroy()
+    
+    def add( str, expr, method=init ) pertinence 10
+        cw.add_expr( String(str), Op(expr), method )
+    
+    def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
+        for cpt, val in 0... , expr
+            self.add( "$str[$cpt]", val, method )
+    
+    def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
+        for i in 0 .. expr.nb_rows
+            for j in 0 .. expr.nb_cols
+                self.add( "$str($i,$j)", expr[i,j], method )
+    
+    def to_string( nb_spaces = 4 )
+        return cw.to_string( nb_spaces )
+
+
+# return true if cond is known_at_compile_time and is true
+def assumed( cond )
+    return Bool( cond )
+# return true if cond is known_at_compile_time and is true
+def assumed( cond ) when is_of_type_Op( cond )
+    return known_at_compile_time( cond ) and cond.value()
+    
+# ------------------------------------------------- INTEGRATION ------------------------------------------------- 
+    
+    
+    
+# f(x) -> [ v_0 V_1 ... ] which represents v_0 + v_1 x + ... + o( x**degree )
+def taylor_expansion( expr, var, center_value, degree )
+    res := Vec[ Op, degree+1 ]()
+    res[ 0 ] = expr
+    for cpt in 1 .. res.size
+        res[ cpt ] = res[ cpt - 1 ].diff( var )
+    acc := Rationnal( 1 )
+    for cpt in 0 .. res.size
+        res[ cpt ] = acc * res[ cpt ].subs( var, center_value )
+        acc /= cpt + 1
+    return res
+
+# return [ [condition_0,positive_in_this_interval_0,beg_0,end_0], [condition_1,positive_in_this_interval_1,beg_1,end_1]... ]
+def intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_zero( expr, var, beg, end )
+    def app_to_inter( res, cond, pos, beg, end )
+        if not assumed( cond == false )
+            res.push_unnamed( [ cond, pos, beg, end ] )
+    #
+    res := VarArgs()
+    a0 := expr; a1 := a0.diff( var ); a2 := a1.diff( var ); a3 := a2.diff( var )
+    assert( assumed( a3 == 0 ), "unable to do intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_zero with polynomials of degree > 2 ($expr)" )
+    #
+    a0 = a0.subs( var, 0 ); a1 = a1.subs( var, 0 ); a2 = a2.subs( var, 0 ) / 2 * 0
+    # cases when a2 and a1 == 0
+    app_to_inter( res, ( a2 == 0 ) * ( a1 == 0 ), ( a0 >= 0 ), beg, end )
+    # a2 == 0
+    int := - a0 / ( a1 + (a1==0) )
+    app_to_inter( res, ( a2 == 0 ) * ( a1 != 0 ) * ( end >= int ), ( a1 >= 0 ), max( beg, int ), end )
+    app_to_inter( res, ( a2 == 0 ) * ( a1 != 0 ) * ( int >= beg ), ( a1 <  0 ), beg, min( int, end ) )
+   
+    # a2 != 0
+    delta := a1**2 - 4 * a0 * a2
+    delta_pos := ( delta > 0 )
+    # case delta < 0 -> no zeroes
+    app_to_inter( res, ( delta < 0 ), ( a2 > 0 ), beg, end )
+    # case delta >= 0
+    r1 := - ( a1 + sqrt( abs( delta ) ) ) / ( 2 * a2 + (a2==0) )
+    r2 := - ( a1 - sqrt( abs( delta ) ) ) / ( 2 * a2 + (a2==0) )
+    app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r1 >= beg ), ( a2 >= 0 ), beg, min( r1, end ) )
+    app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r1 <= end ) * ( r2 >= beg ), ( a2 < 0 ), max( beg, r1 ), min( r2, end ) )
+    app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r2 <= end ), ( a2 >= 0 ), max( beg, r2 ), end )
+        
+    # info beg, min( r1, end )
+    # info r1, r2
+    # info max( beg, r2 ), end
+    return res
+
+#\int_{beg}^{end} expr d{var} using a polynomial approximation deg_poly_max
+def polynomial_integration( expr, var, beg, end, deg_poly_max = 5 )
+    coeffs := taylor_expansion( expr, var, beg, deg_poly_max )
+    res := expr.type( 0 )
+    for cpt in 0 .. coeffs.size
+        res += coeffs[ cpt ] / ( cpt + 1 ) * pow( end - beg, cpt + 1 )
+    return res
+
+# version with [ x, a, b ] where expr==a if x >= 0, or b if x < 0. @see integration
+def integration_with_disc_func_rec_( ds, var, beg, end, deg_poly_max, T ) when is_of_type_VarArgs( ds )
+    res := T( 0 )
+    for int in intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_zero( ds[0], var, beg, end )
+        if not assumed( int[0] == false )
+            if not assumed( 1-int[1] == false )
+                res += int[0] * integration_with_disc_func_rec_( ds[1], var, int[2], int[3], deg_poly_max, T ) * (1-int[1])
+            if not assumed( int[1] == false )
+                res += int[0] * integration_with_disc_func_rec_( ds[2], var, int[2], int[3], deg_poly_max, T ) * int[1]
+    # for int in intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_zero( - ds[0], var, beg, end )
+        # res += int[0] * integration_with_disc_func_rec_( ds[2], var, int[1], int[2], deg_poly_max, T )
+    return res
+
+# no discontinuities. @see integration
+def integration_with_disc_func_rec_( ds, var, beg, end, deg_poly_max, T )
+    # function without discontinuities
+    return polynomial_integration( ds, var, beg, end, deg_poly_max )
+
+## integration des expr par rapport a var de beg a end. deg_poly_max pour les approximations de taylor ##
+def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order <= 0
+    if var.type != Op
+        return expr * ( end - beg )
+    dsc := discontinuities_separation( expr, make_varargs( var ) )
+    return integration_with_disc_func_rec_( dsc, var, beg, end, deg_poly_max, expr.type )
+
+## integration des expr par rapport a var de beg a end. deg_poly_max pour les approximations de taylor ##
+def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order > 0
+    assert( expr.sub_types.size == 1, "TODO" )
+    res := Vec[ expr.sub_types[0], SizeType(expr.size) ]()
+    for i in 0 .. expr.size
+        res[i] = integration( expr[i], var, beg, end, deg_poly_max )
+    return res
+    
+##
+    f := lagrange( [10,11,12], [1,2,3], symbol("tx") )
+    info f
+    info f(10)
+    info f(11)
+    info f(12)
+gives
+    f -> (1.0/2.0)*(-11+tx)*(-12+tx)-2*(-10+tx)*(-12+tx)+(3.0/2.0)*(-10+tx)*(-11+tx)
+    f(10) -> 1
+    f(11) -> 2
+    f(12) -> 3
+##
+def lagrange( points, values, variable )
+    assert( values.size == points.size, "values and points are not of same size" )
+    T := type_promote( partial_instanciation type_promote( values, add ), variable, mul )
+    res := T( 0 )
+    for i in 0 .. values.size
+        num := T( 1 ); den := T( 1 )
+        for j in 0 .. values.size
+            if i != j
+                num *= variable - points[j]
+                den *= points[i] - points[j]
+        res += num / den * values[i]
+    return res
+        
+##
+    f := lagrange_nd( [[10],[11],[12]], [1,2,3], [symbol("tx")] )
+    info f
+    info f(10)
+    info f(11)
+    info f(12)
+gives
+    f -> (1.0/2.0)*(-11+tx)*(-12+tx)-2*(-10+tx)*(-12+tx)+(3.0/2.0)*(-10+tx)*(-11+tx)
+    f(10) -> 1
+    f(11) -> 2
+    f(12) -> 3
+##
+def lagrange_nd( points, values, variables )
+    assert( values.size == points.size, "values and points are not of same size" )
+    T := type_promote( partial_instanciation type_promote( values, add ), variables[0], mul )
+    res := T( 0 )
+    for pi, val in points, values
+        num := T( 1 ); den := T( 1 )
+        for d in 0 .. variables.size
+            pushed_in_num := Vec[ pi[d].type ]( [pi[d]] )
+            for pj in points
+                if not ( pj[d] in pushed_in_num )
+                    num *= variables[d] - pj[d]
+                    den *= pi[d] - pj[d]
+                    pushed_in_num.push_back( pj[d] )
+        res += num / den * val
+    return res
+
+## ##
+def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name, 
+        initialisation = VecCst[0]( size = unknowns.values.size ), 
+        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+        R = Vec[ Op ](),
+        Tout = "double", nb_spaces = 4, declare_out = false )
+    prel := " " * nb_spaces
+    assert( eqs.size == unknowns.size, "$(eqs.size) != $(unknowns.size)" )        
+    unk := Vec[Op]( unknowns.values )
+    #
+    res_symbols := Vec[ Op ]( size = unk.size, function = symbol("$(symbol_base_name)[$_0]") )
+    V := Vec[ Op ]( size = unk.size )
+    M := Mat[ Op, Sym ]( eqs.size, unk.size )
+    linear := true
+    for i in 0 .. eqs.size
+        v := eqs[i]
+        V[i].init( - v )
+        for j in 0 .. unk.size
+            M[i,j].init( v.diff( unk[j] ) )
+            if M[i,j].depends_on( unk )
+                linear = false
+    #
+    m_lu := lu( M )
+    #
+    if linear
+        V = V.subs( unk, Vec[ Op ]( size = unk.size, function = ( x => 0 ) ) )
+        R.init( m_lu * V )
+        
+        cw := CodeWriter( T = Tout )
+        cw.add( "$symbol_base_name", R, reassign )
+        # cw.add( "M", M, __print__ )
+        # cw.add( "V", V, __print__ )
+        if declare_out
+            output <<< "$prel$Tout $symbol_base_name[$(R.size)]; { // linear system"
+        else
+            output <<< "$prel{" 
+        output <<< cw.to_string( nb_spaces = nb_spaces + 4 )
+        output <<< "$prel}"
+    else # non linear case
+        R.init( ( m_lu * V ).subs( unk, res_symbols ) )
+        if declare_out
+            output <<< "$prel$Tout $symbol_base_name[] = { $(join(initialisation,",")) };"
+        output <<< "$(prel)while ( true ) {"
+        cw := CodeWriter( T = Tout )
+        for r, cpt in R, 0...
+            cw.add( "$(symbol_base_name)_delta_$cpt", r, init )
+        output <<< cw.to_string( nb_spaces = nb_spaces + 4 )
+        for i in 0 .. R.size
+            output <<< "$prel    $symbol_base_name[$i] += $(symbol_base_name)_delta_$i;"
+        cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(Float64(precision[_0]))" )
+        output <<< "$prel    if ( $(join( cond," and " )) ) break;"
+        output <<< "$prel}"
+        
+    return res_symbols
+
+## ##
+def code_writer_nl_min( value_to_minimize, unknowns, output, symbol_base_name, 
+        initialisation = VecCst[0]( size = unknowns.values.size ), 
+        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+        R = Vec[ Op ](),
+        Tout = "double", nb_spaces = 4, declare_out = false )
+    assert( value_to_minimize.tensor_order <= 0, "Pourte -> TODO" )
+    unk := Vec[Op]( unknowns.values )
+    eqs := Vec[Op]( size = unk.size )
+    for c in 0 .. unk.size
+        eqs[c].init( value_to_minimize.diff( unk[c] ) )
+    return code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name, 
+        initialisation, precision, R, Tout, nb_spaces, declare_out )
+        
+## ##
+def code_writer_nl_eqs_or_min( val, unknowns, output, symbol_base_name, 
+        initialisation = VecCst[0]( size = unknowns.values.size ), 
+        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+        R = Vec[ Op ](),
+        Tout = "double", nb_spaces = 4, declare_out = false )
+    if val.tensor_order <= 0
+        return code_writer_nl_min( val, unknowns, output, symbol_base_name, 
+                initialisation, precision, R, Tout )
+    return code_writer_nl_eqs( val, unknowns, output, symbol_base_name, 
+            initialisation, precision, R, Tout, nb_spaces, declare_out )
+
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------
+
+#~
+    newton_raphson_minimize_iteration( (a-1)^4, [a] )
+        -> [ (1.0/12.0) * (12*pow(-1+a,2)*a-4*pow(-1+a,3)) / pow(-1+a,2) ]
+    newton_raphson_minimize_iteration( (a-3)^2, [a] )
+        -> [ 3 ] (linear system)
+~#
+def newton_raphson_minimize_iteration( expr, unknowns, old_values = unknowns )
+    if unknowns.tensor_order <= 0
+        return newton_raphson_minimize_iteration( expr, [unknowns], old_values )
+    if expr.type != Op
+        return newton_raphson_minimize_iteration( Op(expr), unknowns, old_values )
+    #
+    nb_unknowns := unknowns.size
+    M := Mat[ Op, Sym[nb_unknowns] ]()
+    V := Vec[ Op, nb_unknowns ]()
+    #
+    for i in 0 .. nb_unknowns
+        d := expr.diff( unknowns[i] )
+        for j in 0 .. i+1
+            M[i,j] = d.diff( unknowns[j] )
+        V[i] = -d
+    #
+    for i in 0 .. nb_unknowns
+        for j in 0 .. nb_unknowns
+            V[i] += M[i,j] * unknowns[j]
+    #
+    for n, v in unknowns, old_values
+        for i in 0 .. nb_unknowns
+            V[i] = V[i].subs( n, v )
+            for j in 0 .. i+1
+                M[i,j] = M[i,j].subs( n, v )
+    return M \ V
+
+#~
+    newton_raphson_minimize_iteration( (a-1)^4, [a] )
+~#
+def newton_raphson_minimize_iteration_rec( expr, unknowns, nb_iter, old_values = unknowns )
+    if nb_iter <= 1
+        return newton_raphson_minimize_iteration( expr, unknowns, old_values )
+    return newton_raphson_minimize_iteration( expr, unknowns, newton_raphson_minimize_iteration_rec( expr, unknowns, nb_iter-1, old_values ) )

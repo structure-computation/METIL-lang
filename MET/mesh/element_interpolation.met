@@ -1,0 +1,18 @@
+
+#~
+~#
+class ElementInterpolation
+    static const nb_val_per_node      := 0
+    static const nb_val_per_elem      := 0
+    static const nb_val_per_skin_elem := VecCst( 0, 0 )
+    
+#~
+~#
+class ElementInterpolationP0 inherits ElementInterpolation
+    static const nb_val_per_elem      := 1
+    
+#~
+~#
+class ElementInterpolationP1 inherits ElementInterpolation
+    static const nb_val_per_node      := 1
+    

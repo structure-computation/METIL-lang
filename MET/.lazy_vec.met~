@@ -1,0 +1,269 @@
+import "lazy_scalar.met"
+
+#~
+    simplified Lazy vector
+~#
+class LazyVec[ T, ST = SizeType ]
+    property is_a_LazyVec, is_lazy
+    static const LO := LazyObject[ Vec[ T, -1, ST ] ]
+    static const TSubVec := PtrWithCptUse[ LO ]
+    static const tensor_order := 1
+    
+    sub_blocks  := Vec[ TSubVec ]()
+    block_sizes := Vec[ ST ]()
+    nb_item_per_sub_vec := 4000000
+    
+    def get_size
+        return sum( block_sizes )
+
+    def reassign_size( v )
+        assert( 0, "TODO" )
+    
+    def init( size, default_value ) pertinence -2
+        init_using_default_values( self )
+        init_size_default_value( size, default_value )
+        
+    def init_size_default_value( size, default_value )
+        if size
+            nb_blocks := ( size + nb_item_per_sub_vec - 1 ) // nb_item_per_sub_vec
+            sub_blocks .reserve( nb_blocks )
+            block_sizes.reserve( nb_blocks )
+            for i in 0 .. nb_blocks
+                lo := new LO( function =
+                    new LazyVecOpAssignCstValue[ T, ST ]( v = default_value, s = nb_item_per_sub_vec )
+                )
+                sub_blocks.push_back( lo )
+                block_sizes.push_back( nb_item_per_sub_vec )
+                if default_value.is_lazy
+                    lo->add_child( default_value.value )
+            # correction
+            es := size - ( nb_blocks - 1 ) * nb_item_per_sub_vec
+            block_sizes.back = es
+            sub_blocks.back->func->s = es
+            
+    def init( r ) when r.is_a_Range_vector
+        init_using_default_values( self )
+        b := r.begin; i := r.increment; e := r.end; const R := r.type
+        sub_blocks.size = 0; block_sizes.size = 0;
+        while b + i <= e
+            bs := min( nb_item_per_sub_vec, ( e - b ) // i )
+            sb := new LO( function = new LazyVecOpAssignRange[ R, T ]( r = R( b, b + i * bs, i ) ) )
+            b += i * bs
+            #
+            block_sizes.push_back( bs )
+            sub_blocks .push_back( sb )
+
+    def reassign( value ) when value.tensor_order <= 0
+        os := get_size()
+        sub_blocks.size = 0
+        block_sizes.size = 0
+        init_size_default_value( os, value )
+    
+    #
+    class BiLazyVecItemExplorer_
+        li1 := MultiPtr() # list of sizes
+        li2 := MultiPtr() # list of sizes
+        def __for__( block ) # num_block_1, num_block_2, offset_1, offset_2, common_size
+            i1 := 0
+            i2 := 0
+            b1 := 0
+            b2 := 0
+            while i1 < li1->size and i2 < li2->size
+                cs1 := li1->select(i1) - b1
+                cs2 := li2->select(i2) - b2
+                if cs1 == cs2
+                    block( ( i1, i2, b1, b2, cs1 ) )
+                    b1 = 0
+                    b2 = 0
+                    i1++
+                    i2++
+                else if cs1 > cs2
+                    block( ( i1, i2, b1, b2, cs2 ) )
+                    b1 += cs2
+                    b2 = 0
+                    i2++
+                else
+                    block( ( i1, i2, b1, b2, cs1 ) )
+                    b1 = 0
+                    b2 += cs1
+                    i1++
+
+    # mul( v, u )...
+    def init( operand_0, operand_1, function ) pertinence -2
+        init_using_default_values( self )
+        for i0, i1, b0, b1, cs in BiLazyVecItemExplorer_( li1 = &operand_0.block_sizes, li2 = &operand_1.block_sizes )
+            nl := new LO( function = new LazyVecOpAssignBinaryOp[ T, operand_0.T, operand_1.T, ST, function ]( b0 = b0, b1 = b1, cs = cs ) )
+            nl->add_child( operand_0.sub_blocks[ i0 ] )
+            nl->add_child( operand_1.sub_blocks[ i1 ] )
+            sub_blocks.push_back( nl )
+            block_sizes.push_back( cs )
+            
+    def write_to_stream( stream )
+        lazy_collection.update( sub_blocks )
+        for sb in sub_blocks
+            for d in @sb->data
+                stream << d << " "
+                
+# -----------------------------------------------------------------------------------------------------------------------------------------------        
+
+#~
+~#
+class MonEnsembleDeFonctionsCompileesPourLazyVec[ T ]
+    def get_src( stream ) 
+        stream <<<< 
+            #include <iostream>
+            template<class V,class T> void make_range( V &res, T begin, T end, T incr ) {
+                for( unsigned i = 0; begin < end ; begin += incr, ++i )
+                    res[i] = begin;
+            }
+            template<class V,class T> void assign_cst_value_k( V &res, const T &value ) {
+                for(unsigned i=0;i<res.size();++i)
+                    res[i] = value;
+            }
+            template<class V,class T> void assign_cst_value_l( V &res, const T &value ) {
+                for(unsigned i=0;i<res.size();++i)
+                    res[i] = value;
+            }
+        for tr, ts in [ ("add","+"), ("mul","*") ]
+            stream <<<< 
+                template<class T,class V> void reduction_$tr( T &res, const V &vec ) {
+                    res = 0;
+                    for(unsigned i=0;i<vec.size();++i)
+                        res $ts= vec[i];
+                }
+            #
+    #
+    def get_wanted_functions
+        res := SplittedVec[ LCppFunctionDescription, 16 ]()
+        res.push_back( name = "make_range"        , ret_type = Vec[T], parameter_types = [ T, T, T ] )
+        res.push_back( name = "assign_cst_value_k", ret_type = Vec[T], parameter_types = [ T ] )
+        res.push_back( name = "assign_cst_value_l", ret_type = Vec[T], parameter_types = [], arg_types = [ T ] )
+        for op in ["add","mul"]
+            res.push_back( name = "reduction_$op", ret_type = T, arg_types = [ Vec[T] ] )
+        return res
+    def get_md5_sum
+        return "2"
+    
+#~
+~#
+class MonEnsembleDeFonctionsCompileesPourLazyVecBinary[ T, T1, T2, ST ]
+    def get_src( stream ) 
+        stream <<< "#include <cmath>"
+        for tr, ts, tb in [ ("add","+",""), ("mul","*",""), ("sub","-",""), ("div","/",""), ("pow",",","std::pow") ]
+            stream <<<< 
+                template<class VR,class V0,class V1,class ST> void binary_op_$tr( VR &res, const V0 &v0, const V1 &v1, ST b0, ST b1 ) {
+                    for(unsigned i=0;i<res.size();++i)
+                        res[i] = $tb( v0[i+b0] $ts v1[i+b1] );
+                }
+            
+    #
+    def get_wanted_functions
+        res := SplittedVec[ LCppFunctionDescription, 16 ]()
+        for op in ["add","mul","sub","div","pow"]
+            res.push_back( name = "binary_op_$op", ret_type = Vec[T], arg_types = [ Vec[T1], Vec[T2] ], parameter_types = [ ST, ST ] )
+        return res
+    def get_md5_sum
+        return ""
+    
+#
+class LazyVecOpReduction[ T, op ] inherits LazyFunc
+    static func := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyVec[T] ]::get_func("reduction_$op")
+    property has_repr
+    s := SizeType( 0 )
+    def apply( data, args )                   func( data, args )
+    def nb_mem_rw_estimation( T, args )       return T.byte_size * s
+    def repr                                  return "R[$op]"
+    
+#
+class LazyVecOpAssignCstValue[ T, ST ] inherits LazyFunc
+    static func_k := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyVec[T] ]::get_func("assign_cst_value_k")
+    static func_l := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyVec[T] ]::get_func("assign_cst_value_l")
+    property has_repr
+    v := T(); s := ST(); lazy_value := false
+    def init( v, s )
+        if v.is_lazy
+            lazy_value = true
+            self.v.init()
+        else
+            lazy_value = false
+            self.v.init( v )
+        self.s.init( s )
+    def apply( data, args )                   data->resize_without_init( size = s ); ( [func_k,func_l][lazy_value]) ( data, args, v )
+    def nb_mem_rw_estimation( T, args )       return produced_data_estimation( T, args )
+    def produced_data_estimation( T, args )   return s * T.byte_size
+    def repr                                  return "x=>$v"
+
+#
+class LazyVecOpAssignRange[ R, T ] inherits LazyFunc
+    static func := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyVec[T] ]::get_func("make_range")
+    property has_repr
+    r := R()
+    def apply( data, args )
+        data->resize_without_init( r.size )
+        func( data, args, T(r.begin), T(r.end), T(r.increment) )
+    def nb_mem_rw_estimation( T, args )       return produced_data_estimation( T, args )
+    def produced_data_estimation( T, args )   return r.size * T.byte_size
+    def repr
+        return "$(scientific_repr(r.begin))..$(scientific_repr(r.end))" # $(r.increment)
+
+#
+class LazyVecOpAssignBinaryOp[ T, T1, T2, ST, op ] inherits LazyFunc
+    static func := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyVecBinary[T,T1,T2,ST] ]::get_func("binary_op_$op")
+    property is_a_LazyVecOpAssignBinaryOp, has_repr
+    b0 := ST(); b1 := ST(); cs := ST()
+    def apply( data, args )
+        data->resize_without_init( cs )
+        func( data, args, b0, b1 )
+        # data->init( op( args[0]->data->select( b0 .. b0 + cs ), args[1]->data->select( b1 .. b1 + cs ) ) )
+    def nb_mem_rw_estimation( T, args )       return produced_data_estimation( T, args ) * 3
+    def produced_data_estimation( T, args )   return cs * T.byte_size
+    def repr                                  return "$op"
+
+#
+def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyVec and b.tensor_order <= 0
+    if b.is_lazy
+        return op( a, LazyVec[ type_promote( partial_instanciation a.T, partial_instanciation b.T, op ) ]( size = a.size, default_value = b ) )
+    return op( a, LazyVec[ type_promote( partial_instanciation a.T, b, op ) ]( size = a.size, default_value = b ) )
+def op_with_ret_using_type_promote( b, a, op ) when a.is_a_LazyVec and b.tensor_order <= 0
+    if b.is_lazy
+        return op( LazyVec[ type_promote( partial_instanciation a.T, partial_instanciation b.T, op ) ]( size = a.size, default_value = b ), a )
+    return op( LazyVec[ type_promote( partial_instanciation a.T, b, op ) ]( size = a.size, default_value = b ), a )
+
+#
+def lvec_binary_op( a, b, op )
+    return LazyVec[ type_promote( partial_instanciation a.T, partial_instanciation b.T, op ) ]( operand_0 = a, operand_1 = b, function = op )
+
+def add( a, b ) when a.is_a_LazyVec and b.is_a_LazyVec pertinence 10 return lvec_binary_op( a, b, add )
+def sub( a, b ) when a.is_a_LazyVec and b.is_a_LazyVec pertinence 10 return lvec_binary_op( a, b, sub )
+def mul( a, b ) when a.is_a_LazyVec and b.is_a_LazyVec pertinence 10 return lvec_binary_op( a, b, mul )
+def div( a, b ) when a.is_a_LazyVec and b.is_a_LazyVec pertinence 10 return lvec_binary_op( a, b, div )
+def pow( a, b ) when a.is_a_LazyVec and b.is_a_LazyVec pertinence 10 return lvec_binary_op( a, b, pow )
+
+
+
+#
+def make_reduction_rec_( T, sub_blocks, block_sizes, function, default_value )
+    if sub_blocks.size == 0
+        return LazyScalar[ T ]( default_value )
+    if sub_blocks.size == 1
+        s := LazyScalar[ T ]( function = new LazyVecOpReduction[ T, function ]( s = block_sizes[0] ) )
+        s.value->add_child( sub_blocks[0] )
+        return s
+    d := sub_blocks.size // 2
+    s0 := make_reduction_rec_( T, sub_blocks[0..d], block_sizes[0..d], function, default_value )
+    s1 := make_reduction_rec_( T, sub_blocks[d...], block_sizes[d...], function, default_value )
+    return s0 + s1
+
+
+#
+def reduction( vec, function, default_value ) when vec.is_a_LazyVec pertinence 2
+    T := vec.T
+    return make_reduction_rec_( T, vec.sub_blocks, vec.block_sizes, function, default_value )
+    # s := LazyScalar[ T ]( function = new LazyVecOpReduction[ T, function ]( s = vec.block_sizes.front ) )
+    # s.value->add_child( vec.sub_blocks.front )
+    # for sb, bs in vec.sub_blocks[1...], vec.block_sizes[1...]
+        # t := LazyScalar[ T ]( function = new LazyVecOpReduction[ T, function ]( s = bs ) )
+        # t.value->add_child( sb )
+        # s += t
+    # return s
+

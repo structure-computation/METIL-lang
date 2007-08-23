@@ -1,0 +1,48 @@
+
+#~
+~#
+def write_vtu( mesh, f )
+    def vec3( vec )
+        if vec.size == 3  return vec
+        if vec.size == 2  return vec +++ [0]
+        if vec.size == 1  return vec +++ [0,0]
+        if vec.size == 0  return [0,0,0]
+        return vec[0..3]
+    pos_data := String( mesh.node_list.map( vec3( _0.pos ) ) )
+    connectivity_data := String( mesh.elem_list.map( _0.node_numbers ) )
+    offsets_data := String( pre_accumulation( Vec[mesh.ST](mesh.elem_list.map(_0.nb_nodes)) ) )
+    type_elems := String( mesh.elem_list.map( _0.vtk_type ) )
+    
+    f <<< "<VTKFile type='UnstructuredGrid'>
+    <UnstructuredGrid>
+        <Piece NumberOfPoints='$(mesh.node_list.size)' NumberOfCells='$(mesh.elem_list.size)'>
+            <PointData> </PointData> 
+            <CellData> </CellData> 
+            <Points>
+                <DataArray NumberOfComponents='3' type='Float64' format='ascii'>
+                    $pos_data
+                </DataArray>
+            </Points> 
+            <Cells>
+                <DataArray Name='connectivity' type='Int32' format='ascii'>
+                    $connectivity_data
+                </DataArray>
+                <DataArray Name='offsets' type='Int32' format='ascii'>
+                    $offsets_data
+                </DataArray>
+                <DataArray Name='types' type='Int32' format='ascii'>
+                    $type_elems
+                </DataArray>
+            </Cells>
+        </Piece>
+    </UnstructuredGrid>
+</VTKFile>"
+    
+#~
+~#
+def display_paraview( mesh, name_file = "tmp_mesh.vtu" )
+    f := File( name_file, "w" )
+    write_vtu( mesh, f )
+    f.close()
+    system( "paraview --data=$name_file" )
+

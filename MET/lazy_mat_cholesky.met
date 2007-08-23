@@ -1,0 +1,246 @@
+#~
+~#
+class MonEnsembleDeFonctionsCompileesPourLazyMat[ T, ST, br, bc ]
+    static const LT := LazyMatTinyBlock[ T, br, bc ]
+    
+    static def nb_args( diag, finalize, lonely )
+        if lonely
+            return 2 - diag
+        return 2 * ( 2 - diag ) - ( 1 - finalize ) * ( 1 - diag )
+    
+    def kernel_for_diag_sqrt( diag, finalize, lonely )
+        res := "\n"
+        for r in 0 .. br
+            for c in 0 .. r + 1
+                j := Vec[String]([ "r.data[$(LT::offset( r, c ))]" ])
+                for c2 in 0 .. c
+                    j.push_back( "r.data[$(LT::offset( r, c2 ))] * r.data[$(LT::offset( c, c2 ))]" )
+                jo := join( j, " - " )
+                if r != c
+                    res <<< "        r.data[$(LT::offset( r, c ))] = ( $jo ) / r.data[$(LT::offset( c, c ))];"
+                else
+                    res <<< "        r.data[$(LT::offset( r, c ))] = sqrt( $jo );"
+        return res
+    
+    def kernel_for_diag_subs( diag, finalize, lonely )
+        res := "\n"
+        for r in 0 .. br
+            for c in 0 .. r + 1
+                j := Vec[String]()
+                for c2 in 0 .. bc
+                    j.push_back( "b.data[$(LT::offset( r, c2 ))] * b.data[$(LT::offset( c, c2 ))]" )
+                jo := join( j, " + " )
+                res <<< "            r.data[$(LT::offset( r, c ))] -= $jo;"
+        return res
+        
+    def kernel_for_self_div( diag, finalize, lonely )
+        if not finalize
+            return ""
+        DNAME := "res"
+        if not diag
+            DNAME = "B" + ( nb_args( diag, finalize, lonely ) - 1 )
+        res := "TD &d = $DNAME.data[ res.beg_ind[c+1]-1 ];\n"
+        for r in 0 .. br
+            for c in 0 .. bc
+                j := Vec[String]()
+                for c2 in 0 .. c
+                    j.push_back( "r.data[$(LT::offset( r, c2 ))] * d.data[$(LT::offset( c, c2 ))]" )
+                if j.size
+                    jo := join( j, " + " )
+                    res <<< "            r.data[$(LT::offset( r, c ))] -= $jo;"
+                res <<< "            r.data[$(LT::offset( r, c ))] /= d.data[$(LT::offset( c, c ))];"
+        return res
+    
+    def kernel_for_self_subs( diag, finalize, lonely )
+        res := "\n"
+        for r in 0 .. br
+            for c in 0 .. bc
+                j := Vec[String]()
+                for c2 in 0 .. bc
+                    j.push_back( "b0.data[$(LT::offset( r, c2 ))] * b1.data[$(LT::offset( c, c2 ))]" )
+                jo := join( j, " + " )
+                res <<< "                        r.data[$(LT::offset( r, c ))] -= $jo;"
+        return res
+    
+    def subs_sq_if_not_lonely( diag, finalize, lonely )
+        if lonely
+            return ""
+        res := "\n"
+        # res <<< "std::cout << B0.beg_ind.size() << ' ' << B1.beg_ind.size() << ' ' << y << std::endl;"
+        if diag
+            res <<< "            for(unsigned ind_1=B1.beg_ind[y];ind_1<B1.beg_ind[y+1];++ind_1) {"
+            res <<< "                const TD &b1 = B1.data[ ind_1 ];"
+            for r in 0 .. br
+                for c in 0 .. bc
+                    j := Vec[String]()
+                    for c2 in 0 .. bc
+                        j.push_back( "b1.data[$(LT::offset( r, c2 ))] * b1.data[$(LT::offset( c, c2 ))]" )
+                    jo := join( j, " + " )
+                    res <<< "                r.data[$(LT::offset( r, c ))] -= $jo;"
+            res <<< "            }"
+        else
+            tmp := "\n"
+            for r in 0 .. br
+                for c in 0 .. bc
+                    j := Vec[String]()
+                    for c2 in 0 .. bc
+                        j.push_back( "b1.data[$(LT::offset( r, c2 ))] * b2.data[$(LT::offset( c, c2 ))]" )
+                    jo := join( j, " + " )
+                    tmp <<< "                        r.data[$(LT::offset( r, c ))] -= $jo;"
+            res <<<<
+                            ST nli0 = B1.beg_ind[y], nle0 = B1.beg_ind[y+1];
+                            ST nli1 = B2.beg_ind[c], nle1 = B2.beg_ind[c+1];
+                            if ( nli0 < nle0 and nli1 < nle1 ) {
+                                while ( true ) {
+                                    if ( B1.indices[ nli0 ] == B2.indices[ nli1 ] ) {
+                                        const TD &b1 = B1.data[ nli0 ];
+                                        const TD &b2 = B2.data[ nli1 ];
+                                        $tmp
+                                    }
+                                    else if ( B1.indices[ nli0 ] < B2.indices[ nli1 ] ) { if ( ++nli0 == nle0 ) break; }
+                                    else { if ( ++nli1 == nle1 ) break; }
+                                }
+                            }
+        #
+        return res
+            
+    #
+    def get_src( stream ) 
+        stream <<<< 
+            #include <cmath>
+        for diag, finalize, lonely in rectilinear( 0..2, 3 )
+            args := Vec[String]( ["V &res"] )
+            for i in 0 .. nb_args( diag, finalize, lonely )
+                args.push_back( "V &B$i" )
+            #
+            stream <<<< 
+                #include <iostream>
+                template<class V> void cholesky_$diag$finalize$lonely( $(join(args,", ")) ) {
+                    using namespace std;
+                    typedef typename V::T T;
+                    typedef typename V::ST ST;
+                    typedef typename V::TD TD;
+                    // std::cout << &res << " " << &B0 << " " << (&res == &B0) << std::endl;
+                    res.beg_ind = B0.beg_ind;
+                    res.indices = B0.indices;
+                    res.data.resize( B0.data.size() );
+                    if ( $diag==false or $finalize==false )
+                        return;
+                    // finalize -> $finalize
+                    
+                    for(unsigned y=0;y<res.beg_ind.size()-1;++y) {
+                        ST ind_diag = res.beg_ind[y+1]-1;
+                        for(unsigned ind=res.beg_ind[y];ind<ind_diag;++ind) {
+                            ST c = res.indices[ ind ];
+                            TD &r = res.data[ ind ];
+                            r = B0.data[ ind ];
+                            //
+                            $( subs_sq_if_not_lonely( diag, finalize, lonely ) )
+                            ST i0 = res.beg_ind[c], e0 = res.beg_ind[c+1] - 1;
+                            ST i1 = res.beg_ind[y], e1 = ind;
+                            if ( i0 < e0 and i1 < e1 ) {
+                                while ( true ) {
+                                    if ( res.indices[ i0 ] == res.indices[ i1 ] ) {
+                                        const TD &b0 = res.data[ i0 ];
+                                        const TD &b1 = res.data[ i1 ];
+                                        $( kernel_for_self_subs( diag, finalize, lonely ) )
+                                        ++i0; ++i1;
+                                    }
+                                    else if ( res.indices[ i0 ] < res.indices[ i1 ] ) { if ( ++i0 == e0 ) break; }
+                                    else { if ( ++i1 == e1 ) break; }
+                                    break;
+                                }
+                            }
+                            $( kernel_for_self_div( diag, finalize, lonely ) )
+                        }
+                        TD &r = res.data[ ind_diag ];
+                        r = B0.data[ ind_diag ];
+                        for(unsigned ind=B0.beg_ind[y];ind<ind_diag;++ind) {
+                            TD &b = res.data[ ind ];
+                            $( kernel_for_diag_subs( diag, finalize, lonely ) )
+                        }
+                        $( kernel_for_diag_sqrt( diag, finalize, lonely ) )
+                    }
+                }
+            #
+    #
+    def get_wanted_functions
+        res := SplittedVec[ LCppFunctionDescription, 16 ]()
+        # cholesky_$diag$finalize$lonely
+        for diag, finalize, lonely in rectilinear( 0..2, 3 )
+            res.push_back( 
+                name = "cholesky_$(Int32(diag))$(Int32(finalize))$(Int32(lonely))",
+                ret_type = LazyMatSubBlock[ T, ST, br, bc ],
+                arg_types = vec_cst( nb_args( diag, finalize, lonely ), LazyMatSubBlock[ T, ST, br, bc ] )
+            )
+        return res
+    def get_md5_sum
+        return "1"
+
+
+#
+class LMatSubBlockIncompleteCholesky[ T, ST, br, bc, diag, finalize, lonely ] inherits LazyFunc
+    static func := LCppCompiledFunctionSet[ MonEnsembleDeFonctionsCompileesPourLazyMat[ T, ST, br, bc ] ]::get_func("cholesky_$(Int32(diag))$(Int32(finalize))$(Int32(lonely))")
+    static const args_that_can_be_used_as_io := [0]
+    property has_repr
+    t := ST( 0 ) # for timing
+    s := ST( 0 ) # produced data size
+    x := 0; y1 := 0; y2 := 0
+    def apply( data, args )
+        data->init()
+        # info diag, finalize, lonely
+        # info MonEnsembleDeFonctionsCompileesPourLazyMat[ T, ST, br, bc ]::nb_args( diag, finalize, lonely )
+        # info args.size
+        func( data, args )
+    def nb_mem_rw_estimation( T, args )       return t
+    def produced_data_estimation( T, args )   return s
+    def repr                                  return "Ch[$y1,$y2,$x]" # "Ch[$diag,$finalize,$lonely]"
+        
+#~
+~#
+def incomplete_cholesky( m ) when m.is_a_LazyMat
+    res := LazyMat[ m.T, m.sym, m.ST, m.br, m.bc ]()
+    res.block_sizes = m.block_sizes
+    res.sub_blocks = m.sub_blocks
+    
+    #
+    for y in 0 .. res.sub_blocks.size
+        nb_rw_est := m.T.byte_size * 1000 * res.block_sizes[1][y]
+        for x in 0 .. y + 1
+            if res.sub_blocks[y][x]
+                s := res.sub_blocks[y][x]->produced_data
+                #
+                common_x := Vec[ Int32 ]()
+                if x == y
+                    for x2 in 0 .. x
+                        if res.sub_blocks[y][x2]
+                            common_x.push_back( x2 )
+                else
+                    for x2 in 0 .. x
+                        if res.sub_blocks[y][x2] and res.sub_blocks[x][x2]
+                            common_x.push_back( x2 )
+                #~
+                  A
+                  B C
+                  D E F
+                  G H I J
+                ~#
+                if common_x.size
+                    for x2, cpt in common_x, 0...
+                        finalize := ( cpt == common_x.size-1 )
+                        lo := new res.LO( function = new LMatSubBlockIncompleteCholesky[ m.T, m.ST, m.br, m.bc, diag = (x==y), finalize = finalize, lonely=false ]( t = nb_rw_est, s = s, x=x2, y1=x, y2=y ) )
+                        lo->add_child( res.sub_blocks[y][x ] ) # H or J
+                        lo->add_child( res.sub_blocks[y][x2] ) # G
+                        if x != y
+                            lo->add_child( res.sub_blocks[x][x2] ) # B
+                            if finalize
+                                lo->add_child( res.sub_blocks[x][x ] ) # C
+                        res.sub_blocks[y][x] = lo
+                else # a lonely block (need only self)
+                    lo := new res.LO( function = new LMatSubBlockIncompleteCholesky[ m.T, m.ST, m.br, m.bc, diag = (x==y), finalize = true, lonely = true ]( t = nb_rw_est, s = s, x=x, y1=y, y2=y ) )
+                    lo->add_child( res.sub_blocks[y][x] ) # G
+                    if x != y
+                        lo->add_child( res.sub_blocks[x][x] ) # A
+                    res.sub_blocks[y][x] = lo
+    return res
+    

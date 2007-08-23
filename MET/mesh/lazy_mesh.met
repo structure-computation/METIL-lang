@@ -1,0 +1,141 @@
+import "paraview.met"
+import "std_elements.met"
+import "make_rect.met"
+
+#~ ~#
+class Node[ T, dim, ST ]
+    pos := Vec[ T, dim ]()
+
+#~ ~#
+class NodeList[ Tnode ]
+    static const tensor_order := 1
+    static const TSubBlock := Vec[ Tnode ]
+    static const LO := LazyObject[ TSubBlock ]
+    
+    dep_elem_list := VarArgs() # ElemListOfType[ TE, ST, TNodeList ]::sub_blocks[ n ]
+    sub_blocks    := SplittedVec[ PtrWithCptUse[ LO ], 24 ]()
+    prefered_bs   := 1e5
+
+    def __for__( block )
+        for d in sub_blocks
+            lazy_collection.update( [ d ] )
+            for v in @d->data
+                block( v )
+
+#~ ~#
+class ElemListOfType[ TE, ST, TNodeList ]
+    static const tensor_order := 1
+    static const TSubBlock := Vec[ TE ]
+    static const LO := LazyObject[ TSubBlock ]
+    
+    sub_blocks := Vec[ PtrWithCptUse[ LO ] ]()
+    
+    def __for__( block )
+        for d in sub_blocks
+            lazy_collection.update( [ d ] )
+            for v in @d->data
+                block( v )
+
+#~ ~#
+class ElemList[ ST, TNodeList ]
+    static const tensor_order := 1
+    
+    data := VarArgs() # ElemListOfType[ Triangle, ST ], ElemListOfType[ Quad, ST ]...
+    prefered_bs := 1e5
+    
+    #~ ~#
+    def add_sub_block( TE, function )
+        s := ref sub_list_of_type( TE )
+        return s.sub_blocks.push_back( new s.LO( function = function ) )
+    
+    #~ ~#
+    def sub_list_of_type( TE )
+        for l in data
+            if l.TE == TE
+                return l
+        n := ElemListOfType[ TE, ST, TNodeList ]()
+        data.push_unnamed( n )
+        return n
+    
+    #~ ~#
+    def __for__( block )
+        for d in data
+            for e in d
+                block( e )
+    
+
+#~
+
+~#
+class Mesh[ T = Float64, dim = 3, ST = SizeType ]
+    static const Tnode := Node[ T, dim, ST ]
+    static const TNodeList := NodeList[ Tnode ]
+    static const TElemList := ElemList[ ST, TNodeList ]
+    property is_a_Mesh
+
+    elem_list := TElemList()
+    node_list := TNodeList()
+    
+    def update_node_list_elem_list_sub_blocks_correspondance
+        
+    
+    
+#
+class LazyBinaryReader[ ST = SyzeType ] inherits LazyFunc
+    property has_repr
+    b := ST( 0 ) # seek
+    s := ST( 0 ) # size
+    f := "" # filename
+    def apply( data, args )
+        fi := File( f, "r" )
+        fi.seek( b )
+        data->resize_without_init( s )
+        fi.read( data->begin, s )
+    def nb_mem_rw_estimation( T, args )
+        return s
+    def repr
+        return "BinRead[$b,$s,$f]"
+    
+#~ ~#
+class DummyTetra[ ST = SizeType ]
+    nodes := Vec[ ST, 4 ]()
+
+#~  ~#
+def read_bin( m, file_name ) when m.is_a_Mesh
+    f := File( file_name, "r" )
+    nb_elems := m.ST( 0 )
+    nb_nodes := m.ST( 0 )
+    f.read( nb_elems )
+    f.read( nb_nodes )
+    te := f.tell
+    
+    # elems
+    cpt_elems := 0
+    TE := DummyTetra[ m.ST ]
+    se := TE.byte_size_if_in_vec
+    while cpt_elems < nb_elems
+        ns := min( nb_elems - cpt_elems, m.elem_list.prefered_bs )
+        fu := new LazyBinaryReader[ m.ST ]( b = te + cpt_elems * se, s = ns * se, f = file_name )
+        lo := ref m.elem_list.add_sub_block( TE, function = fu )
+        cpt_elems += ns
+    
+    # nodes
+    cpt_nodes := 0
+    sn := m.Tnode.byte_size_if_in_vec
+    while cpt_nodes < nb_nodes
+        ns := min( nb_nodes - cpt_nodes, m.node_list.prefered_bs )
+        fu := new LazyBinaryReader[ m.ST ]( b = te + cpt_nodes * sn, s = ns * sn, f = file_name )
+        lo := ref m.node_list.sub_blocks.push_back( new m.node_list.LO( function = fu ) )
+        cpt_nodes += ns
+    
+    # get node_list <-> elem_list correspondance
+    m.update_node_list_elem_list_sub_blocks_correspondance()
+    info nb_nodes, nb_elems
+    
+    
+#~  ~#
+def make_rect( m, TE, left_corner, right_corner, vec_nb_nodes ) when m.is_a_Mesh
+    nb_nodes := 0
+
+
+

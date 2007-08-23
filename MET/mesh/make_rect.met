@@ -1,0 +1,27 @@
+
+def val_or_vec_of_size( val, dim )
+    if val.tensor_order == 1
+        return val
+    return Vec[ type_of(val), dim ]( default_value = val )
+
+#~
+~#
+def make_rect_( m, TE, P0, P1, nb_points_ ) when TE==Quad
+    nb_points := ceil( nb_points_ )
+    I := (P1-P0)  / (nb_points-1)
+    for p in rectilinear( nb_points )
+        m.add_node( P0 + I * p )
+    for p in rectilinear( nb_points - 1 )
+        m.add_element( Quad, [
+             p[0]    * nb_points[1] + p[1],
+            (p[0]+1) * nb_points[1] + p[1],
+            (p[0]+1) * nb_points[1] + p[1]+1,
+             p[0]    * nb_points[1] + p[1]+1 ] )
+
+
+#~
+    
+~#
+def make_rect( m, TE, P0, P1, nb_points )
+    make_rect_( m, TE, val_or_vec_of_size(P0,m.dim), val_or_vec_of_size(P1,m.dim), val_or_vec_of_size(nb_points,m.dim) )
+    

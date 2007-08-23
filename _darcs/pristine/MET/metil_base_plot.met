@@ -1,0 +1,87 @@
+#~  ~#
+class GenericPlotDevice[ dim ]
+    static const P := Vec[Float64,dim]
+    points   := Vec[P]()
+    lines    := Vec[Vec[P,2]]()
+    triangle := Vec[Vec[P,3]]()
+    labels   := Vec[ Pair[P,String] ]()
+    
+    def add_line( P0, P1 )
+        lines.push_back( [ P0, P1 ] )
+    
+    def add_point( P0 )
+        points.push_back( P0 )
+    
+    def add_label( P, L )
+        labels.push_back( first = P, second = L )
+        
+
+#~  ~#
+class PyLabPlot
+    f ~= File
+    destroy_pipe := true
+    def init
+        init_using_default_values( self )
+        f.init( executable = "python", mode = "w" )
+        f <<< "from pylab import *"
+        destroy_pipe = true
+    def destroy
+        if destroy_pipe
+            f.destroy()
+    def plot( lst )
+        f << "plot("
+        for v, cpt in lst, 0...
+            if v.tensor_order!=1 and ( cpt % 2 )
+                f << "[" << join(lst[cpt-1].map( Float64(v(_0)) ),",") << "], "
+            else
+                f << "[" << join(v.map( Float64 ),",") << "], "
+        f <<< ")"
+        f.flush()
+    def show
+        f << "show()" <<< fflush
+
+#~  ~#
+class GnuPlot[ dim = 2 ] inherits GenericPlotDevice[ dim ]
+    f ~= File
+    destroy_pipe := true
+    
+    def init
+        init_using_default_values( self )
+        f.init( executable = "gnuplot", mode = "w" )
+        destroy_pipe = true
+        
+    def destroy
+        if destroy_pipe
+            f.destroy()
+            
+    def plot( varargs )
+        f <<< "plot '-' w l"
+        for value in varargs[0]
+            # if is_of_type_Op( v ) and ( cpt % 2 )
+            f << Float64(value) << " " <<< Float64( varargs[1](value) )
+        f <<< "e"
+        f.flush()
+        
+    def show
+        f <<< "pause -1" << fflush
+
+    def flush
+        for l in labels
+            f <<< "set label \"$(l.second)\" at $(l.first[0]), $(l.first[1]) center"
+        f <<< "plot '-' w lp"
+        for p in points
+            f << p << "\n\n"
+        for l in lines
+            f << l[0] << "\n"
+            f << l[1] << "\n\n"
+        f <<< "e"
+        f.flush()
+
+#~  ~#
+def plot( varargs )
+    p := PyLabPlot()
+    p.destroy_pipe = false
+    p.plot( varargs )
+    p.show()
+
+

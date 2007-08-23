@@ -1,0 +1,187 @@
+import "lazy.met"
+
+
+#~
+~#    
+class LCppFunctionDescription
+    name      := ""
+    ret_type  := InternalVariable()
+    arg_types := InternalVariable()
+    parameter_types := InternalVariable()
+    def init( name, ret_type, arg_types = [], parameter_types = [] )
+        self.name.init( name )
+        self.ret_type.init_using_var( ret_type )
+        self.arg_types.init_using_var( arg_types )
+        self.parameter_types.init_using_var( parameter_types )
+
+#~
+~#    
+class LCppCompiledFunctionCaller
+    func := UntypedPtr()
+    def apply( data, args, varargs )
+        exec_ccode_function( func, data.ptr, args.begin.ptr, (&varargs).ptr )
+
+#~
+~#    
+class LCppCompiledFunctionSet_
+    static env := BuilderEnvironment()
+    dl := DlLoader()
+    name_to_func := Map[ String, LCppCompiledFunctionCaller ]()
+    
+    def init( fs )
+        # base file name
+        base_file_name := env.GEN_DIR + "/" + CppGenerator::cpp_name( fs.type )
+        so_file_name   := base_file_name + ".so"
+        # look for a .so, look if up to date
+        have_to_compile := not last_modification_time_or_zero_of_file_named( so_file_name )
+        if not have_to_compile # if there's a .so file, look for md5 control sum
+            dl.init( so_file_name )
+            assert( dl, dl.last_error() )
+            control_sum := Ptr[UntypedPtr]( dl.find_symbol( "control_sum" ) )
+            control_sum_size := Ptr[Int32]( dl.find_symbol( "control_sum_size" ) )
+            have_to_compile = not control_sum or not control_sum_size or String( size = @control_sum_size, data = @control_sum ) != fs.get_md5_sum()
+            if have_to_compile
+                dl.destroy()
+            
+        if have_to_compile
+            # else, make a .cpp file
+            CppGenerator::check_or_create_directory( env.GEN_DIR )
+            cpp_file_name  := base_file_name + ".cpp"
+            make_cpp_code( fs, File( cpp_file_name, "w" ), cpp_file_name )
+            # and compile it
+            o_file_name    := base_file_name + ".o"
+            assert( env.make_object_from_cpp ( cpp_file_name, o_file_name , want_so = true )==0, "Compilation pb" )
+            assert( env.make_lib_from_objects( o_file_name  , so_file_name, want_so = true )==0, "Link edition pb" )
+            dl.init( so_file_name )
+            assert( dl, dl.last_error() )
+            
+        # summary of metil_functions
+        metil_function_names := Ptr[ UntypedPtr ]( dl.find_symbol("metil_function_names") )
+        assert( metil_function_names, dl.get_last_error() )
+        name_to_func.init()
+        for i in 0...
+            fn := metil_function_names[ i ]
+            if not fn break
+            sfn := String( c_str = fn )
+            name_to_func[ sfn ].init( func = dl.find_symbol( sfn ) )
+        
+    def select( func_name )
+        f := name_to_func[ "metil_" + func_name ]
+        assert( f.func, "function $func_name not found" )
+        return f
+    
+    def make_cpp_code( fs, f, fn )
+        control_sum := fs.get_md5_sum()
+        # types
+        f <<<<
+            #include <stdlib.h>
+            #include <string.h>
+            #include <sys/types.h>
+            
+            typedef float Float32;
+            typedef double Float64;
+            typedef long double Float96;
+            
+            typedef __int8_t  Int8;
+            typedef __int16_t Int16;
+            typedef __int32_t Int32;
+            typedef __int64_t Int64;
+            
+            typedef __uint8_t  Unsigned8;
+            typedef __uint16_t Unsigned16;
+            typedef __uint32_t Unsigned32;
+            typedef __uint64_t Unsigned64;
+            
+            typedef void *UntypedPtr;
+            
+            Int64 control_sum_size = $(control_sum.size);
+            char *control_sum = "$control_sum";
+            
+            struct _Variable_ {
+                void *type;
+                char *data;
+                void *transient_data;
+                unsigned attributes;
+                
+                void *parent_type;
+                char *parent_data;
+                void *parent_transient_data;
+                int *cpt_use; 
+                
+                int name;
+                _Variable_ *prev_named;
+            };
+            typedef _Variable_ InternalVariable;
+            
+            template< class T, unsigned item_size_in_stack, unsigned item_size_in_heap=item_size_in_stack >
+            struct _SplittedVec_ {
+                struct Item {
+                    Item *prev, *next;
+                    unsigned size, reserved;
+                };
+                template<unsigned s> struct ItemWithData : public Item {
+                    T data[ s ];
+                };
+                Item *last_item;
+                ItemWithData<item_size_in_stack> first_item;
+                
+                unsigned size() const {
+                    unsigned res = first_item.size;
+                    for( Item *i=first_item.next; i; i=i->next )
+                        res += i->size;
+                    return res;
+                }
+                
+                T &operator[](unsigned val) {
+                    Item *item = &first_item;
+                    unsigned v;
+                    for( v = val; v >= item->size; item = item->next )
+                        v -= item->size;
+                    return static_cast<ItemWithData<1> *>(item)->data[ v ];
+                }
+                
+                const T &operator[](unsigned val) const {
+                    const Item *item = &first_item;
+                    unsigned v;
+                    for( v = val; v >= item->size; item = item->next )
+                        v -= item->size;
+                    return static_cast<const ItemWithData<1> *>(item)->data[ v ];
+                }
+            };
+        # 
+        types_to_inc := VarArgs(); types_to_ptr := VarArgs()
+        for wf in fs.wanted_functions
+            for T in [ @wf.ret_type ] +++ @wf.arg_types +++ @wf.parameter_types
+                CppGenerator::add_to_types_to_inc( types_to_inc, types_to_ptr, T )
+        files_to_include := Vec[String]()
+        for T in types_to_inc +++ types_to_ptr
+            CppGenerator::generate_type_info_if_necessary( T, files_to_include, env.GEN_DIR )
+        for i in files_to_include
+            f <<< "#include \"$i\""
+        # code
+        fs.get_src( StreamWithLinePreProcDirective( f ) ) 
+        # f <<< "#line 0 \"$fn\""
+        # call wrappers
+        for wf in fs.wanted_functions
+            f <<< "extern \"C\" void metil_$(wf.name)( void *ret, _Variable_ *args, _SplittedVec_<_Variable_,8,8> *parameters ) {"
+            args := Vec[String]()
+            args.push_back( "*reinterpret_cast< $(CppGenerator::cpp_name_in_struct(@wf.ret_type)) *>( ret )" )
+            for T, cpt in @wf.arg_types, 0...
+                args.push_back( "**reinterpret_cast< $(CppGenerator::cpp_name_in_struct(T)) **>( args[$cpt].data )" )
+            for T, cpt in @wf.parameter_types, 0...
+                args.push_back( "*reinterpret_cast< $(CppGenerator::cpp_name_in_struct(T)) *>( parameters->operator[]($cpt).data )" )
+            f <<< "    $(wf.name)( $(join(args,", ")) );"
+            f <<< "}"
+        # summary
+        f <<< "char *metil_function_names[] = {"
+        for wf in fs.wanted_functions
+            f <<< "    \"metil_$(wf.name)\","
+        f <<< "    NULL"
+        f <<< "};"
+        
+#~
+~#    
+class LCppCompiledFunctionSet[ FS ]
+    static data := LCppCompiledFunctionSet_( FS() )
+    static def get_func( func_name )
+        return data[ func_name ]

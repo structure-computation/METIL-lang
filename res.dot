@@ -1,0 +1,12 @@
+digraph popoterie {
+    node0x8315130 [label="add"];
+    node0x8315130 -> node0x830fbc8 [color=black];
+    node0x830fbc8 [label="a"];
+    node0x8315130 -> node0x8314f60 [color=black];
+    node0x8314f60 [label="cos"];
+    node0x8314f60 -> node0x8315098 [color=black];
+    node0x8315098 [label="pow"];
+    node0x8315098 -> node0x830fbc8 [color=black];
+    node0x8315098 -> node0x83150e8 [color=black];
+    node0x83150e8 [label="2"];
+}
