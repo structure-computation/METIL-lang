@@ -431,5 +431,10 @@ class GetNamedArguments
             block( ( a->get_name_of_named_argument_nb( i ), a->get_named_argument_nb( i ) ) )
 
 #~~#
-def get_named_arguments( a ) when is_of_type_VarArgs( a )
-    return GetNamedArguments( a )
+def get_named_arguments( self ) when is_of_type_VarArgs( self )
+    return GetNamedArguments( self )
+
+# ------------------------------------------------------------------------------------
+def reinterpret_cast( new_type, from )
+    return new_type( UntypedPtr( from ) )
+

@@ -433,3 +433,4 @@ class GetNamedArguments
 #~~#
 def get_named_arguments( self ) when is_of_type_VarArgs( self )
     return GetNamedArguments( self )
+
