@@ -175,7 +175,7 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
             contains_virtual_methods = true;
             //
             data_size_in_bits += sizeof(void *) * 8;
-            needed_alignement = std::max( needed_alignement, sizeof(int) * 8 );
+            needed_alignement = std::max( needed_alignement, unsigned( sizeof(int) * 8 ) );
             for(unsigned j=0;j<nb_variables;++j)
                 if ( variables[j].offset_in_bits >= 0 )
                     variables[j].offset_in_bits += sizeof(void *) * 8;

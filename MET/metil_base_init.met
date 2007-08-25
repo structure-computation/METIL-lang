@@ -319,7 +319,7 @@ class String
         else
             data_ = data
     def init( c_str )                          pertinence -2
-        init( size = strlen( c_str ), data = c_str )
+        init( size = strlen( UntypedPtr( c_str ) ), data = c_str )
     def reassign( s ) when s.type == String                    destroy(); init(s)
     def destroy                                                if reserved_  data_.free()
     def write_to_stream( stream )                              stream.write( data_, size_ )
