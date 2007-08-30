@@ -978,6 +978,9 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size < 0
                 data_.init( allocate( T, reserved_ ) )
                 cpt := 0; for i in vector select( cpt++ ).init( i )
     
+    def init( vector ) when vector.is_a_LittleHeterogeneousArray and vector.tensor_order == 0
+        init()
+    
     def init( values ) pertinence -2
         self.init( vector = values )
     

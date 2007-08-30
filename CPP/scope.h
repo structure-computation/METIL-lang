@@ -16,6 +16,7 @@
 #include "splittedvec.h"
 #include "type.h"
 #include "usual_strings.h"
+#include "sourcefile.h"
 
 /**
     @author Grover <hugo@gronordi>
@@ -97,8 +98,16 @@ public:
         properties.push_back( name );
     }
     
+    bool has_already_imported( const char *name ) const {
+        for(unsigned i=0;i<imported_sf.size();++i)
+            if ( strcmp( imported_sf[i]->provenance, name ) == 0 )
+                return true;
+        return false;
+    }
+    
     Variable *hash_table[hash_size]; /// size might be > (if this was created using make_new)
     SplittedVec<Nstring,64> properties;
+    SplittedVec<SourceFile *,64> imported_sf;
     unsigned cpt_use;
 };
 

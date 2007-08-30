@@ -35,6 +35,7 @@ struct DefinitionData {
     bool has_varargs() const { return attributes & Tok::Definition::VARARGS; }
     bool has_self_as_arg() const { return attributes & Tok::Definition::SELF_AS_ARG; }
     bool is_method() const { return attributes & Tok::Definition::METHOD; }
+    bool is_abstract() const { return attributes & Tok::Definition::METHOD; }
     void inc_ref() { ++cpt_use; }
 
     unsigned offset_in_sar_file; /// from Tok::pos_...
@@ -52,7 +53,7 @@ struct DefinitionData {
     Float64 pertinence;
     unsigned min_nb_args;
     unsigned nb_args;
-    Type *parent_type; // type of parent class
+    Type *parent_type; // type of parent class if method
     
     SplittedVec<Type *,2,8> type_cache; /// only for classes
 

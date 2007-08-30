@@ -704,6 +704,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name) );
         }
     }
+    for(unsigned i=0;i<primitive_classes.size();++i)
+        if ( integer_class(primitive_classes[i]) )
+            primitive_functions.push_back( PrimitiveFunction( "shift_right", "init_arithmetic( ret, a >> b );", /*ret*/primitive_classes[i] ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+            
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float32" ).A("Float32").A("Float32") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float64" ).A("Float64").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float96" ).A("Float96").A("Float96") );
@@ -757,7 +761,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "__print__", "std::cout << a << std::endl;" ).A("BlockOfTok") );
     primitive_functions.push_back( PrimitiveFunction( "__print__", "std::cout << a << std::endl;" ).A("UntypedPtr") );
     
-    primitive_functions.push_back( PrimitiveFunction( "has_size_and_select", "ret = (a->type->find_var(NULL,STRING_size_NUM) or a->type->find_var(STRING_get_size_NUM)) and a->type->find_var(NULL,STRING_select_NUM);", /*ret*/"Bool" ).
+    primitive_functions.push_back( PrimitiveFunction( "has_size_and_select", "ret = (a->type->find_var(NULL,STRING_size_NUM) or a->type->find_var(NULL,STRING_get_size_NUM)) and a->type->find_var(NULL,STRING_select_NUM);", /*ret*/"Bool" ).
         A("any") );
         
     primitive_functions.push_back( PrimitiveFunction( "nb_attributes_of", "ret = a->type->nb_attributes_in_inst();", /*ret*/"Int32" ).A("any") );

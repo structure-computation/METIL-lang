@@ -240,7 +240,7 @@ def inferior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  retur
 def superior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >= b.ptr
     
 def reinterpret_cast( T, p )
-    return T( p.ptr )
+    return T( UntypedPtr( p ) )
     
 ## Reference on an object of type T. ##
 class RefOn[T]
@@ -319,7 +319,7 @@ class String
         else
             data_ = data
     def init( c_str )                          pertinence -2
-        init( size = strlen( c_str ), data = c_str )
+        init( size = strlen( UntypedPtr( c_str ) ), data = c_str )
     def reassign( s ) when s.type == String                    destroy(); init(s)
     def destroy                                                if reserved_  data_.free()
     def write_to_stream( stream )                              stream.write( data_, size_ )

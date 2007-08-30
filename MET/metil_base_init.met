@@ -223,10 +223,10 @@ def type_promote( a, b, op ) when b.is_a_Ptr and is_of_type_UntypedPtr(a) return
 
 ## ##
 def add( a, b ) when a.is_a_Ptr and b.tensor_order <= 0 pertinence 1000
-    return Ptr[ a.T ]( a.ptr + Int32( b * size_of(partial_instanciation a.T) / 8 ) )
+    return Ptr[ a.T ]( a.ptr + Int32( b * size_of(partial_instanciation a.T) // 8 ) )
 ## ##
 def sub( a, b ) when a.is_a_Ptr and b.tensor_order <= 0 and not b.is_a_Ptr pertinence 1000
-    return Ptr[ a.T ]( a.ptr + Int32( - b * size_of(partial_instanciation a.T) / 8 ) )
+    return Ptr[ a.T ]( a.ptr + Int32( - b * size_of(partial_instanciation a.T) // 8 ) )
 
 ## ##
 def sub( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000

@@ -978,6 +978,8 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size < 0
                 data_.init( allocate( T, reserved_ ) )
                 cpt := 0; for i in vector select( cpt++ ).init( i )
     
+    def init( vector ) when vector.tensor_order == 0 and 
+    
     def init( values ) pertinence -2
         self.init( vector = values )
     
@@ -1438,7 +1440,7 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
     def stream_copy_to( stream )
         nb := size_of( partial_instanciation T ) // 8
         for a in [ first ] +++ chained_list( first.next )
-            stream.write( (&a.data[0]).ptr, nb * a.size )
+            stream.write( a.data.begin, nb * a.size )
     
     def new_elem # new uninitialised element. TODO : return a pointer
         return @check_contiguous_room( 1, 1 )

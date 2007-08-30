@@ -704,6 +704,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name) );
         }
     }
+    for(unsigned i=0;i<primitive_classes.size();++i)
+        if ( integer_class(primitive_classes[i]) )
+            primitive_functions.push_back( PrimitiveFunction( "shift_right", "init_arithmetic( ret, a >> b );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+            
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float32" ).A("Float32").A("Float32") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float64" ).A("Float64").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float96" ).A("Float96").A("Float96") );

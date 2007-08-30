@@ -161,13 +161,17 @@ class AssertionError
 def throw_failed_assertion( txt, from_stack_level = 0 )
     res := AssertionError()
     cpt := from_stack_level + 1
+    
+    res.msg << ":" << txt << "\n"
+
     while cpt < __nb_stack_level__()
-        res.msg << __file_at_stack_level__( cpt ) << ":" << __line_at_stack_level__( cpt ) << ":" << __col_at_stack_level__( cpt )
-        if cpt == from_stack_level + 1
-            res.msg << ":" << txt << ":"
-        else
+        fn := __file_at_stack_level__( cpt )
+        if not ( "metil_base" in fn )
+            res.msg << fn << ":" << __line_at_stack_level__( cpt ) << ":" << __col_at_stack_level__( cpt )
+            # if cpt == from_stack_level + 1
+            # else
             res.msg << ":instantiated_from:"
-        res.msg << __line_str_at_stack_level__( cpt, 80 ) << "\n"
+            res.msg << __line_str_at_stack_level__( cpt, 80 ) << "\n"
         cpt++
     throw res
 
@@ -204,6 +208,7 @@ class File( write_allowed=false, read_allowed=false )
     def write_to_stream( stream )               stream << name
     def get_eof                                 return f.eof()
     def get_tell                                return f.tell()
+    def get_size                                return f.get_size()
     def seek( v )                               f.seek( Int64( v ) )
     def get_next_line                           return get_next_line_( f )
     def for_lines( block )

@@ -487,6 +487,10 @@ const void *play_with_ok_callables_after_all_trials_are_done( DefTrial *def_tria
     if ( c->self and c->def_data->name == STRING_init_NUM and c->self->type->contains_virtual_methods )
         *reinterpret_cast<Type **>( c->self->data ) = c->self->type;
     
+    if ( c->def_data->is_abstract() )
+       th->add_error( "Abstract function", tok );
+        
+    
     th->set_current_sourcefile( c->def_data->sourcefile );
     return c->def_data->block;
 }

@@ -1481,11 +1481,24 @@ template<int compile_mode> const void *exec_tok_import(const N<compile_mode> &n_
         return tok->next();
     }
     free(tmp_str);
+    
+    // already imported
+    if ( th->currently_in_main_scope() ) {
+        if ( th->main_scope->has_already_imported( complete_name ) ) {
+            free( complete_name );
+            return tok->next();
+        }
+    }
+    
+    //
     SourceFile *sourcefile = global_data.get_sourcefile( complete_name, th->error_list, &th->interpreter_behavior );
     
     //
     const void *tok_del;
     if ( sourcefile and sourcefile->tok_header() and sourcefile->tok_header()->tok_data() ) {
+        if ( th->currently_in_main_scope() )
+            th->main_scope->imported_sf.push_back( sourcefile );
+            
         sourcefile->add_property_names( th->main_scope );
         
         OldPC *pc = th->old_pc_list.new_elem();
