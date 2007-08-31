@@ -46,8 +46,8 @@ struct CompiledFunctionSet_ {
         if ( not metil_functions )
             return;
         //
-        for(unsigned i=0;metil_functions[ i ];++i)
-            function_map->operator[]( metil_functions[i] ) = reinterpret_cast<CompFunc *>( ld_handle->find_symbol( metil_functions[i] ) );
+//         for(unsigned i=0;metil_functions[ i ];++i)
+//             function_map->operator[]( metil_functions[i] ) = reinterpret_cast<CompFunc *>( ld_handle->find_symbol( metil_functions[i] ) );
     }
     
     TMAP *function_map;

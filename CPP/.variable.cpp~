@@ -301,7 +301,7 @@ const void *init_using_varargs( Thread *th, const void *tok, Variable *var_to_in
     if ( nb_init_call ) {
         th->check_for_room_in_variable_stack( sp, 2 * nb_init_call, var_to_init );
         for(unsigned i=0;i<va.nb_nargs();++i) {
-            TypeVariable *t = var_to_init->type->find_var( va.name( i ) );
+            TypeVariable *t = var_to_init->type->find_var( var_to_init, va.name( i ) );
             if ( t and t->num_attribute >= 0 ) {
                 // push ref on variable to init, then to variable.init definition
                 Variable *na = assign_ref_on( sp++, var_to_init ); // a

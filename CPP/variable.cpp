@@ -736,9 +736,9 @@ typedef void CcodeFunction3( void *, void *, void * );
 typedef void CcodeFunction4( void *, void *, void *, void * );
 typedef void CcodeFunction5( void *, void *, void *, void *, void * );
 
-void exec_ccode_function( void *f ) { reinterpret_cast<CcodeFunction0 *>( f )(  ); }
-void exec_ccode_function( void *f, void *a ) { reinterpret_cast<CcodeFunction1 *>( f )( a ); }
-void exec_ccode_function( void *f, void *a, void *b ) { reinterpret_cast<CcodeFunction2 *>( f )( a, b ); }
-void exec_ccode_function( void *f, void *a, void *b, void *c ) { reinterpret_cast<CcodeFunction3 *>( f )( a, b, c ); }
-void exec_ccode_function( void *f, void *a, void *b, void *c, void *d ) { reinterpret_cast<CcodeFunction4 *>( f )( a, b, c, d ); }
+void exec_ccode_function( void *f ) { /*reinterpret_cast<CcodeFunction0 *>( f )(  );*/ }
+void exec_ccode_function( void *f, void *a ) { /*reinterpret_cast<CcodeFunction1 *>( f )( a );*/ }
+void exec_ccode_function( void *f, void *a, void *b ) { /*reinterpret_cast<CcodeFunction2 *>( f )( a, b );*/ }
+void exec_ccode_function( void *f, void *a, void *b, void *c ) { /*reinterpret_cast<CcodeFunction3 *>( f )( a, b, c );*/ }
+void exec_ccode_function( void *f, void *a, void *b, void *c, void *d ) { /*reinterpret_cast<CcodeFunction4 *>( f )( a, b, c, d );*/ }
 
