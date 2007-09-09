@@ -30,7 +30,7 @@ public:
     int nb_accessible_variables() const; /// return nb accessible named variables
     Nstring accessible_variables_nb(unsigned n) const;
     void register_var_in_current_scope( const void *tok, Variable *v, Nstring name, bool need_verification );
-    void set_current_sourcefile( SourceFile *sf ) { assert( (int)sf != 4 ); current_sourcefile = sf; }
+    void set_current_sourcefile( SourceFile *sf ) { current_sourcefile = sf; }
     void add_error( const std::string &msg, const void *tok, const std::vector<ErrorList::Provenance> &possibilities=std::vector<ErrorList::Provenance>(), unsigned nb_def_trial_to_skip=0 );
     
     SignedSize check_for_room_in_variable_stack( Variable * &sp, int nb_variables );

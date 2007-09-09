@@ -17,6 +17,14 @@ def display_graphviz( self )
     
     system( "dot -Tps res.dot > res.eps && gv res.eps" )
 
+#~
+~#
+def graphviz_string( self ) when self.tensor_order == 1
+    res := ""
+    for i in self
+        res <<< i.graphviz_string()
+    return res
+    
 ## 
     make a .tex file and display corresponding .eps
 ##

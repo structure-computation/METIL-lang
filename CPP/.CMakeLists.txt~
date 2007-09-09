@@ -114,14 +114,14 @@ ADD_LIBRARY( metil_mpi_wrap_no STATIC mpi_wrap_no.c )
 
 # main executable
 ADD_EXECUTABLE( metil metil.cpp )
-TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${READLINE_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} )
+TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${READLINE_LIBRARY} -ltgetnum ${CMAKE_THREAD_LIBS_INIT} )
 
 # main mpi executable
 IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
     ADD_EXECUTABLE( metil_mpi metil.cpp )
-    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${READLINE_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} -llam-mpi )
+    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${READLINE_LIBRARY} -ltgetnum ${CMAKE_THREAD_LIBS_INIT} ${MPI_LIBRARY} -llam )
 ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
-
+MESSAGE( ${MPI_LIBRARY} )
 
 # INSTALL
 INSTALL( TARGETS metil RUNTIME DESTINATION bin ) #   LIBRARY DESTINATION lib #   ARCHIVE DESTINATION lib

@@ -162,7 +162,7 @@ def throw_failed_assertion( txt, from_stack_level = 0 )
     res := AssertionError()
     cpt := from_stack_level + 1
     
-    res.msg << ":" << txt << "\n"
+    res.msg << txt << "\n"
 
     while cpt < __nb_stack_level__()
         fn := __file_at_stack_level__( cpt )

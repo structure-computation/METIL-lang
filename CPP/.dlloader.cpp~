@@ -26,55 +26,55 @@ void DlLoader::init() {
 }
 
 bool DlLoader::init( const char *lib_name, int size_lib_name ) {
-    return true;
-//     std::string s( lib_name, lib_name + size_lib_name );
-//     return init( s.c_str() );
+    //     return true;
+    std::string s( lib_name, lib_name + size_lib_name );
+    return init( s.c_str() );
 }
 
 bool DlLoader::init( const char *lib_name ) {
-    return true;
-//     #ifdef HAVE_LIBDL
-//         lib = dlopen( lib_name, RTLD_LAZY );
-//     #else
-//         lib = LoadLibrary( lib_name );
-//     #endif
-//     return lib;
+//     return true;
+    #ifdef HAVE_LIBDL
+        lib = dlopen( lib_name, RTLD_LAZY );
+    #else
+        lib = LoadLibrary( lib_name );
+    #endif
+    return lib;
 }
 
 
 void DlLoader::destroy() {
-//     #ifdef HAVE_LIBDL
-//         if ( lib ) dlclose( lib );
-//     #else
-//         FreeLibrary( static_cast<HMODULE>( lib ) );
-//     #endif
+    #ifdef HAVE_LIBDL
+        if ( lib ) dlclose( lib );
+    #else
+        FreeLibrary( static_cast<HMODULE>( lib ) );
+    #endif
 }
 
 const char *DlLoader::last_error() const {
-//     #ifdef HAVE_LIBDL
-//         return dlerror(); 
-//     #else
-//         LPVOID lpMsgBuf;
-//         
-//         FormatMessage( 
-//                         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-//                         NULL,
-//                         GetLastError(),
-//                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-//                         (LPTSTR) &lpMsgBuf,
-//                         0,
-//                         NULL 
-//                         );
-//         
-//         // Free the buffer.
-//         static char *str = 0;
-//         delete [] str;
-//         if (lpMsgBuf) {
-//             str = strcpy(new char[strlen((char*)lpMsgBuf)+1], (char*)lpMsgBuf);
-//             LocalFree( lpMsgBuf );
-//         }
-//         return str;
-//     #endif
+    #ifdef HAVE_LIBDL
+        return dlerror(); 
+    #else
+        LPVOID lpMsgBuf;
+        
+        FormatMessage( 
+                        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                        NULL,
+                        GetLastError(),
+                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+                        (LPTSTR) &lpMsgBuf,
+                        0,
+                        NULL 
+                        );
+        
+        // Free the buffer.
+        static char *str = 0;
+        delete [] str;
+        if (lpMsgBuf) {
+            str = strcpy(new char[strlen((char*)lpMsgBuf)+1], (char*)lpMsgBuf);
+            LocalFree( lpMsgBuf );
+        }
+        return str;
+    #endif
     return NULL;
 }
 
@@ -88,8 +88,9 @@ void *DlLoader::find_symbol( const char *symbol_name ) const {
 }
 
 void *DlLoader::find_symbol( const char *symbol_name, int size_symbol_name ) const {
-    std::string s( symbol_name, symbol_name + size_symbol_name );
-    return find_symbol( s.c_str() );
+    return NULL;
+//     std::string s( symbol_name, symbol_name + size_symbol_name );
+//     return find_symbol( s.c_str() );
 }
 
 const char *DlLoader::std_prefix() {

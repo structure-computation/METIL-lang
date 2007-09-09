@@ -155,11 +155,14 @@ void get_cpu_type_( Thread *th, const void *tok, Variable *return_var );
 void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *return_var );
 void get_next_line_( Thread *th, const void *tok, struct CFile &a, Variable *return_var );
 
-void exec_ccode_function( void *f );
-void exec_ccode_function( void *f, void *a );
-void exec_ccode_function( void *f, void *a, void *b );
-void exec_ccode_function( void *f, void *a, void *b, void *c );
-void exec_ccode_function( void *f, void *a, void *b, void *c, void *d );
+void exec_ccode_function( void *f_ );
+void exec_ccode_function( void *f_, Variable *a );
+void exec_ccode_function( void *f_, Variable *a, Variable *b );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g );
 void exec_asm( void *th, void *code );
 
 #endif

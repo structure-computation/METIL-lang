@@ -357,9 +357,9 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     
     def init( m ) when m.tensor_order == 2 pertinence 4
         init( m.nb_rows, m.nb_cols )
-        info m.type
-        info m[0,0].type
-        interact
+        # info m.type
+        # info m[0,0].type
+        # interact
         for r, c in structure
             self[ r, c ].init( m[ r, c ] )
     

@@ -17,6 +17,14 @@ def display_graphviz( self )
     
     system( "dot -Tps res.dot > res.eps && gv res.eps" )
 
+#~
+~#
+def graphviz_string( self ) when self.tensor_order == 1
+    res := ""
+    for i in self
+        res <<< i
+    return res
+    
 ## 
     make a .tex file and display corresponding .eps
 ##
@@ -153,9 +161,6 @@ class CodeWriter
         return cw.to_string( nb_spaces )
 
 
-# return true if cond is known_at_compile_time and is true
-def assumed( cond )
-    return Bool( cond )
 # return true if cond is known_at_compile_time and is true
 def assumed( cond ) when is_of_type_Op( cond )
     return known_at_compile_time( cond ) and cond.value()

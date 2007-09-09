@@ -213,7 +213,7 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "memcpy", "memcpy( a, b, (c+7)/8 * d );" ).A("UntypedPtr").A("UntypedPtr").A("Int32").A("Int32") );
     
-    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)self;" ).M("UntypedPtr").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)(Int64)self;" ).M("UntypedPtr").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int64)self;" ).M("UntypedPtr").A("Int64") );
 }
 
@@ -456,10 +456,12 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     // void exec_ccode_function( CcodeFunction *function, void *sp, void *th, void *tok, void *self_var );
     //  -> function( sp, th, tok, self_var );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a );" ).A("UntypedPtr") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b );" ).A("UntypedPtr").A("UntypedPtr") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b );" ).A("UntypedPtr").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c );" ).A("UntypedPtr").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d );" ).A("UntypedPtr").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e );" ).A("UntypedPtr").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -832,6 +834,8 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     //
     primitive_functions.push_back( PrimitiveFunction( "inheritance", "ret = inheritance( a->type, b->type );", /*ret*/"Bool" ).A("any").A("any") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "true_type", "return get_def_from_type( th, tok, sp, ret, a->type->contains_virtual_methods ? *reinterpret_cast<Type**>(a->data) : a->type );", /*ret*/"Def" ).A("any") );
     
     
 }

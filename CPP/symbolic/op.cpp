@@ -555,6 +555,10 @@ Op &pow( Op &a, Op &b ) {
     if ( b.type == Op::NUMBER ) { // a ^ 10
         if ( a.type == Op::NUMBER ) // 10 ^ 32
             return Op::new_number( pow_96( a.number_data()->val, b.number_data()->val ) );
+        if ( b.is_zero() )
+            return Op::new_number( 1 );
+        if ( b.is_one() )
+            return a.inc_ref();
         if ( a.type == STRING_abs_NUM ) { // abs(a) ^ n
             if ( b.number_data()->val.is_even() ) // abs(a) ^ 4
                 return pow( *a.func_data()->children[0], b );

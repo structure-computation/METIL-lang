@@ -281,6 +281,7 @@ class PtrWithCptUse[ T ]
         if ptr
             ptr->cpt_use++
         if old_ptr
+            info old_ptr
             if old_ptr->cpt_use > 1
                 old_ptr->cpt_use--
             else
@@ -303,6 +304,9 @@ class PtrWithCptUse[ T ]
                 ptr->cpt_use--
             else
                 delete ptr
+    
+    def write_to_stream( stream )
+        stream << ptr
     
     def test_
         class P
@@ -391,5 +395,8 @@ class MultiPtrWithCptUse
         p = p
     
     
-    
-    
+#~
+~#
+def child_cast( p )
+    return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
+

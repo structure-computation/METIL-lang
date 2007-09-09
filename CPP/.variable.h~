@@ -64,6 +64,7 @@ struct Variable {
     bool can_be_redefined()   const { return attributes & CAN_BE_REDEFINED; }
     bool type_of_only()       const { return attributes & TYPE_OF_ONLY; }
     bool is_primary_def()     const { return attributes & IS_PRIMARY_DEF; }
+    bool is_virtual()         const { return attributes & VIRTUAL; }
     void inc_ref() { ++ *cpt_use; }
     void dec_ref() { -- *cpt_use; }
     Definition *replace_by_method( Thread *th, Definition *method );
@@ -155,10 +156,13 @@ void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *retur
 void get_next_line_( Thread *th, const void *tok, struct CFile &a, Variable *return_var );
 
 void exec_ccode_function( void *f );
-void exec_ccode_function( void *f, void *a );
-void exec_ccode_function( void *f, void *a, void *b );
-void exec_ccode_function( void *f, void *a, void *b, void *c );
-void exec_ccode_function( void *f, void *a, void *b, void *c, void *d );
+void exec_ccode_function( void *f, Variable *a );
+void exec_ccode_function( void *f, Variable *a, Variable *b );
+void exec_ccode_function( void *f, Variable *a, Variable *b, Variable *c );
+void exec_ccode_function( void *f, Variable *a, Variable *b, Variable *c, Variable *d );
+void exec_ccode_function( void *f, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e );
+void exec_ccode_function( void *f, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f );
+void exec_ccode_function( void *f, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g );
 void exec_asm( void *th, void *code );
 
 #endif

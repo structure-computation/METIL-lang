@@ -46,6 +46,9 @@ class AutoPtr[ T ]
 
     def conversion_to( b ) when is_of_type_Bool( b )
         b.init( Bool( p.ptr ) )
+    
+    def conversion_to( b ) when is_of_type_UntypedPtr( b )
+        b.init( p.ptr )
 #~
 ~#
 def auto_ptr( p )
@@ -301,6 +304,9 @@ class PtrWithCptUse[ T ]
             else
                 delete ptr
     
+    def write_to_stream( stream )
+        stream << ptr
+    
     def test_
         class P
             cpt_use := 0
@@ -388,5 +394,8 @@ class MultiPtrWithCptUse
         p = p
     
     
-    
-    
+#~
+~#
+def child_cast( p )
+    return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
+

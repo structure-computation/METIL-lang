@@ -680,6 +680,9 @@ class VecOp
         op.init_using_var( function )
         va.init( varargs )
         
+    def get_values
+        return self
+        
     def reassign( v ) when v.is_a_VecOp pertinence 2
         # assert( 0, "Reassigning a VecOp is forbidden." )
         va = v.make_cp_va()
@@ -1383,6 +1386,8 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
             for i in ( 0 .. a->size ).reversed
                 a->data[i].destroy()
             o := a; a = a->next; o.destroy(); o.free()
+        # info T, first.size
+        # if T::is_a_PtrWithCptUse info T::T
         for i in ( 0 .. first.size ).reversed
             first.data[i].destroy()
         first.destroy()
@@ -1460,7 +1465,13 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
         n := ref new_elem()
         call( n.init, varargs )
         return n
-    
+        
+    def push_back_unique( val )
+        for i in self
+            if i == val
+                return i
+        return push_back( val )
+        
     def push_back_in_reserved_room( val )
         n := ref new_elem_in_reserved_room()
         n.init( val )

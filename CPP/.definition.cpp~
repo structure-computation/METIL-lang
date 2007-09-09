@@ -110,6 +110,8 @@ std::ostream &operator<<( std::ostream &ss, const Definition &def ) {
 }
 
 const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Definition &ret, Type *type ) {
+    if ( not type )
+        return NULL;
     //     Type *type = a->type;
     DefinitionData *dd = type->def_data;
     unsigned nb_args = dd->nb_args + dd->has_varargs();
@@ -127,7 +129,7 @@ const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Defin
         th->check_for_room_in_variable_stack( sp, nb_args * 2 );
         // partial instanciations
         for(unsigned i=0;i<nb_args;++i) {
-            TypeVariable *tv = type->find_var( dd->args[i] );
+            TypeVariable *tv = type->find_var( NULL, dd->args[i] );
             if ( tv ) {
                 // partial instanciation
                 ret.args[i].init( tv->v.type, 0 );
@@ -151,6 +153,7 @@ const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Defin
 }
 
 bool are_radically_different( Definition &a, Definition &b ) {
+    std::cout << a.def_data->name << " " << b.def_data->name << std::endl;
     if ( a.def_data->name != b.def_data->name )
         return true;
     for(unsigned i=0;i<std::min(a.nb_uargs,b.nb_uargs);++i) {

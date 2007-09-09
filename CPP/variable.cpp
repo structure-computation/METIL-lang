@@ -730,15 +730,21 @@ void get_next_line_( Thread *th, const void *tok, CFile &a, Variable *return_var
 }
 
 typedef void CcodeFunction0(  );
-typedef void CcodeFunction1( void * );
-typedef void CcodeFunction2( void *, void * );
-typedef void CcodeFunction3( void *, void *, void * );
-typedef void CcodeFunction4( void *, void *, void *, void * );
-typedef void CcodeFunction5( void *, void *, void *, void *, void * );
+typedef void CcodeFunction1( Variable * );
+typedef void CcodeFunction2( Variable *, Variable * );
+typedef void CcodeFunction3( Variable *, Variable *, Variable * );
+typedef void CcodeFunction4( Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction5( Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction6( Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction7( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 
-void exec_ccode_function( void *f ) { /*reinterpret_cast<CcodeFunction0 *>( f )(  );*/ }
-void exec_ccode_function( void *f, void *a ) { /*reinterpret_cast<CcodeFunction1 *>( f )( a );*/ }
-void exec_ccode_function( void *f, void *a, void *b ) { /*reinterpret_cast<CcodeFunction2 *>( f )( a, b );*/ }
-void exec_ccode_function( void *f, void *a, void *b, void *c ) { /*reinterpret_cast<CcodeFunction3 *>( f )( a, b, c );*/ }
-void exec_ccode_function( void *f, void *a, void *b, void *c, void *d ) { /*reinterpret_cast<CcodeFunction4 *>( f )( a, b, c, d );*/ }
+void exec_ccode_function( void *f_ ) { reinterpret_cast<CcodeFunction0 *>( f_ )(  ); }
+void exec_ccode_function( void *f_, Variable *a ) { reinterpret_cast<CcodeFunction1 *>( f_ )( a ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b ) { reinterpret_cast<CcodeFunction2 *>( f_ )( a, b ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c ) { reinterpret_cast<CcodeFunction3 *>( f_ )( a, b, c ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d ) { reinterpret_cast<CcodeFunction4 *>( f_ )( a, b, c, d ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e ) { reinterpret_cast<CcodeFunction5 *>( f_ )( a, b, c, d, e ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f ) { reinterpret_cast<CcodeFunction6 *>( f_ )( a, b, c, d, e, f ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { reinterpret_cast<CcodeFunction7 *>( f_ )( a, b, c, d, e, f, g ); }
+
 

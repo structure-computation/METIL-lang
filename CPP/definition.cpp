@@ -110,6 +110,8 @@ std::ostream &operator<<( std::ostream &ss, const Definition &def ) {
 }
 
 const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Definition &ret, Type *type ) {
+    if ( not type )
+        return NULL;
     //     Type *type = a->type;
     DefinitionData *dd = type->def_data;
     unsigned nb_args = dd->nb_args + dd->has_varargs();
