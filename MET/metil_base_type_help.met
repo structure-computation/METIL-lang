@@ -265,6 +265,9 @@ class PtrWithCptUse[ T ]
     def conversion_to( r ) when r.type == Bool
         r.init( ptr )
     
+    def init( p ) when p.is_Null
+        ptr.init( NULL )
+    
     def init( p ) when p.is_a_Ptr
         ptr.init( p )
         if ptr
@@ -281,7 +284,6 @@ class PtrWithCptUse[ T ]
         if ptr
             ptr->cpt_use++
         if old_ptr
-            info old_ptr
             if old_ptr->cpt_use > 1
                 old_ptr->cpt_use--
             else
