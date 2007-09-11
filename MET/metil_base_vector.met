@@ -716,6 +716,8 @@ class VecOp
         if va.size
             return va[0].size
         return 0
+    def get_sizes
+        return [ get_size() ]
     def select( n )
         v := VarArgs()
         for vec in va

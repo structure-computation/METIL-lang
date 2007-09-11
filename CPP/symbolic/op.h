@@ -80,6 +80,7 @@ inline void dec_ref( Op *op ) { if ( not op->cpt_use ) { op->destroy(); free( op
 inline bool are_nb(Op &a,Op &b) { return a.type==Op::NUMBER and b.type==Op::NUMBER; }
 inline bool is_a_sub( Op &a ) { return a.type == STRING_mul_NUM and a.func_data()->children[0]->is_minus_one(); }
 inline bool is_a_inv( Op &a ) { return a.type == STRING_pow_NUM and a.func_data()->children[1]->is_minus_one(); }
+inline bool is_a_mul_by_neg_number( Op &a ) { return a.type == STRING_mul_NUM and a.func_data()->children[0]->type == Op::NUMBER and a.func_data()->children[0]->number_data()->val.is_neg(); }
 
 Op &operator+( Op &a, Op &b );
 Op &operator-( Op &a, Op &b );

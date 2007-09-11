@@ -170,13 +170,60 @@ std::string cpp_repr( const Rationnal &val, int type_parent ) {
     return os.str();
 }
 
+// 
+void find_p_and_s_parts_rec( Op *op, std::vector<Op *> &p_part, std::vector<Op *> &s_part ) {
+    if ( op->type == Op::NUMBER and op->number_data()->val.is_neg() )
+        s_part.push_back( op );
+    else if ( op->type != STRING_add_NUM )
+        p_part.push_back( op );
+    else {
+        if ( is_a_mul_by_neg_number( *op->func_data()->children[0] ) ) // ( -2 ) * a
+            s_part.push_back( op->func_data()->children[0] );
+        else
+            find_p_and_s_parts_rec( op->func_data()->children[0], p_part, s_part );
+        //
+        if ( is_a_mul_by_neg_number( *op->func_data()->children[1] ) ) // ( -2 ) * a
+            s_part.push_back( op->func_data()->children[1] );
+        else
+            find_p_and_s_parts_rec( op->func_data()->children[1], p_part, s_part );
+    }
+}
+
 void cpp_repr_rec( std::ostream &os, Op *op, int type_parent ) {
     if ( op->type == Op::NUMBER ) {
         os << cpp_repr( op->number_data()->val, type_parent );
     } else if ( op->type == Op::SYMBOL ) {
         os << op->symbol_data()->cpp_name_str;
     } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
-        if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
+        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+        
+        std::vector<Op *> p_part;
+        std::vector<Op *> s_part;
+        find_p_and_s_parts_rec( op, p_part, s_part );
+    
+        for(unsigned i=0;i<p_part.size();++i) {
+            if ( i ) os << "+";
+            cpp_repr_rec( os, p_part[i], STRING_add_NUM );
+        }
+        for(unsigned i=0;i<s_part.size();++i) {
+            os << "-";
+            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
+                os << cpp_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+            else { // ( -2 ) * a
+                Op *ch_0 = s_part[i]->func_data()->children[0];
+                Op *ch_1 = s_part[i]->func_data()->children[1];
+                if ( ch_0->number_data()->val.is_minus_one() )
+                    cpp_repr_rec( os, ch_1, STRING_sub_NUM );
+                else {
+                    os << cpp_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    os << "*";
+                    cpp_repr_rec( os, ch_1, STRING_mul_NUM );
+                }
+            }
+        }
+        
+        if ( np ) os << ")";
+        /*if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
             bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
             cpp_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
             os << "-";
@@ -200,6 +247,7 @@ void cpp_repr_rec( std::ostream &os, Op *op, int type_parent ) {
             cpp_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
             if ( np ) os << ")";
         }
+        */
     } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
         if ( is_a_inv( *op->func_data()->children[1] ) ) { // a * ( 1/b )
             bool np = type_parent > STRING_div_NUM; if ( np ) os << "(";
@@ -341,7 +389,7 @@ Op &operator+( Op &a, Op &b ) {
         }
         // ( 10 + a ) + b -> 10 + ( a + b )
         Op &new_sum = *a.func_data()->children[1] + b;
-        return add_number_and_expr( *a.func_data()->children[0], new_sum );
+        return *a.func_data()->children[0] + new_sum; // add_number_and_expr( *a.func_data()->children[0], new_sum );
     }
     // a + ( 10 + b ) -> 10 + ( a + b )
     if ( b.type == STRING_add_NUM and b.func_data()->children[0]->type == Op::NUMBER ) {
@@ -957,6 +1005,35 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
     } else if ( op->type == Op::SYMBOL ) {
         os << op->symbol_data()->tex_name_str;
     } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
+        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+        
+        std::vector<Op *> p_part;
+        std::vector<Op *> s_part;
+        find_p_and_s_parts_rec( op, p_part, s_part );
+    
+        for(unsigned i=0;i<p_part.size();++i) {
+            if ( i ) os << "+";
+            tex_repr_rec( os, p_part[i], STRING_add_NUM );
+        }
+        for(unsigned i=0;i<s_part.size();++i) {
+            os << "-";
+            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
+                os << tex_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+            else { // ( -2 ) * a
+                Op *ch_0 = s_part[i]->func_data()->children[0];
+                Op *ch_1 = s_part[i]->func_data()->children[1];
+                if ( ch_0->number_data()->val.is_minus_one() )
+                    tex_repr_rec( os, ch_1, STRING_sub_NUM );
+                else {
+                    os << tex_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    //os << "*";
+                    tex_repr_rec( os, ch_1, STRING_mul_NUM );
+                }
+            }
+        }
+        
+        if ( np ) os << ")";
+        /*
         if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
             bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
             tex_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
@@ -981,6 +1058,7 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
             tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
             if ( np ) os << ")";
         }
+        */
     } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
         SplittedVec<MulSeq,4,16,true> items;
         find_mul_items_and_coeff_rec( op, items );
@@ -1000,8 +1078,8 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
                 items_[1][i].tex_repr( os << ( i ? "\\," : " " ) );
             os << "}";
         } else { // only *
-            for(unsigned i=0;i<items.size();++i)
-                std::cout << *items[i].op << std::endl;
+            //             for(unsigned i=0;i<items.size();++i)
+            //                 std::cout << *items[i].op << std::endl;
             for(unsigned i=0;i<items.size();++i)
                 items[i].tex_repr( os << ( i ? "\\," : " " ) );
         }

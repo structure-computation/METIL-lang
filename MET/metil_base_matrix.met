@@ -210,6 +210,8 @@ class MatAncestor
         return SubMatExtraction[ST]( self, v1, v2 )
     def select( v1  ) when v1.tensor_order == 1
         return SubMatExtraction[ST]( self, v1, v1 )
+    def apply( x, y )
+        return select( x, y )
     def get_diag
         return DiagExtraction[ ST ]( self, 120 )
     def reassign( val ) when val.tensor_order <= 0
@@ -437,7 +439,7 @@ def get_det( self ) when self.tensor_order == 2
 # inverse of a tiny matrix (rank 1, 2, 3)
 def inv_tiny( mat, d = mat.get_det() ) when mat.tensor_order == 2
     if mat.nb_rows == 1
-        return Mat[ mat.T, Gen[1,1] ]( [ 1 / d ] )
+        return Mat[ mat.T, Gen[1,1] ]( default_value = 1 / d )
     res := Mat[ mat.T, Gen[mat.nb_rows,mat.nb_cols] ]()
     for i in 0 .. mat.nb_rows
         Ac := mat.without_row(i)
@@ -620,6 +622,8 @@ def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
+    if mat.nb_rows <= 4
+        return inv_tiny( mat ) * vec
     return lu( mat ) * vec # mat.solve( vec )
 
 

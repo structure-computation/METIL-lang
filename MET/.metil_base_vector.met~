@@ -1386,9 +1386,8 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
             for i in ( 0 .. a->size ).reversed
                 a->data[i].destroy()
             o := a; a = a->next; o.destroy(); o.free()
-        info T, first.size
-        if T::is_a_PtrWithCptUse
-            info T::T
+        # info T, first.size
+        # if T::is_a_PtrWithCptUse info T::T
         for i in ( 0 .. first.size ).reversed
             first.data[i].destroy()
         first.destroy()

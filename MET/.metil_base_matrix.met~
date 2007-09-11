@@ -210,6 +210,8 @@ class MatAncestor
         return SubMatExtraction[ST]( self, v1, v2 )
     def select( v1  ) when v1.tensor_order == 1
         return SubMatExtraction[ST]( self, v1, v1 )
+    def apply( x, y )
+        return select( x, y )
     def get_diag
         return DiagExtraction[ ST ]( self, 120 )
     def reassign( val ) when val.tensor_order <= 0
@@ -357,9 +359,9 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     
     def init( m ) when m.tensor_order == 2 pertinence 4
         init( m.nb_rows, m.nb_cols )
-        info m.type
-        info m[0,0].type
-        interact
+        # info m.type
+        # info m[0,0].type
+        # interact
         for r, c in structure
             self[ r, c ].init( m[ r, c ] )
     
@@ -620,6 +622,8 @@ def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
+    if mat.nb_rows <= 4
+        return inv_tiny( mat ) * vec
     return lu( mat ) * vec # mat.solve( vec )
 
 

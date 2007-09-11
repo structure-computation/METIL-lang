@@ -9,7 +9,10 @@
 #include <iostream>
 
 void CodeWriter::init( const char *s, Int32 si ) {
-    basic_type = strdupp0( s, si );
+    if ( si )
+        basic_type = strdupp0( s, si );
+    else
+        basic_type = NULL;
     
     //
     op_to_write.init();
@@ -68,7 +71,7 @@ void CodeWriter::add_expr( Op *expr, Nstring method, char *name ) {
 }
 
 
-void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces ) {
+void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     switch ( nb_to_write.method.v ) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
         case STRING_add_NUM:       os << nb_to_write.name << " += " << nb_to_write.n << ".0;";  break;
@@ -76,14 +79,14 @@ void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_wr
         case STRING_mul_NUM:       os << nb_to_write.name << " *= " << nb_to_write.n << ".0;";  break;
         case STRING_div_NUM:       os << nb_to_write.name << " /= " << nb_to_write.n << ".0;";  break;
         case STRING_reassign_NUM:  os << nb_to_write.name << " = "  << nb_to_write.n << ".0;";  break;
-        case STRING_init_NUM:      os << nb_to_write.name << " = "  << nb_to_write.n << ".0;";  break;
+        case STRING_init_NUM:      if ( basic_type ) os << nb_to_write.name << " = "  << nb_to_write.n << ".0;"; else os << nb_to_write.name << " := "  << nb_to_write.n << ".0;"; break;
         case STRING___print___NUM: os << "printf( \"" << nb_to_write.name << " -> %f\\n\", " << nb_to_write.n << ".0 );";  break;
         default:
             std::cerr << "UNKNOWN RES METHOD '" << nb_to_write.method << "'" << std::endl;
     }
 }
 
-void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces ) {
+void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     for(unsigned i=0;i<ponr->res.size();++i) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
         switch ( ponr->res[i]->method.v ) {
@@ -92,7 +95,10 @@ void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, u
             case STRING_mul_NUM:       os << ponr->res[i]->name << " *= " << "R_" << ponr->num_reg << ";";  break;
             case STRING_div_NUM:       os << ponr->res[i]->name << " /= " << "R_" << ponr->num_reg << ";";  break;
             case STRING_reassign_NUM:  os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";  break;
-            case STRING_init_NUM:      os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";  break;
+            case STRING_init_NUM:  
+                if ( basic_type ) os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";
+                else              os << ponr->res[i]->name << " := "  << "R_" << ponr->num_reg << ";";
+                break;
             case STRING___print___NUM: os << "printf( \"" << ponr->res[i]->name << " -> %f\\n\", R_"  << ponr->num_reg << " );";  break;
             default:
                 std::cerr << "UNKNOWN RES METHOD '" << ponr->res[i]->method << "'" << std::endl;
@@ -150,7 +156,10 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
         }
         else {
             ponr->num_reg = fr.nb_declared_registers++;
-            os << basic_type << " " << "R_" << ponr->num_reg << " = ";
+            if ( basic_type ) 
+                os << basic_type << " R_" << ponr->num_reg << " = ";
+            else
+                os << "R_" << ponr->num_reg << " := ";
         }
         
         // no variables in front
@@ -193,9 +202,6 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
             if ( b.is_minus_one() ) {
                 os << "1/";
                 disp_codewriter( os, op->func_data()->children[0] );
-                os << "; PRINT(";
-                disp_codewriter( os, op->func_data()->children[0] );
-                os << ")";
             } else if ( b.num.is_one() and b.den.is_two() ) {
                 os << "sqrt(";
                 disp_codewriter( os, op->func_data()->children[0] );
@@ -221,7 +227,7 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
         os << ";";
         
         //
-        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces );
+        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
         
         if ( (cpt_op++ % 4) == 3 ) { os << '\n'; put_a_cr=true; } else { os << ' '; put_a_cr=false; }
 
@@ -327,7 +333,7 @@ void add_to_used_rec( Op *expr, int val, SimpleVector<CodeWriter::AlreadyCalcula
     
 void CodeWriter::write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated ) {
     CodeWriter *cw = (CodeWriter *)malloc( sizeof(CodeWriter) );
-    cw->init( basic_type, strlen(basic_type) );
+    cw->init( basic_type, basic_type ? strlen(basic_type) : 0 );
     cw->free_registers = free_registers;
     cw->already_calculated = already_calculated;
     for(unsigned i=0;i<op_to_write.size();++i)
@@ -396,10 +402,12 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
     std::ostringstream ss;
     // results with method init -> declaration
     if ( has_init_methods ) {
-        for(int k=0;k<nb_spaces;++k) ss << ' '; 
-        for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
-        for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
-        ss << "\n";
+        if ( basic_type ) {
+            for(int k=0;k<nb_spaces;++k) ss << ' ';
+            for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
+            for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
+            ss << "\n";
+        }
     }
     
     if ( op_to_write.size() ) {
@@ -438,7 +446,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
                 if ( ponr->num_reg >= 0 ) {
                     for(int k=1;k<nb_spaces;++k) ss << ' '; 
                     bool put_a_cr;
-                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces );
+                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
                 }
             }
             // front
@@ -462,7 +470,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         for(int k=0;k<nb_spaces;++k) ss << ' ';
         unsigned cpt_op = 0; bool put_a_cr = false;
         for(unsigned i=0;i<nb_to_write.size();++i) {
-            disp_number_to_write( ss, nb_to_write[i], cpt_op, put_a_cr, nb_spaces );
+            disp_number_to_write( ss, nb_to_write[i], cpt_op, put_a_cr, nb_spaces, basic_type );
             if ( i%4==3 ) { ss << "\n"; for(int k=0;k<nb_spaces;++k) ss << ' '; }
             else          ss << " ";
         }
@@ -486,7 +494,8 @@ void destroy( Thread *th, const void *tok, CodeWriter &c ) {
     c.op_to_write.destroy();
     c.nb_to_write.destroy();
     c.already_calculated.destroy();
-    free( c.basic_type );
+    if ( c.basic_type )
+        free( c.basic_type );
     c.free_registers.free_ones.destroy();
 }
     

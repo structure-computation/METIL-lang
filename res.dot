@@ -1,12 +1,19 @@
 digraph popoterie {
-    node0x8315130 [label="add"];
-    node0x8315130 -> node0x830fbc8 [color=black];
-    node0x830fbc8 [label="a"];
-    node0x8315130 -> node0x8314f60 [color=black];
-    node0x8314f60 [label="cos"];
-    node0x8314f60 -> node0x8315098 [color=black];
-    node0x8315098 [label="pow"];
-    node0x8315098 -> node0x830fbc8 [color=black];
-    node0x8315098 -> node0x83150e8 [color=black];
-    node0x83150e8 [label="2"];
+    node0x82dbc68 [label="add"];
+    node0x82dbc68 -> node0x82dbb30 [color=black];
+    node0x82dbb30 [label="1"];
+    node0x82dbc68 -> node0x82dbc30 [color=black];
+    node0x82dbc30 [label="add"];
+    node0x82dbc30 -> node0x82db9a0 [color=black];
+    node0x82db9a0 [label="mul"];
+    node0x82db9a0 -> node0x82db958 [color=black];
+    node0x82db958 [label="-1"];
+    node0x82db9a0 -> node0x82da510 [color=black];
+    node0x82da510 [label="a"];
+    node0x82dbc30 -> node0x82dbbf8 [color=black];
+    node0x82dbbf8 [label="mul"];
+    node0x82dbbf8 -> node0x82dbbb0 [color=black];
+    node0x82dbbb0 [label="-1"];
+    node0x82dbbf8 -> node0x82db040 [color=black];
+    node0x82db040 [label="b"];
 }

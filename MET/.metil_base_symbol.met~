@@ -22,7 +22,7 @@ def display_graphviz( self )
 def graphviz_string( self ) when self.tensor_order == 1
     res := ""
     for i in self
-        res <<< i
+        res <<< i.graphviz_string()
     return res
     
 ## 
@@ -80,7 +80,7 @@ def diff( self, var ) when __is_a_Property__( self ) or __is_a_Property__( var )
 
 ## differenciation ( [toto pouet].diff(tata) ) ##
 def diff( self, var ) when self.tensor_order == 1
-    return self.map( _0.diff( _1 ), var )
+    return self.map( _0.diff( var ) )
 
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
@@ -400,7 +400,7 @@ def code_writer_nl_eqs_or_min( val, unknowns, output, symbol_base_name,
     newton_raphson_minimize_iteration( (a-3)^2, [a] )
         -> [ 3 ] (linear system)
 ~#
-def newton_raphson_minimize_iteration( expr, unknowns, old_values = unknowns )
+def newton_raphson_minimize_iteration( expr, unknowns, old_values = Vec[Op,unknowns.size]( default_value = 0 ) )
     if unknowns.tensor_order <= 0
         return newton_raphson_minimize_iteration( expr, [unknowns], old_values )
     if expr.type != Op
@@ -434,3 +434,33 @@ def newton_raphson_minimize_iteration_rec( expr, unknowns, nb_iter, old_values =
     if nb_iter <= 1
         return newton_raphson_minimize_iteration( expr, unknowns, old_values )
     return newton_raphson_minimize_iteration( expr, unknowns, newton_raphson_minimize_iteration_rec( expr, unknowns, nb_iter-1, old_values ) )
+
+
+#~
+    newton_raphson_iteration( [a-1,2*b-a], [a,b] )
+        -> [ 1, 1/2 ]
+~#
+def newton_raphson_iteration( equations, unknowns, old_values = Vec[Op,unknowns.size]( default_value = 0 ) )
+    if unknowns.tensor_order <= 0
+        return newton_raphson_iteration( equations, [unknowns], old_values )
+    #
+    nb_unknowns  := unknowns.size
+    nb_equations := equations.size
+    M := Mat[ Op, Gen[nb_equations,nb_unknowns] ]()
+    V := Vec[ Op, nb_equations ]( -equations )
+    #
+    for i in 0 .. nb_equations
+        for j in 0 .. nb_unknowns
+            M[i,j] = equations[i].diff( unknowns[j] )
+    #
+    for i in 0 .. nb_equations
+        for j in 0 .. nb_unknowns
+            V[i] += M[i,j] * unknowns[j]
+    #
+    for n, v in unknowns, old_values
+        for i in 0 .. nb_unknowns
+            V[i] = V[i].subs( n, v )
+            for j in 0 .. i+1
+                M[i,j] = M[i,j].subs( n, v )
+    
+    return M \ V

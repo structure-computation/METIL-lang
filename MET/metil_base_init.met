@@ -504,4 +504,4 @@ import "metil_base_serialization.met"
 import "metil_base_mpi.met"
 # import "lazy_mat.met"
 
-
+base_generated_files := "generated"
