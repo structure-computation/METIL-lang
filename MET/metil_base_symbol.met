@@ -147,15 +147,18 @@ class CodeWriter
     
     def add( str, expr, method=init ) pertinence 10
         cw.add_expr( String(str), Op(expr), method )
+        return self
     
     def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
         for cpt, val in 0... , expr
             self.add( "$str[$cpt]", val, method )
+        return self
     
     def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
         for i in 0 .. expr.nb_rows
             for j in 0 .. expr.nb_cols
                 self.add( "$str($i,$j)", expr[i,j], method )
+        return self
     
     def to_string( nb_spaces = 4 )
         return cw.to_string( nb_spaces )
