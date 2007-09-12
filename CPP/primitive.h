@@ -191,7 +191,8 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "init", "self = a;" ).M("UntypedPtr",/*modify*/"true").A("UntypedPtr") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = a;" ).M("UntypedPtr",/*modify*/"true").A("UntypedPtr") );
     
-    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)(SizeType)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)(SizeType)a;" ).M("UntypedPtr",/*modify*/"true").A("Int64") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = (void *)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = (a==b);", /*ret*/"Bool" ).A("UntypedPtr").A("UntypedPtr") );

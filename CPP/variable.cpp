@@ -738,13 +738,13 @@ typedef void CcodeFunction5( Variable *, Variable *, Variable *, Variable *, Var
 typedef void CcodeFunction6( Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 typedef void CcodeFunction7( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 
-void exec_ccode_function( void *f_ ) { reinterpret_cast<CcodeFunction0 *>( f_ )(  ); }
-void exec_ccode_function( void *f_, Variable *a ) { reinterpret_cast<CcodeFunction1 *>( f_ )( a ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b ) { reinterpret_cast<CcodeFunction2 *>( f_ )( a, b ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c ) { reinterpret_cast<CcodeFunction3 *>( f_ )( a, b, c ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d ) { reinterpret_cast<CcodeFunction4 *>( f_ )( a, b, c, d ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e ) { reinterpret_cast<CcodeFunction5 *>( f_ )( a, b, c, d, e ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f ) { reinterpret_cast<CcodeFunction6 *>( f_ )( a, b, c, d, e, f ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { reinterpret_cast<CcodeFunction7 *>( f_ )( a, b, c, d, e, f, g ); }
+void exec_ccode_function( void *f_ ) { ((CcodeFunction0 *)( f_ ))(  ); }
+void exec_ccode_function( void *f_, Variable *a ) { ((CcodeFunction1 *)( f_ ))( a ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b ) { ((CcodeFunction2 *)( f_ ))( a, b ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c ) { ((CcodeFunction3 *)( f_ ))( a, b, c ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d ) { ((CcodeFunction4 *)( f_ ))( a, b, c, d ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e ) { ((CcodeFunction5 *)( f_ ))( a, b, c, d, e ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f ) { ((CcodeFunction6 *)( f_ ))( a, b, c, d, e, f ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { ((CcodeFunction7 *)( f_ ))( a, b, c, d, e, f, g ); }
 
 

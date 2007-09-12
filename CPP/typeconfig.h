@@ -18,6 +18,12 @@ typedef __uint16_t Unsigned16;
 typedef __uint32_t Unsigned32;
 typedef __uint64_t Unsigned64;
 
+template<int N> struct SizeTypeChoice {};
+template<> struct SizeTypeChoice<4> { typedef Int32 T; };
+template<> struct SizeTypeChoice<8> { typedef Int64 T; };
+
+typedef SizeTypeChoice<sizeof(void *)>::T SizeType;
+
 // struct Type;
 // typedef Type *TypePtr;
 
