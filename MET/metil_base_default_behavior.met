@@ -407,6 +407,13 @@ def factorial( n )
     for i in n.type(1) .. n+1  res *= i
     return res
     
+#~
+    Mat[ Int32, ... ]::EqTypeWithScalarType( Float64 ) -> Mat[ Float64, ... ]
+~#
+def EqTypeWithScalarType( self, TO ) when self.tensor_order <= 0
+    return TO
+
+    
 # ------------------------------------------------------------------------------------
 proc_has_SSE := true
 proc_has_SSE2 := true

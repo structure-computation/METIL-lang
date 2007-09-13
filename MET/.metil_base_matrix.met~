@@ -330,6 +330,8 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     static const sub_types := [ T ]
     static const static_nb_rows := structure.static_nb_rows
     static const static_nb_cols := structure.static_nb_cols
+    static const has_static_sizes := static_nb_rows >= 0 and static_nb_cols >= 0
+    static const static_sizes := [ static_nb_rows, static_nb_cols ]
     
     # def init( nb_rows = structure.default_nb_rows, nb_cols = structure.default_nb_cols ) when nb_rows.tensor_order<=0 pertinence 2
         # structure.init( nb_rows, nb_cols )
@@ -439,7 +441,7 @@ def get_det( self ) when self.tensor_order == 2
 # inverse of a tiny matrix (rank 1, 2, 3)
 def inv_tiny( mat, d = mat.get_det() ) when mat.tensor_order == 2
     if mat.nb_rows == 1
-        return Mat[ mat.T, Gen[1,1] ]( [ 1 / d ] )
+        return Mat[ mat.T, Gen[1,1] ]( default_value = 1 / d )
     res := Mat[ mat.T, Gen[mat.nb_rows,mat.nb_cols] ]()
     for i in 0 .. mat.nb_rows
         Ac := mat.without_row(i)

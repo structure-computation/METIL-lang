@@ -191,7 +191,8 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "init", "self = a;" ).M("UntypedPtr",/*modify*/"true").A("UntypedPtr") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = a;" ).M("UntypedPtr",/*modify*/"true").A("UntypedPtr") );
     
-    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)(SizeType)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self = (void *)(SizeType)a;" ).M("UntypedPtr",/*modify*/"true").A("Int64") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = (void *)a;" ).M("UntypedPtr",/*modify*/"true").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = (a==b);", /*ret*/"Bool" ).A("UntypedPtr").A("UntypedPtr") );
@@ -462,6 +463,7 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e );" ).A("UntypedPtr").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").A("any") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

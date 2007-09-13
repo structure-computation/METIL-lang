@@ -7,6 +7,9 @@ class Tensor[ T, s=[], ST=SizeType ]
     property has_for_with_index_and_values
     static const tensor_order := s.size
     static const sizes := s
+    property has_static_sizes
+    static const static_sizes := s
+    static def EqTypeWithScalarType( TO ) return Tensor[ TO, s, ST ]
     
     data ~= Array[ T, sizes ]
     base ~= String

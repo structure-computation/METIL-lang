@@ -172,6 +172,10 @@ def reduction( vec, function, default_value ) when vec.tensor_order==1
     for i in 1 .. vec.size
         res = function( res, vec[i] )
     return res
+
+## reduction( [], ..., 1 ) -> 1 ##
+def reduction( vec, function, default_value ) when vec.tensor_order==0
+    return default_value
     
 ## accumulation( make_varargs( 1, 2, 3 ), add ) -> 1 3 6 ##
 class Accumulation[pre,first_val]
@@ -809,13 +813,17 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     # static const size := static_size
     property is_a_vector
     property is_a_vec_of_static_size
+    property has_static_sizes
     static const sub_type := T
+    static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
     
     data := __uninitialised_vec_using_partial_instanciation__( partial_instanciation T, static_size )
     
     def get_size             return static_size
     
-    def get_sizes            return [ static_size ]
+    def get_static_sizes return [ static_size ]
+    
+    def get_sizes        return [ static_size ]
     
     def reassign_size( ns )  resize( ns )
     
@@ -922,6 +930,7 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
 class Vec[ T, static_size=-1, ST=Int32 ] when static_size < 0
     static const tensor_order := 1
     static const is_a_vector := true
+    static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
     
     data_ ~= Ptr[ T ]
     size_ ~= ST
@@ -1159,6 +1168,14 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size < 0
             reserved_ = 2 * size_ + 1;
         }
         return data_ + size_++;
+    }
+    T *push_back_unique( const T &val ) {
+        for(unsigned i=0;i<size();++i)
+            if ( data_[ i ] == val )
+                return data_ + i;
+        T *res = new_elem();
+        *res = val;
+        return res;
     }
     void operator=( const SelfType &v ) {
         resize( v.size() );
@@ -1706,7 +1723,7 @@ Code
 gives
     v -> 0 0 0 10 0 0 1 0 0 7 0 0 0 0 0 0 0 0 0 
 ~#
-class VecSparse[ T, default_value = 0, ST = SizeType ]
+class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
     static const tensor_order := 1
     indices := Vec[ST]()
     values := Vec[T]()

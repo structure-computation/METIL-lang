@@ -9,8 +9,9 @@ def inferior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence
 def superior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return heaviside( a - b )
 def not_equal     ( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return 1 - eqz( a - b )
 
-def equal( a, b ) when type_of(a) == type_of(b) pertinence -1
-    return false
+def equal( a, b ) pertinence -1
+    if type_of(a) != type_of(b)
+        return false
     for num_attr in 0 .. nb_attributes_of( a )
         if attribute_nb_of( a, num_attr ) != attribute_nb_of( b, num_attr )
             return false
@@ -405,6 +406,10 @@ def factorial( n )
     res := n.type(1)
     for i in n.type(1) .. n+1  res *= i
     return res
+    
+def EqTypeWithScalarType( self, TO ) when self.tensor_order <= 0
+    return TO
+
     
 # ------------------------------------------------------------------------------------
 proc_has_SSE := true
