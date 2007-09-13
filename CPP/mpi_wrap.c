@@ -25,7 +25,11 @@ int metil_mpi_send( void *buf, int count, int dest, int tag ) {
 int metil_mpi_recv( void *buf, int count, int src, int tag ) {
     MPI_Status stat;
     MPI_Recv( buf, count, MPI_BYTE, src, tag, MPI_COMM_WORLD, &stat );
+    #ifdef MPICH_NAME
+    return stat.count;
+    #else
     return stat.st_length;
+    #endif
 }
 
 void metil_mpi_finalize() {
