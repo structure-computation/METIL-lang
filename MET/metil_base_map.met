@@ -95,3 +95,38 @@ class Pair[ T0, T1 ]
     def __for__( block )
         block( first )
         block( second )
+        
+##
+##
+class Quadrinom[ T0, T1, T2, T3 ]
+    first  := T0()
+    second := T1()
+    third  := T2()
+    fourth := T3()
+    def init( a, b, c, d )
+        first .init( a )
+        second.init( b )
+        third .init( c )
+        fourth.init( d )
+    def init( a ) when a.tensor_order == 1
+        first .init( a[0] )
+        second.init( a[1] )
+        third .init( a[2] )
+        fourth.init( a[3] )
+    def reassign( a ) when a.tensor_order == 1
+        first  = a[0]
+        second = a[1]
+        third  = a[2]
+        fourth = a[3]
+    def select( i )
+        if i == 3 return fourth
+        if i == 2 return third
+        if i return second
+        return first
+    def __for__( block )
+        block( first  )
+        block( second )
+        block( third  )
+        block( fourth )
+        
+        

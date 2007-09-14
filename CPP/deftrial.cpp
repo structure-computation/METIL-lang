@@ -488,8 +488,7 @@ const void *play_with_ok_callables_after_all_trials_are_done( DefTrial *def_tria
         *reinterpret_cast<Type **>( c->self->data ) = c->self->type;
     
     if ( c->def_data->is_abstract() )
-       th->add_error( "Abstract function", tok );
-        
+        th->add_error( "Abstract function (type="+std::string( c->self->type->name )+")", tok );
     
     th->set_current_sourcefile( c->def_data->sourcefile );
     return c->def_data->block;
