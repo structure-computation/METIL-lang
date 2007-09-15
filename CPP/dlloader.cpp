@@ -27,8 +27,14 @@ void DlLoader::init() {
 
 bool DlLoader::init( const char *lib_name, int size_lib_name ) {
     //     return true;
-    std::string s( lib_name, lib_name + size_lib_name );
-    return init( s.c_str() );
+    char *str = (char *)malloc( size_lib_name + 8 );
+    for(int i=0;i<size_lib_name;++i) // -> libdl read char by sets of 4
+        str[i] = lib_name[i];
+    for(int i=size_lib_name;i<size_lib_name+8;++i) // -> libdl read char by sets of 4
+        str[i] = 0;
+    bool res = this->init( str );
+    free( str );
+    return res;
 }
 
 bool DlLoader::init( const char *lib_name ) {

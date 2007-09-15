@@ -28,6 +28,7 @@
 #include "label.h"
 #include "compiledfunctionset.h"
 #include <assert.h>
+#include <malloc.h>
 #include <sstream>
 extern "C" {
     #include "mpi_wrap.h"

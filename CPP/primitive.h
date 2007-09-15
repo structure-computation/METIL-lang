@@ -212,6 +212,7 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "__get_data_in_static_vec__", "return __get_data_in_static_vec__( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = memalign( std::max( (c+7)/8, 4 ), (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "memcpy", "memcpy( a, b, (c+7)/8 * d );" ).A("UntypedPtr").A("UntypedPtr").A("Int32").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)(Int64)self;" ).M("UntypedPtr").A("Int32") );

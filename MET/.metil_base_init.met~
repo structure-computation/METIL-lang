@@ -263,6 +263,11 @@ def pointed_value( ptr )
 ## reserve room in memory for n variables of type T. Returns a Ptr[T] ##
 def allocate( T, n = 1 )
     return Ptr[T]( allocate( size_of_if_in_vec(partial_instanciation T), Int32(n) ) )
+
+#~ T_alignement in bytes ~#
+def allocate( T, n, T_alignement )
+    bs := size_of_if_in_vec(partial_instanciation T)
+    return Ptr[T]( allocate( bs, Int32(n), bs * T_alignement ) )
     
 #~~#
 def malloc( size )
@@ -504,4 +509,4 @@ import "metil_base_serialization.met"
 import "metil_base_mpi.met"
 # import "lazy_mat.met"
 
-
+base_generated_files := "generated"

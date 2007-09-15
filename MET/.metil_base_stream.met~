@@ -166,7 +166,7 @@ def throw_failed_assertion( txt, from_stack_level = 0 )
 
     while cpt < __nb_stack_level__()
         fn := __file_at_stack_level__( cpt )
-        if not ( "metil_base" in fn )
+        if true #not ( "metil_base" in fn )
             res.msg << fn << ":" << __line_at_stack_level__( cpt ) << ":" << __col_at_stack_level__( cpt )
             # if cpt == from_stack_level + 1
             # else
