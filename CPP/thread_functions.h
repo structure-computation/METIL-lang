@@ -1669,3 +1669,26 @@ template<int compile_mode> const void *exec_tok_constify(const N<compile_mode> &
     return tok->next();
 }
 
+
+template<int compile_mode> const void *exec_tok_exec_in_prev_scope(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::Exec_in_prev_scope *tok,Variable * &sp) {
+    // register scope
+    OldScope *os = (OldScope *)th->info_stack.get_room_for( sizeof(OldScope) );
+    os->last_named_variable = th->last_named_variable_in_current_scope;
+    os->prev = th->old_scope;
+    th->old_scope = os;
+    
+    //
+    if ( not th->current_def_trial or not th->current_def_trial->prev_def_trial )
+        th->add_error( "There's no old scope !", tok );
+    th->last_named_variable_in_current_scope = th->current_def_trial->old_last_named_variable_in_current_scope;
+    return tok->next();    
+}
+
+template<int compile_mode> const void *exec_tok_end_exec_in_prev_scope(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::End_exec_in_prev_scope *tok,Variable * &sp) {
+    // old scope becomes current scope
+    th->last_named_variable_in_current_scope = th->old_scope->last_named_variable;
+    th->old_scope = th->old_scope->prev;
+    th->info_stack.pop_contiguous( sizeof(OldScope) );
+    return tok->next();    
+}
+

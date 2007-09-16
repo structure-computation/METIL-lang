@@ -28,7 +28,11 @@
 #include "label.h"
 #include "compiledfunctionset.h"
 #include <assert.h>
-#include <malloc.h>
+#ifdef __APPLE__
+  void *memalign( int align, int size ) { return malloc( size ); }
+#else
+  #include <malloc.h>
+#endif
 #include <sstream>
 extern "C" {
     #include "mpi_wrap.h"

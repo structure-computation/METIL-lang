@@ -696,7 +696,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
         }
     }
     // exp, log, ...
-    const char *fps_arithmetic_operations[] = {"exp","log","sin","cos","tan","asin","acos","atan","sinh","cosh","tanh",NULL};
+    const char *fps_arithmetic_operations[] = {"exp","log","sin","cos","tan","asin","acos","atan","sinh","cosh","tanh","ceil",NULL};
     for( const char **a=fps_arithmetic_operations; *a; ++a ) {
         for(unsigned i=0;i<primitive_classes.size();++i)
             if ( float_class(primitive_classes[i]) )

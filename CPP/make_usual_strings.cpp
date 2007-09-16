@@ -104,7 +104,11 @@ OpInfo operators[] = {
     { "<<<"        , "shift_left_then_endl"  , Need2args  },
     { "<<"         , "shift_left"            , Need2args  },
     { ">>"         , "shift_right"           , Need2args  },
-                                             
+
+    { "exec_in_prev_scope",
+                     "exec_in_prev_scope"    , Needrarg  },
+                                        
+    
     { "or"         , "or_boolean"            , Need2args  },
     { "and"        , "and_boolean"           , Need2args  },
     { "xor"        , "xor_boolean"           , Need2args  },

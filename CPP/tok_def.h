@@ -178,6 +178,9 @@ inline void get_tok_defs( std::vector<TokDef> &tok_defs ) {
     tok_defs.push_back(TokDef("end_try_block"));
     tok_defs.push_back(TokDef("condition_in_try_block"));
     tok_defs.push_back(TokDef("pertinence_in_try_block"));
+
+    tok_defs.push_back(TokDef("exec_in_prev_scope"));
+    tok_defs.push_back(TokDef("end_exec_in_prev_scope"));
 }
 
 #endif // TOK_DEF_H

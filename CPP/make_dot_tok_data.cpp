@@ -1215,6 +1215,11 @@ void DotSarToDotTok::push_tok( const Lexem *l, bool expect_result ) {
                 error_list->add("lonely get_value_prop. Statement has no effect.",l->s,provenance);
             push_tok_get_value_prop( l );
             break;
+        case STRING_exec_in_prev_scope_NUM:
+            push_type_and_offsets( l, Tok::EXEC_IN_PREV_SCOPE, 0 );
+            push_tok( l->children[0], expect_result );
+            push_type_and_offsets( l, Tok::END_EXEC_IN_PREV_SCOPE, 0 );
+            break;
         default: // type >= 0
             push_tok_operator( l, expect_result );
     }
