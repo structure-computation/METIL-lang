@@ -164,6 +164,8 @@ void copy_bits( char *dest, unsigned dest_offset_in_bits, const char *src, unsig
 
 const void *init_using_default_values( Thread *th, const void *tok, Variable *v, Variable * &sp ) {
     // nb_init_call and reassign_using_mem_copy
+    //     std::cout << v->type->name << std::endl;
+    
     unsigned nb_init_call = 0;
     for(int num_variable=v->type->nb_variables-1;num_variable>=0;--num_variable) {
         TypeVariable *t = v->type->variables + num_variable;

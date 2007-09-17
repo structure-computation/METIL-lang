@@ -164,6 +164,8 @@ void copy_bits( char *dest, unsigned dest_offset_in_bits, const char *src, unsig
 
 const void *init_using_default_values( Thread *th, const void *tok, Variable *v, Variable * &sp ) {
     // nb_init_call and reassign_using_mem_copy
+//     std::cout << v->type->name << std::endl;
+    
     unsigned nb_init_call = 0;
     for(int num_variable=v->type->nb_variables-1;num_variable>=0;--num_variable) {
         TypeVariable *t = v->type->variables + num_variable;
@@ -737,6 +739,8 @@ typedef void CcodeFunction4( Variable *, Variable *, Variable *, Variable * );
 typedef void CcodeFunction5( Variable *, Variable *, Variable *, Variable *, Variable * );
 typedef void CcodeFunction6( Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 typedef void CcodeFunction7( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction8( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction9( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 
 void exec_ccode_function( void *f_ ) { ((CcodeFunction0 *)( f_ ))(  ); }
 void exec_ccode_function( void *f_, Variable *a ) { ((CcodeFunction1 *)( f_ ))( a ); }

@@ -267,7 +267,7 @@ def allocate( T, n = 1 )
 #~ T_alignement in bytes ~#
 def allocate( T, n, T_alignement )
     bs := size_of_if_in_vec(partial_instanciation T)
-    return Ptr[T]( allocate( bs, Int32(n), bs * T_alignement ) )
+    return Ptr[T]( allocate( bs, Int32(n), T_alignement ) )
     
 #~~#
 def malloc( size )
@@ -276,6 +276,7 @@ def malloc( size )
 
 ## reserve room in memory for n variables of type T. Returns a Ptr[T] ##
 def __new__( T, varargs )
+    info T, size_of(partial_instanciation T) // 8
     res := Ptr[T]( allocate( size_of(partial_instanciation T), 1 ) )
     call( res->init, varargs )
     return res
