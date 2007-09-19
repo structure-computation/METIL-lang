@@ -276,7 +276,6 @@ def malloc( size )
 
 ## reserve room in memory for n variables of type T. Returns a Ptr[T] ##
 def __new__( T, varargs )
-    info T, size_of(partial_instanciation T) // 8
     res := Ptr[T]( allocate( size_of(partial_instanciation T), 1 ) )
     call( res->init, varargs )
     return res

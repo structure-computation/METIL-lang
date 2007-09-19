@@ -13,9 +13,9 @@ class Map[ K, V, default_value = V() ]
                 return values[i]
         # creation of a new pair
         keys.push_back( key )
-        v := ref values.new_elem()
-        v.init( default_value )
-        return v
+        # v := ref values.new_elem()
+        # v.init( default_value )
+        return values.push_back( default_value )
         
     def select( varargs )
         t := partial_instanciation K
@@ -32,13 +32,28 @@ def __in__( key, map_ ) when map_.is_a_Map
             return true
     return false
 
+#~
+~#
+class MapDef[ V, default_value = V() ]
+    keys   := VarArgs()
+    values := Vec[ V ]()
+    
+    def select( key )
+        for k, cpt in keys, 0...
+            if @k == key
+                return values[ cpt ]
+        keys.push_unnamed( key )
+        return values.push_back( default_value )
+        
+        
+        
 ##
     Simple set made by 1 vector
 ##
 class Set[ K ]
     property is_a_Set
     
-    keys := Vec[K]()
+    keys := Vec[ K ]()
     
     def init( values ) when values.tensor_order == 1
         keys.init()
@@ -95,3 +110,38 @@ class Pair[ T0, T1 ]
     def __for__( block )
         block( first )
         block( second )
+        
+##
+##
+class Quadrinom[ T0, T1, T2, T3 ]
+    first  := T0()
+    second := T1()
+    third  := T2()
+    fourth := T3()
+    def init( a, b, c, d )
+        first .init( a )
+        second.init( b )
+        third .init( c )
+        fourth.init( d )
+    def init( a ) when a.tensor_order == 1
+        first .init( a[0] )
+        second.init( a[1] )
+        third .init( a[2] )
+        fourth.init( a[3] )
+    def reassign( a ) when a.tensor_order == 1
+        first  = a[0]
+        second = a[1]
+        third  = a[2]
+        fourth = a[3]
+    def select( i )
+        if i == 3 return fourth
+        if i == 2 return third
+        if i return second
+        return first
+    def __for__( block )
+        block( first  )
+        block( second )
+        block( third  )
+        block( fourth )
+        
+        

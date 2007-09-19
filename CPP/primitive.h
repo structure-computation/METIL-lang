@@ -212,7 +212,7 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "__get_data_in_static_vec__", "return __get_data_in_static_vec__( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = memalign( std::max( (c+7)/8, 4 ), (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), (a+7)/8 * b ); else ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "memcpy", "memcpy( a, b, (c+7)/8 * d );" ).A("UntypedPtr").A("UntypedPtr").A("Int32").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)(Int64)self;" ).M("UntypedPtr").A("Int32") );
@@ -840,7 +840,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     //
     primitive_functions.push_back( PrimitiveFunction( "inheritance", "ret = inheritance( a->type, b->type );", /*ret*/"Bool" ).A("any").A("any") );
     
-    primitive_functions.push_back( PrimitiveFunction( "true_type", "return get_def_from_type( th, tok, sp, ret, a->type->contains_virtual_methods ? *reinterpret_cast<Type**>(a->data) : a->type );", /*ret*/"Def" ).A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "true_type", "return get_def_from_type( th, tok, sp, ret, a->type->contains_virtual_methods and a->data ? *reinterpret_cast<Type**>(a->data) : a->type );", /*ret*/"Def" ).A("any") );
     
     
 }

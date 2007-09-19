@@ -27,6 +27,7 @@ struct Thread;
 */
 struct DefinitionData {
     static DefinitionData *make_new(unsigned nb_args,unsigned attributes);
+    DefinitionData *make_copy();
     void destroy( Thread *th );
     void inc_this_and_children_cpt_use();
     
@@ -53,7 +54,7 @@ struct DefinitionData {
     Float64 pertinence;
     unsigned min_nb_args;
     unsigned nb_args;
-    Type *parent_type; // type of parent class if method
+    Type *parent_type; // type of parent class if method (used if virtual)
     
     SplittedVec<Type *,2,8> type_cache; /// only for classes
 

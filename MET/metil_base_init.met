@@ -213,6 +213,7 @@ class Ptr(T)
     def write_to_stream( stream )                        stream << ptr
     def equal( p ) when p.is_a_Ptr                       return p.ptr == ptr
     def equal( p ) when is_of_type_UntypedPtr( p )       return p == ptr
+    def equal( p )                                       return UntypedPtr( p ) == ptr
     def copy                                             return new T( pointed_value() )
     def get_pointer_attributes                           return [ ( self, 1 ) ] # for serialization
     def to_Ptr                                           return self

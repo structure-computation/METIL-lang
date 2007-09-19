@@ -914,7 +914,7 @@ template<int compile_mode> const void *exec_tok_throw(const N<compile_mode> &n__
         else if ( type == Tok::END_TOK_FILE ) {
             const void *test_tok = th->pop_pc();
             if ( not test_tok ) {
-                th->add_error( "uncatched exception", old_t );
+                th->add_error( "uncatched exception (type=" + std::string( e->type->name ) + ")", old_t );
                 return t;
             }
             t = test_tok;
@@ -1201,6 +1201,19 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
     
     // look in attributes
     TypeVariable *tv = v->type->find_var( v, name );
+    
+    // if contains_virtual_methods and $name is a property, look for variable in true type
+    if ( tv == NULL and v->type->contains_virtual_methods ) {
+        for(unsigned i=0;i<th->main_scope->properties.size();++i) {
+            if ( th->main_scope->properties[i] == name ) {
+                Type *true_type = *reinterpret_cast<Type **>( v->data );
+                tv = true_type->find_var( v, name );
+                break;
+            }
+        }
+    }
+    
+    //
     if ( tv ) {
         if ( tv->v.type == global_data.Def and tv->v.is_primary_def() )
             v->replace_by_method( th, reinterpret_cast<Definition *>( tv->v.data ) );
@@ -1231,6 +1244,7 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
             v->replace_by_non_static_attr( tv );
         return tok->next();
     }
+
         
     // if Property -> replace var by corresponding value
     if ( v->type == global_data.Property ) {
@@ -1399,9 +1413,14 @@ template<int compile_mode> const void *exec_tok_append_inheritance_data(const N<
     for(unsigned num_variable=0;num_variable<type->nb_variables;++num_variable) {
         TypeVariable *t = type->variables + num_variable;
         Variable *v = assign_ref_on( sp++, &t->v );
-        if ( t->v.is_primary_def() ) v->attributes |= Variable::IS_PRIMARY_DEF;
+        if ( t->v.is_primary_def() ) { // make a copy of def and def_data
+            v->attributes |= Variable::IS_PRIMARY_DEF;
+            v->data = (char *)malloc( sizeof( Definition ) );
+            Definition *d = reinterpret_cast<Definition *>( v->data );
+            d->init( reinterpret_cast<Definition *>( t->v.data )->def_data->make_copy() );
+        }
         v->attributes |= Variable::CAN_BE_REDEFINED;
-        th->register_var_in_current_scope( tok, v, t->v.name, /*need_verification*/false );
+        th->register_var_in_current_scope( tok, v, t->v.name, /*need_verification*/ t->num_attribute >= 0 );
     }
     
     return tok->next();

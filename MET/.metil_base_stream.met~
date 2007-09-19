@@ -46,7 +46,7 @@ class Char
     def equal( b ) when b.is_a_Char
         return val == b.val
     def get_represents_a_letter
-        return ( val >= 64 and val <= 90 ) or ( val >= 97 and val < 122 )
+        return ( val >= 64 and val <= 90 ) or ( val >= 97 and val <= 122 )
     def get_represents_a_number
         return val >= 48 and val <= 57
     def get_represents_an_underscore
@@ -159,6 +159,8 @@ class AssertionError
 ##
 ##
 def throw_failed_assertion( txt, from_stack_level = 0 )
+    stderr <<< txt
+
     res := AssertionError()
     cpt := from_stack_level + 1
     

@@ -446,6 +446,10 @@ const void *play_with_ok_callables_after_all_trials_are_done( DefTrial *def_tria
     c->first_variable = reinterpret_cast<Variable *>( sp );
     // set variables in thread
     th->current_self = c->self;
+    if ( c->def_data->parent_type ) {
+        std::cout << "1 -> " << th->current_self->type->name << std::endl;
+        std::cout << "2 -> " << c->def_data->parent_type->name << std::endl;
+    }
     if ( c->def_data->parent_type ) 
         th->current_self->type = c->def_data->parent_type;
         
@@ -488,6 +492,8 @@ const void *play_with_ok_callables_after_all_trials_are_done( DefTrial *def_tria
         *reinterpret_cast<Type **>( c->self->data ) = c->self->type;
     
     if ( c->def_data->is_abstract() )
+        th->add_error( "Abstract function (type="+std::string( c->self->type->name )+")", tok );
+    
     th->set_current_sourcefile( c->def_data->sourcefile );
     return c->def_data->block;
 }

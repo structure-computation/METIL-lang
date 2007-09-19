@@ -825,6 +825,8 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     
     def get_sizes        return [ static_size ]
     
+    def get_scalar_type  return T
+    
     def reassign_size( ns )  resize( ns )
     
     def resize( ns )         assert( ns == static_size, "changing size of static sized vector if forbidden." )
@@ -957,7 +959,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
             data_.init( allocate( T, reserved_, T_alignement ) )
             for i in 0 .. size
                 data_[i].init()
-                
+    
     def resize_without_init( size, reservation = size )
         size_.init( size ); reserved_.init( reservation )
         if reserved_
@@ -976,12 +978,12 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         init( size = size )
         for v in 0 .. size
             self[ v ].init( function( v ) )
-            
+    
     def init( size, data ) # non owned vec
         data_.init( data )
         size_.init( size )
         reserved_.init( 0 )
-            
+    
     def init( vector ) when vector.tensor_order == 1 # constructor from another vector (of any kind)
         if vector.size_evaluation_costs_a_lot
             init()

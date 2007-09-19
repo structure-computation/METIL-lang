@@ -27,6 +27,22 @@ DefinitionData *DefinitionData::make_new(unsigned nb_args,unsigned attributes) {
     return res;
 }
 
+DefinitionData *DefinitionData::make_copy() {
+    bool has_varargs = attributes & Tok::Definition::VARARGS;
+    int si = sizeof(DefinitionData) + ( nb_args + has_varargs ) * sizeof(Nstring *);
+    
+    DefinitionData *res = (DefinitionData *)malloc( si );
+    memcpy( res, this, si );
+    
+    res->type_cache.init();
+    res->parent_type = NULL; // type of parent class if method
+    res->cpt_use = 0;
+    if ( next_with_same_name )
+        res->next_with_same_name = next_with_same_name->make_copy();
+
+    return res;
+}
+
 void DefinitionData::destroy( Thread *th ) {
     for(unsigned i=0;i<type_cache.size();++i)
         dec_ref( th, type_cache[i] );

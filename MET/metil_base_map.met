@@ -13,9 +13,7 @@ class Map[ K, V, default_value = V() ]
                 return values[i]
         # creation of a new pair
         keys.push_back( key )
-        v := ref values.new_elem()
-        v.init( default_value )
-        return v
+        return values.push_back( default_value )
         
     def select( varargs )
         t := partial_instanciation K
@@ -32,6 +30,21 @@ def __in__( key, map_ ) when map_.is_a_Map
             return true
     return false
 
+#~
+~#
+class MapDef[ V, default_value = V() ]
+    keys   := VarArgs()
+    values := Vec[ V ]()
+    
+    def select( key )
+        for k, cpt in keys, 0...
+            if @k == key
+                return values[ cpt ]
+        keys.push_unnamed( key )
+        return values.push_back( default_value )
+        
+        
+        
 ##
     Simple set made by 1 vector
 ##

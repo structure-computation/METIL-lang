@@ -69,7 +69,7 @@ Thread::Thread( Scope *main_scope_, ErrorList *error_list_, Thread *parent_, uns
     current_def_trial = NULL;
     current_self = NULL;
     compile_mode = false;
-    max_recursive_depth = 200;
+    max_recursive_depth = 500;
 }
 
 Thread::~Thread() {
@@ -336,8 +336,10 @@ void Thread::add_error( const std::string &msg, const void *tok, const std::vect
     // current tok
     if ( nb_def_trial_to_skip == 0 ) {
         if ( tok and current_sourcefile ) {
+            int offset_in_sar_file = reinterpret_cast<const int *>(tok)[1];
             const char *t = current_sourcefile->sar_text();
-            e.caller_stack.push_back( ErrorList::Provenance( t ? t + /*offset_in_sar_file*/ reinterpret_cast<const int *>(tok)[1] : t, current_sourcefile->provenance ) );
+            if ( offset_in_sar_file < strlen( t + 1 ) )
+                e.caller_stack.push_back( ErrorList::Provenance( t ? t + offset_in_sar_file : t, current_sourcefile->provenance ) );
         }
     }
     

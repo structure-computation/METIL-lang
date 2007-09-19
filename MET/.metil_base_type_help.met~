@@ -265,6 +265,9 @@ class PtrWithCptUse[ T ]
     def conversion_to( r ) when r.type == Bool
         r.init( ptr )
     
+    def init( p ) when p.is_Null
+        ptr.init( NULL )
+    
     def init( p ) when p.is_a_Ptr
         ptr.init( p )
         if ptr
@@ -318,7 +321,9 @@ class PtrWithCptUse[ T ]
         p := PtrWithCptUse[ P ]( new P )
         p = p
     
-    
+#
+def equal( a, b ) when a.is_a_PtrWithCptUse and b.is_a_PtrWithCptUse
+    return a.ptr == b.ptr
     
     
 #~

@@ -825,6 +825,8 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     
     def get_sizes        return [ static_size ]
     
+    def get_scalar_type  return T
+    
     def reassign_size( ns )  resize( ns )
     
     def resize( ns )         assert( ns == static_size, "changing size of static sized vector if forbidden." )
@@ -1177,7 +1179,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                         data_[ i ] = v[ i ];
                 }
         #
-        if T in [ "Float32" "Float64" "Float96" "Int8" "Int16" "Int32" "Int64" "Unsigned8" "Unsigned16" "Unsigned32" "Unsigned64" "UntypedPtr" ]
+        if T in [ Float32 Float64 Float96 Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 UntypedPtr ]
             res <<<<
                     T *push_back_unique( const T &v ) {
                         for(unsigned i=0;i<size_;++i)

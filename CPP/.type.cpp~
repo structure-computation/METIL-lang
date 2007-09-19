@@ -89,6 +89,10 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
             register_var( variables + i, v->name );
             variables[i].num_attribute = -1; // by default
             variables[i].num_in_transient_data = -1; // by default
+            //
+            //             if ( v->is_primary_def() ) {
+            //             }
+            //             variables[i].
         }
         /*
         // get data size and alignements
@@ -260,10 +264,8 @@ Nstring Type::name_static_attributes_in_inst(unsigned n) const {
 TypeVariable *Type::attr_in_inst_nb(unsigned n) {
     for( unsigned i=0; i<nb_variables; ++i )
         if ( store_in_inst( variables[i].v ) )
-            if ( n-- == 0 ) {
-                std::cout << variables[i].v.name << std::endl;
+            if ( n-- == 0 )
                 return variables + i;
-            }
     return NULL;
 }
 TypeVariable *Type::static_attr_in_inst_nb(unsigned n) {

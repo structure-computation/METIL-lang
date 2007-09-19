@@ -89,6 +89,10 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
             register_var( variables + i, v->name );
             variables[i].num_attribute = -1; // by default
             variables[i].num_in_transient_data = -1; // by default
+            //
+            //             if ( v->is_primary_def() ) {
+            //             }
+            //             variables[i].
         }
         /*
         // get data size and alignements
@@ -182,6 +186,7 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
             break;
         }
     }
+    
     // 
     for(unsigned i=0;i<nb_variables;++i) {
         if ( variables[i].v.is_virtual() ) { // and variables[i].v.is_primary_def()

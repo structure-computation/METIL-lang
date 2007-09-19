@@ -321,7 +321,9 @@ class PtrWithCptUse[ T ]
         p := PtrWithCptUse[ P ]( new P )
         p = p
     
-    
+#
+def equal( a, b ) when a.is_a_PtrWithCptUse and b.is_a_PtrWithCptUse
+    return a.ptr.ptr == b.ptr.ptr
     
     
 #~
