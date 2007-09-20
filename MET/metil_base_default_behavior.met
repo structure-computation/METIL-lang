@@ -9,7 +9,7 @@ def inferior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence
 def superior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return heaviside( a - b )
 def not_equal     ( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return 1 - eqz( a - b )
 
-def equal( a, b ) pertinence 0.5
+def equal( a, b ) when a.is_a_number==false and b.is_a_number==false pertinence 0.5
     if type_of(a) != type_of(b)
         return false
     for num_attr in 0 .. nb_attributes_of( a )

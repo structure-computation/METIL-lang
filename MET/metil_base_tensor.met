@@ -10,6 +10,7 @@ class Tensor[ T, s=[], ST=SizeType ]
     property has_static_sizes
     static const static_sizes := s
     static def EqTypeWithScalarType( TO ) return Tensor[ TO, s, ST ]
+    static def get_scalar_type return T
     
     data ~= Array[ T, sizes ]
     base ~= String
