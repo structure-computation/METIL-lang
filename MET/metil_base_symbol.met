@@ -221,10 +221,12 @@ def intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_z
 
 #\int_{beg}^{end} expr d{var} using a polynomial approximation deg_poly_max
 def polynomial_integration( expr, var, beg, end, deg_poly_max = 5 )
-    coeffs := taylor_expansion( expr, var, beg, deg_poly_max )
+    coeffs := taylor_expansion( expr, var, ( beg + end ) / 2, deg_poly_max )
     res := expr.type( 0 )
+    d := ( end - beg ) / 2
     for cpt in 0 .. coeffs.size
-        res += coeffs[ cpt ] / ( cpt + 1 ) * pow( end - beg, cpt + 1 )
+        if not and_bitwise( cpt, 1 )
+            res += 2 * coeffs[ cpt ] / ( cpt + 1 ) * pow( d, cpt + 1 )
     return res
 
 # version with [ x, a, b ] where expr==a if x >= 0, or b if x < 0. @see integration

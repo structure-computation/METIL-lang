@@ -207,6 +207,8 @@ void Type::destroy() {
 
 TypeVariable *Type::find_var( Variable *self, Nstring n ) {
     unsigned h = n.v % size_hash_table;
+    //     std::cout << name << " " << n << std::endl;
+    //     std::cout << hash_table[h] << std::endl;
     for(TypeVariable *tv = hash_table[h]; tv; tv=tv->prev_in_hash_table) {
         if ( tv->v.name == n ) {
             if ( tv->v.is_virtual() and self ) {

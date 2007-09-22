@@ -1173,6 +1173,13 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                     }
                     return data_ + size_++;
                 }
+                T *make_room_to_insert( ST from, ST n ) {
+                    ST os = size_;
+                    resize( size_ + n );
+                    for( ST i = os - 1; i >= from; --i )
+                        data_[ i + n ] = data_[ i ];
+                    return data_ + from;
+                }
                 void operator=( const SelfType &v ) {
                     resize( v.size() );
                     for(unsigned i=0;i<size_;++i)
@@ -1282,7 +1289,8 @@ class LittleHeterogeneousArray[ tensor_order, sizes ]
     def map( function )
         return VecOp( function, self )
     
-# def equal( a, b ) when a.tensor_order != b.tensor_order and a.tensor_order > 0 and b.tensor_order > 0 pertinence 20  return false
+def equal( a, b ) when a.is_a_LittleHeterogeneousArray and b.is_a_LittleHeterogeneousArray and ( ( a.tensor_order==0 and b.tensor_order>0 ) or ( a.tensor_order>0 and b.tensor_order==0 ) )
+    return false
 
 ## make a static vector (Vec[Type,size]) from a LittleHeterogeneousArray ##
 def stat_vec( array ) when have_same_name( type_of(array), LittleHeterogeneousArray )

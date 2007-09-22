@@ -311,6 +311,9 @@ const void *instantiate( DefTrial *def_trial, Thread *th, const void *tok, Varia
     if ( def_trial->partial_instanciation ) {
         if ( def_trial->return_var )
             def_trial->return_var->init( type, Variable::TYPE_OF_ONLY );
+        if ( type->contains_virtual_methods )
+            *reinterpret_cast< Type ** >( def_trial->return_var->data ) = type;
+        //
         th->set_current_sourcefile( NULL );
         return tok_end_def_block;
     }

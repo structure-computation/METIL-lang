@@ -438,7 +438,9 @@ Op &mul_number_and_expr( Op &a, Op &b ) { // a is a number
     // 10 * ( 5 * a )
     if ( b.type == STRING_mul_NUM and b.func_data()->children[0]->type == Op::NUMBER ) {
         Op &new_num = Op::new_number( a.number_data()->val * b.func_data()->children[0]->number_data()->val );
-        return Op::new_function( STRING_mul_NUM, new_num, *b.func_data()->children[1] );
+        return mul_number_and_expr( new_num, *b.func_data()->children[1] );
+        //         return new_num * *b.func_data()->children[1];
+        //         return Op::new_function( STRING_mul_NUM, new_num, *b.func_data()->children[1] );
     }
     // 10 * ( a + 5 * b ) -> 10 * a + 50 * b
     if ( b.type == STRING_add_NUM ) {
@@ -494,13 +496,18 @@ Op &make_mul_seq( SplittedVec<MulSeq,4,16,true> &items_c ) {
         return Op::new_number( 1 );
     //
     Op *res = &items_c[0].to_op();
+    Rationnal n = 1;
     for(unsigned i=1;i<items_c.size();++i) {
-        if ( res < items_c[i].op )
-            res = &Op::new_function( STRING_mul_NUM, *res, items_c[i].to_op() );
+        if ( items_c[i].op->type == Op::NUMBER )
+            n *= items_c[i].to_op().number_data()->val;
+        else if ( res < items_c[i].op )
+            res = &Op::new_function( STRING_mul_NUM, *res, items_c[i].to_op() ); // &( *res * items_c[i].to_op() ); // 
         else
-            res = &Op::new_function( STRING_mul_NUM, items_c[i].to_op(), *res );
+            res = &Op::new_function( STRING_mul_NUM, items_c[i].to_op(), *res ); // &( items_c[i].to_op() * *res ); // 
     }
-    return *res;
+    if ( n.is_one() )
+        return *res;
+    return Op::new_number( n ) * *res;
 }
 
 /// @see operator*
@@ -559,7 +566,8 @@ Op &operator*( Op &a, Op &b ) {
         }
         // ( 10 * a ) * b -> 10 * ( a * b )
         Op &new_mul = *a.func_data()->children[1] * b;
-        return mul_number_and_expr( *a.func_data()->children[0], new_mul );
+        return *a.func_data()->children[0] * new_mul;
+        //         return mul_number_and_expr( *a.func_data()->children[0], new_mul );
     }
     // a * ( 10 * b ) -> 10 * ( a * b )
     if ( b.type == STRING_mul_NUM and b.func_data()->children[0]->type == Op::NUMBER ) {

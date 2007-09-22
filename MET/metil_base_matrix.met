@@ -787,6 +787,8 @@ class MatTrans[ST] inherits MatAncestor
     def init( m )            mat.init_using_var( m )
     def get_nb_rows          return mat->nb_cols
     def get_nb_cols          return mat->nb_rows
+    def get_static_nb_rows   return mat->static_nb_cols
+    def get_static_nb_cols   return mat->static_nb_rows
     def get_known_nb_values  return mat->known_nb_values
     def select( i, j )       return conj( mat->select( j, i ) )
     def conversion_to( b ) when is_of_type_Bool(b) and @op == equal
