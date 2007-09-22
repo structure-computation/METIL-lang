@@ -1207,7 +1207,8 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
         for(unsigned i=0;i<th->main_scope->properties.size();++i) {
             if ( th->main_scope->properties[i] == name ) {
                 Type *true_type = *reinterpret_cast<Type **>( v->data );
-                tv = true_type->find_var( v, name );
+                if ( true_type ) // may be uninitialised
+                    tv = true_type->find_var( v, name );
                 break;
             }
         }

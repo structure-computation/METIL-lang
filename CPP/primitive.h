@@ -842,6 +842,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "true_type", "return get_def_from_type( th, tok, sp, ret, a->type->contains_virtual_methods and a->data ? *reinterpret_cast<Type**>(a->data) : a->type );", /*ret*/"Def" ).A("any") );
     
+    primitive_functions.push_back( PrimitiveFunction( "contains_virtual_method", "ret = a->type->contains_virtual_methods;", /*ret*/"Bool" ).A("any") );
     
 }
 

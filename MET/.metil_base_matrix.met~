@@ -332,6 +332,7 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     static const static_nb_cols := structure.static_nb_cols
     static const has_static_sizes := static_nb_rows >= 0 and static_nb_cols >= 0
     static const static_sizes := [ static_nb_rows, static_nb_cols ]
+    static def EqTypeWithScalarType( TO ) return Mat[ TO, Structure, Storage, ST ]
     
     # def init( nb_rows = structure.default_nb_rows, nb_cols = structure.default_nb_cols ) when nb_rows.tensor_order<=0 pertinence 2
         # structure.init( nb_rows, nb_cols )

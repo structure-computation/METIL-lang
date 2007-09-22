@@ -33,6 +33,12 @@ class Tensor[ T, s=[], ST=SizeType ]
         for ind, v in data
             data[ind] = function( ind )
     
+    def init( vec ) when vec.tensor_order == s.tensor_order
+        init()
+        #
+        for ind, val in indices_and_values_of( vec )
+            self[ ind ] = val
+    
     def destroy
         data.destroy()
         base.destroy()

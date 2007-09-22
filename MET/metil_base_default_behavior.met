@@ -9,13 +9,13 @@ def inferior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence
 def superior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return heaviside( a - b )
 def not_equal     ( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return 1 - eqz( a - b )
 
-def equal( a, b ) pertinence 0.5
-    if type_of(a) != type_of(b)
-        return false
-    for num_attr in 0 .. nb_attributes_of( a )
-        if attribute_nb_of( a, num_attr ) != attribute_nb_of( b, num_attr )
-            return false
-    return true
+# def equal( a, b ) when a.is_a_number==false and b.is_a_number==false  pertinence 0.5
+    # if type_of(a) != type_of(b)
+        # return false
+    # for num_attr in 0 .. nb_attributes_of( a )
+        # if attribute_nb_of( a, num_attr ) != attribute_nb_of( b, num_attr )
+            # return false
+    # return true
 
 #~ check @a == @b if a and b are non NULL, else, return false if one is not null only. ~#
 def equal_pointed( a, b )
@@ -272,8 +272,8 @@ def get_byte_size_if_in_vec( self )
     return ( size_of_if_in_vec( partial_instanciation self ) + 7 ) // 8
 
 # ------------- type promote -----------
-def type_promote( a, b, op ) pertinence -5
-    return false
+# def type_promote( a, b, op ) pertinence -5
+    # return false
 
 # ...
 def type_promote( a, b, op ) when are_of_same_type( a, b ) pertinence 10 return type_of( a )

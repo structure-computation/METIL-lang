@@ -419,8 +419,8 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
             already_calculated[i].op->clear_additional_info_rec();
         // get heavisides
         SplittedVec<Op *,32,256> heavisides;
-        for(unsigned i=0;i<op_to_write.size();++i)
-            get_heavisides_rec( op_to_write[i].op, heavisides );
+        //         for(unsigned i=0;i<op_to_write.size();++i)
+        //             get_heavisides_rec( op_to_write[i].op, heavisides );
             
         if ( heavisides.size() ) {
             write_code_with_cond_0_and_1( th, tok, ss, heavisides[0], nb_spaces, of );

@@ -20,6 +20,13 @@ class Map[ K, V, default_value = V() ]
         call( t.init, varargs )
         return select( t )
     
+    def remove( key )
+        for cpt in 0 .. keys.size
+            if keys[cpt] == key
+                keys  .remove_unordered( cpt )
+                values.remove_unordered( cpt )
+                break
+    
     def write_to_stream( stream )
         for i in 0 .. keys.size
             stream << keys[i] << " => " <<< values[i]

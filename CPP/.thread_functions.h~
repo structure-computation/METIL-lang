@@ -914,7 +914,7 @@ template<int compile_mode> const void *exec_tok_throw(const N<compile_mode> &n__
         else if ( type == Tok::END_TOK_FILE ) {
             const void *test_tok = th->pop_pc();
             if ( not test_tok ) {
-                th->add_error( "uncatched exception", old_t );
+                th->add_error( "uncatched exception (type=" + std::string( e->type->name ) + ")", old_t );
                 return t;
             }
             t = test_tok;
@@ -1207,7 +1207,8 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
         for(unsigned i=0;i<th->main_scope->properties.size();++i) {
             if ( th->main_scope->properties[i] == name ) {
                 Type *true_type = *reinterpret_cast<Type **>( v->data );
-                tv = true_type->find_var( v, name );
+                if ( true_type )
+                    tv = true_type->find_var( v, name );
                 break;
             }
         }

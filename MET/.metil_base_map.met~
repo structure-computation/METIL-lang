@@ -13,14 +13,18 @@ class Map[ K, V, default_value = V() ]
                 return values[i]
         # creation of a new pair
         keys.push_back( key )
-        # v := ref values.new_elem()
-        # v.init( default_value )
         return values.push_back( default_value )
         
     def select( varargs )
         t := partial_instanciation K
         call( t.init, varargs )
         return select( t )
+    
+    def remove( key )
+        for cpt in 0 .. keys.size
+            if keys[cpt] == key
+                keys  .remove_unordered( cpt )
+                values.remove_unordered( cpt )
     
     def write_to_stream( stream )
         for i in 0 .. keys.size

@@ -227,7 +227,7 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
         os << ";";
         
         //
-        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces );
+        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
         
         if ( (cpt_op++ % 4) == 3 ) { os << '\n'; put_a_cr=true; } else { os << ' '; put_a_cr=false; }
 
@@ -446,7 +446,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
                 if ( ponr->num_reg >= 0 ) {
                     for(int k=1;k<nb_spaces;++k) ss << ' '; 
                     bool put_a_cr;
-                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces );
+                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
                 }
             }
             // front
