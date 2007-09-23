@@ -9,15 +9,6 @@ def inferior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence
 def superior_equal( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return heaviside( a - b )
 def not_equal     ( a, b ) when is_of_type_Op(a) and is_of_type_Op(b) pertinence 100 return 1 - eqz( a - b )
 
-<<<<<<< HEAD:MET/metil_base_default_behavior.met
-def equal( a, b ) when a.is_a_number==false and b.is_a_number==false pertinence 0.5
-    if type_of(a) != type_of(b)
-        return false
-    for num_attr in 0 .. nb_attributes_of( a )
-        if attribute_nb_of( a, num_attr ) != attribute_nb_of( b, num_attr )
-            return false
-    return true
-=======
 # def equal( a, b ) when a.is_a_number==false and b.is_a_number==false  pertinence 0.5
     # if type_of(a) != type_of(b)
         # return false
@@ -25,7 +16,6 @@ def equal( a, b ) when a.is_a_number==false and b.is_a_number==false pertinence 
         # if attribute_nb_of( a, num_attr ) != attribute_nb_of( b, num_attr )
             # return false
     # return true
->>>>>>> 5bae3a72cbb71f5c6883d358241f9968165ef1d7:MET/metil_base_default_behavior.met
 
 #~ check @a == @b if a and b are non NULL, else, return false if one is not null only. ~#
 def equal_pointed( a, b )
