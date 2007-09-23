@@ -404,8 +404,9 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
     if ( has_init_methods ) {
         if ( basic_type ) {
             for(int k=0;k<nb_spaces;++k) ss << ' ';
-            for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
-            for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
+            std::string cr( "\n" ); cr += std::string( nb_spaces, ' ' );
+            for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? cr.c_str() : " " );
+            for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? cr.c_str() : " " );
             ss << "\n";
         }
     }

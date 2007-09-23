@@ -27,8 +27,12 @@ class Tensor[ T, s=[], ST=SizeType ]
         # base.init("pouet")
         # for v, cpt in data
             # v.init( tensor[cpt] )
+    
+    def get_size
+        assert( tensor_order == 1, "size defined only if tensor_order == 1" )
+        return s[0]
 
-    def init( function ) when function.is_a_function
+    def init( function ) when function.is_a_function pertinence 1
         base.init("pouet")
         data.init( default_value = T() )
         for ind, v in data
@@ -39,6 +43,10 @@ class Tensor[ T, s=[], ST=SizeType ]
         #
         for ind, val in indices_and_values_of( vec )
             self[ ind ] = val
+    
+    def init( val ) when val.tensor_order <= 0
+        init()
+        data.init( default_value = val )
     
     def destroy
         data.destroy()
@@ -92,6 +100,17 @@ class Tensor[ T, s=[], ST=SizeType ]
     #
     def eig_vectors_and_values( e_val, e_vec )
         data.eig_vectors_and_values( e_val, e_vec )
+        
+    #
+    def get_additional_cpp_methods 
+        if tensor_order != 1
+            return ""
+        return "
+    ST size() const { return $(s[0]); }
+    ST reserved() const { return $(s[0]); }
+    const T &operator[]( ST i ) const { return data.data[ i ]; }
+    T &operator[]( ST i ) { return data.data[ i ]; }
+        "
 
 ##   ##
 def diff( self, a ) when self.tensor_order<=0 and a.is_a_tensor pertinence 10
@@ -157,6 +176,12 @@ def mul( b, a ) when a.is_a_tensor and b.tensor_order<=0
     for ind, val in res.data val.init( b * a[ind] )
     return res
 
+def mul( a, b ) when a.is_a_tensor and b.is_a_tensor and a.tensor_order==1 and b.tensor_order==1
+    T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
+    res := Tensor[T,a.s,a.ST]()
+    for ind, val in res.data val.init( a[ind] * b[ind] )
+    return res
+
 def div( a, b ) when a.is_a_tensor and b.tensor_order<=0
     T := type_promote( partial_instanciation a.T, b, div )
     res := Tensor[T,a.s,a.ST]()
@@ -179,7 +204,7 @@ def doubledot( a, b ) when a.is_a_tensor and b.is_a_tensor
     ns := b.s.size - a.s.size
     sel := b.s.size - ns .. b.s.size
     s := Vec[a.ST,ns]( b.s[ sel ] )
-    res := Tensor[ T, s, a.ST ]( x => 0 )
+    res := Tensor[ T, s, a.ST ]( function = x => 0 )
     for ind, val in b
         res[ ind[ sel ] ] += a[ ind[ 0 .. a.tensor_order ] ] * val
     return res

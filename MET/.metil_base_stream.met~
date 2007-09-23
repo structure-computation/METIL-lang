@@ -160,6 +160,7 @@ class AssertionError
 ##
 def throw_failed_assertion( txt, from_stack_level = 0 )
     stderr <<< txt
+    stack_info()
 
     res := AssertionError()
     cpt := from_stack_level + 1
