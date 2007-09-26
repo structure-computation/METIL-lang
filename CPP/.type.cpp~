@@ -17,6 +17,7 @@
 #include "splittedset.h"
 #include "thread.h"
 #include "md5.h"
+#include "property.h"
 
 void Type::init( unsigned prevision_of_nb_variables ) {
     // zero_var = NULL; one_var = NULL; two_var = NULL; zero_op = NULL; one_op = NULL; two_op = NULL;
@@ -52,6 +53,7 @@ bool is_static_attr( Variable &v ) {
     return v.is_static() and not v.is_primary_def();
 }
 
+extern Thread *main_thread;
 
 void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
     // basic init
@@ -92,7 +94,7 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
             //
             //             if ( v->is_primary_def() ) {
             //             }
-            //             variables[i].
+            //             varistore_in_instables[i].
         }
         /*
         // get data size and alignements
@@ -197,6 +199,15 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
         }
     }
     
+    // check property in template args
+    for(unsigned i=0;i<def_data->nb_args;++i) {
+        Variable *v = &find_var( NULL, def_data->args[n] )->v;
+        if ( v->type == global_data.Property ) {
+            std::cout << reinterpret_cast<Property *>( v->data )->get_() << std::endl;
+            main_thread->add_error( "property in template args is forbiden.", NULL );
+        }
+    }
+    
 }
 
 void Type::destroy() {
@@ -205,13 +216,16 @@ void Type::destroy() {
         free( variables );
 }
 
+
 TypeVariable *Type::find_var( Variable *self, Nstring n ) {
     unsigned h = n.v % size_hash_table;
     //     std::cout << name << " " << n << std::endl;
     //     std::cout << hash_table[h] << std::endl;
     for(TypeVariable *tv = hash_table[h]; tv; tv=tv->prev_in_hash_table) {
         if ( tv->v.name == n ) {
-            if ( tv->v.is_virtual() and self ) {
+            if ( tv->v.is_virtual() and self and not self->type_of_only() ) {
+                //                 main_thread->display_stack_file << self->type->name << " " << n << std::endl;
+                //                 main_thread->display_stack(0);
                 Type *nt = *reinterpret_cast<Type **>( self->data );
                 TypeVariable *tmp = nt->find_var( NULL, n );
                 if ( tmp )

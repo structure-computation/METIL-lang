@@ -157,7 +157,7 @@ def lazy_scalar_binary_op( a, b, op )
                 return lazy_scalar_binary_op( b, a, op )
     
     # look in parents for similar op
-    BT := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]
+    BT := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->get_is_calculable() and b->get_is_calculable() ]
     # BT_ := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]
     # BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
     # for ls in a->parents
@@ -212,7 +212,7 @@ def lazy_scalar_unary_op( a, op )
         return LazyScalar( op( a->value ) )
     
     # look in parents for similar op
-    BT := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->is_calculable ]
+    BT := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->get_is_calculable() ]
     # BT_ := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->is_calculable ]
     # BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
     # for ls in a->parents

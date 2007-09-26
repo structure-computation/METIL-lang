@@ -359,7 +359,8 @@ void Thread::add_error( const std::string &msg, const void *tok, const std::vect
     error_list->add( e );
     
     if ( not interpreter_behavior.interpretation )
-        exit( 122 );
+        exit(1);
+    //         metil_interactive( this, tok, tok, sp, "=> ", "-> " );
 }
 
 void Thread::rm_var_in_current_scope( Variable *v ) {

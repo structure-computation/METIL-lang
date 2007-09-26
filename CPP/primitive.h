@@ -185,7 +185,7 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     
     primitive_functions.push_back( PrimitiveFunction( "init", "init_arithmetic( self, bool(a) );" ).M("Bool").A("UntypedPtr") );
     
-    primitive_functions.push_back( PrimitiveFunction( "free", "if ( self ) free( self );" ).M("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "free", "if ( self ) free( self ); self = NULL;" ).M("UntypedPtr") );
     primitive_functions.push_back( PrimitiveFunction( "init", "self  = NULL;" ).M("UntypedPtr",/*modify*/"true") );
     
     primitive_functions.push_back( PrimitiveFunction( "init", "self = a;" ).M("UntypedPtr",/*modify*/"true").A("UntypedPtr") );

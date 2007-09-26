@@ -359,7 +359,8 @@ void Thread::add_error( const std::string &msg, const void *tok, const std::vect
     error_list->add( e );
     
     if ( not interpreter_behavior.interpretation )
-        exit( 122 );
+        
+    //         metil_interactive( this, tok, tok, sp, "=> ", "-> " );
 }
 
 void Thread::rm_var_in_current_scope( Variable *v ) {
@@ -483,7 +484,7 @@ void __line_str_at_stack_level__( Thread *th, const void *tok, Int32 level, Int3
     }
 }
 
-int Thread::display_stack(const void *tok) const {
+int Thread::display_stack(const void *tok) {
     for(Int32 i=0;i<__nb_stack_level__(this, tok);++i) {
         ErrorList::Provenance e = __get_info_on_stack_level__( this, tok, i );
         display_stack_file << i << " " << e.provenance << " " << e.line << " " << e.col << std::endl;
