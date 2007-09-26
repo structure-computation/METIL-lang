@@ -7,6 +7,7 @@
 #include "splittedvec.h"
 #include "deftrial.h"
 #include "n.h"
+#include <fstream>
 
 struct SourceFile;
 struct Scope;
@@ -44,7 +45,7 @@ public:
     bool replace_var_by_ext_property_named( Variable *v, Nstring name );
     void rm_var_in_current_scope( Variable *v );
     unsigned nb_def_trial() const;
-    int display_stack(const void *tok) const;
+    int display_stack(const void *tok);
     //
     
     Variable *beg_variable_stack, *end_variable_stack; /// nearly all the variable data are stored here
@@ -73,6 +74,7 @@ public:
     int return_value;
     bool compile_mode;
     unsigned max_recursive_depth;
+    std::ofstream display_stack_file;
 private:
     void append_def_data_if_basic_conditions_are_checked( DefTrial *def_trial, Variable *&sp, DefinitionData *dd );
     void push_destroy_methods_rec( unsigned &nb_calls_to_destroy, Variable * &sp, Type *type, char *data, TransientData *transient_data );

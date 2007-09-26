@@ -931,7 +931,8 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     static const is_a_vector := true
     static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
     static const pt ~= T
-    static const does_not_need_destroy := pt.does_not_need_destroy
+    static const item_does_not_need_destroy := pt.does_not_need_destroy
+    static const needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
     
     data_ ~= Ptr[ T ]
     size_ ~= ST
@@ -954,8 +955,9 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         size_.init( size ); reserved_.init( reservation )
         if reserved_
             data_.init( allocate( T, reserved_, T_alignement ) )
-            for i in 0 .. size
-                data_[i].init()
+            if needs_item_init
+                for i in 0 .. size
+                    data_[i].init()
     
     def resize_without_init( size, reservation = size )
         size_.init( size ); reserved_.init( reservation )
@@ -1020,7 +1022,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     def destroy #
         # int32_display(reserved_)
         if reserved_
-            if not does_not_need_destroy
+            if not item_does_not_need_destroy
                 cpt := size_; while cpt-- select( cpt ).destroy() # destroy sub elements
             data_.ptr.free()
             reserved_ = 0
@@ -1052,13 +1054,18 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
             size_--
             select( size_ ).destroy()
         reserve( ns )
-        while size_ < ns
-            select( size_++ ).init()
+        
+        if needs_item_init
+            while size_ < ns
+                select( size_++ ).init()
+        else
+            size_ = ns
             
     def resize( ns, default_value )
         while size_ > ns
             size_--
-            select( size_ ).destroy()
+            if not item_does_not_need_destroy
+                select( size_ ).destroy()
         reserve( ns )
         while size_ < ns
             select( size_++ ).init( default_value )

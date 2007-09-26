@@ -1,0 +1,113 @@
+
+#~
+~#
+class LazySimpleSchedulerExtraData
+    lazy_obj            := Ptr[ LazyObjectAncestor ]()
+    parents             := SplittedVec[ Ptr[ LazySimpleSchedulerExtraData ], 4 ]()
+    
+    def init( lo )
+        init_using_default_values( self )
+        lazy_obj = lo
+        
+#~
+~#
+class LazySimpleScheduler
+    static const ED := LazySimpleSchedulerExtraData
+    
+    self_id          ~= Int64
+    extra_data       := SplittedVec[ ED, 128 ]()
+    leaves           := SplittedVec[ Ptr[ ED ], 64 ]()
+    expr_to_evaluate := SplittedVec[ Ptr[ LazyObjectAncestor ], 64 ]()
+    
+    #
+    def init( lst )
+        init_using_default_values( self )
+        # register expr
+        self_id = LazyObjectAncestor::current_operation_id++
+        for lazy_obj in lst
+            if lazy_obj.is_a_Ptr and lazy_obj->is_a_LazyObject
+                add_expr_to_evaluate( lazy_obj )
+            else
+                lazy_obj.apply_lazy_objects( add_expr_to_evaluate )
+                
+    #
+    def add_expr_to_evaluate( lazy_obj ) # when lazy_obj.is_a_PtrWithCptUse
+        expr_to_evaluate.push_back( lazy_obj )
+    
+    #
+    def make_extra_data_rec( lazy_obj )
+        if lazy_obj->sched_id != self_id
+            lazy_obj->sched_id = self_id
+            #
+            lazy_obj->sched_info.init( &extra_data.push_back( lazy_obj ) )
+            
+            leave := lazy_obj->done
+            if not leave
+                leave = true
+                for c in lazy_obj->children
+                    leave = leave and c->done
+            
+            if leave
+                leaves.push_back( lazy_obj->sched_info )
+            else
+                for c in lazy_obj->children
+                    make_extra_data_rec( c )
+                    Ptr[ED]( c->sched_info )->parents.push_back( lazy_obj->sched_info )
+            
+    #
+    def execute( disp = false )
+        # simplify
+        # for lazy_obj in expr_to_evaluate
+            # lazy_obj = simplify( lazy_obj )
+        # fill sched_info
+        for lazy_obj in expr_to_evaluate
+            make_extra_data_rec( lazy_obj )
+        if disp
+            display( String( @_0.lazy_obj ) + " " + _0.lazy_obj->done ) #  + _0.lazy_obj->cpt_use
+        #
+        front := leaves
+        # print "----------- front ----------"
+        # for f in front
+            # info @f->lazy_obj, f->lazy_obj->done
+        # print "--------- end front --------"
+        while front.size
+            f := front.pop_back()
+            was_done := f->lazy_obj->done
+            if not was_done
+                print "execution of ", @f->lazy_obj
+                f->lazy_obj->allocate()
+                f->lazy_obj->evaluate()
+            # look for parents to execute
+            for p in f->parents
+                if not p->lazy_obj->done
+                    ch_are_done := true
+                    for c in p->lazy_obj->children
+                        if not c->done
+                            ch_are_done = false
+                            break
+                    if ch_are_done
+                        front.push_back_unique( p )
+            # look for children to free
+            if not was_done
+                for c in f->lazy_obj->children
+                    c->times_used++
+                    if c->times_used == c->cpt_use # nb_times_to_be_used # cs->parents.size
+                        # print "free ", @c
+                        # c->free()
+                        pass
+                    
+    #
+    def write_graph( function, f )
+        f <<< "digraph \"popo\" {"
+        for n in extra_data
+            f <<< "    node$(n.lazy_obj) [label=\"$(function(n))\",fontsize=14];"
+            for d in n.lazy_obj->children
+                f <<< "    node$(n.lazy_obj) -> node$d;"
+        f <<< "}"
+    
+    def display( function, fn = ".res.dot", x = true )
+        write_graph( function, File( fn, "w" ) )
+        system( "dot -Tps $fn > $fn.eps && epstopdf $fn.eps" )
+        if x
+            system( "gv $fn.eps" )
+    

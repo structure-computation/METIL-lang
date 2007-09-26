@@ -932,6 +932,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
     static const pt ~= T
     static const does_not_need_destroy := pt.does_not_need_destroy
+    static const needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
     
     data_ ~= Ptr[ T ]
     size_ ~= ST
@@ -954,8 +955,9 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         size_.init( size ); reserved_.init( reservation )
         if reserved_
             data_.init( allocate( T, reserved_, T_alignement ) )
-            for i in 0 .. size
-                data_[i].init()
+            if needs_item_init
+                for i in 0 .. size
+                    data_[i].init()
     
     def resize_without_init( size, reservation = size )
         size_.init( size ); reserved_.init( reservation )
@@ -1052,13 +1054,18 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
             size_--
             select( size_ ).destroy()
         reserve( ns )
-        while size_ < ns
-            select( size_++ ).init()
+        
+        if needs_item_init
+            while size_ < ns
+                select( size_++ ).init()
+        else
+            size_ = ns
             
     def resize( ns, default_value )
         while size_ > ns
             size_--
-            select( size_ ).destroy()
+            if not item_does_not_need_destroy
+                select( size_ ).destroy()
         reserve( ns )
         while size_ < ns
             select( size_++ ).init( default_value )
@@ -1135,22 +1142,6 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     def get_additional_cpp_methods
         res := ""
         res <<<<
-                ST size() const { return size_; }
-                ST reserved() const { return reserved_; }
-                void resize( ST s ) { reserve( s ); size_ = s; }
-                void reserve( ST r ) {
-                    if ( r <= reserved_ )
-                        return;
-                    if ( r ) {
-                        T *nvec = (T *)malloc( sizeof( T ) *  r );
-                        for(unsigned i=0;i<(size_>r?r:size_);++i)
-                            nvec[i] = data_[i];
-                        if ( reserved_ )
-                            free( data_ );
-                        data_ = nvec;
-                    }
-                    reserved_ = r;
-                }
                 const T &operator[]( ST i ) const { return data_[ i ]; }
                 T &operator[]( ST i ) { return data_[ i ]; }
                 const T *begin() const { return data_; }
@@ -1159,32 +1150,8 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                 T *end() { return data_ + size_; }
                 const T &back() const { return data_[size_-1]; }
                 T &back() { return data_[size_-1]; }
-                T &pop_back() { return data_[--size_]; }
-                T *new_elem() {
-                    if ( size_ >= reserved_ ) {
-                        T *nd = (T *)malloc( sizeof(T) * ( 2 * size_ + 1 ) );
-                        for(unsigned i=0;i<size_;++i)
-                            nd[i] = data_[i];
-                        data_ = nd;
-                        reserved_ = 2 * size_ + 1;
-                    }
-                    return data_ + size_++;
-                }
-                void push_back( const T &val ) {
-                    *new_elem() = val;
-                }
-                T *make_room_to_insert( ST from, ST n ) {
-                    ST os = size_;
-                    resize( size_ + n );
-                    for( ST i = os - 1; i >= from; --i )
-                        data_[ i + n ] = data_[ i ];
-                    return data_ + from;
-                }
-                void operator=( const SelfType &v ) {
-                    resize( v.size() );
-                    for(unsigned i=0;i<size_;++i)
-                        data_[ i ] = v[ i ];
-                }
+                ST size() const { return size_; }
+                ST reserved() const { return reserved_; }
         #
         if T in [ Float32 Float64 Float96 Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 UntypedPtr ]
             res <<<<
@@ -1195,6 +1162,46 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                         T *r = new_elem();
                         *r = v;
                         return r;
+                    }
+                    void resize( ST s ) { reserve( s ); size_ = s; }
+                    void reserve( ST r ) {
+                        if ( r <= reserved_ )
+                            return;
+                        if ( r ) {
+                            T *nvec = (T *)malloc( sizeof( T ) *  r );
+                            for(unsigned i=0;i<(size_>r?r:size_);++i)
+                                nvec[i] = data_[i];
+                            if ( reserved_ )
+                                free( data_ );
+                            data_ = nvec;
+                        }
+                        reserved_ = r;
+                    }
+                    T &pop_back() { return data_[--size_]; }
+                    T *new_elem() {
+                        if ( size_ >= reserved_ ) {
+                            T *nd = (T *)malloc( sizeof(T) * ( 2 * size_ + 1 ) );
+                            for(unsigned i=0;i<size_;++i)
+                                nd[i] = data_[i];
+                            data_ = nd;
+                            reserved_ = 2 * size_ + 1;
+                        }
+                        return data_ + size_++;
+                    }
+                    void push_back( const T &val ) {
+                        *new_elem() = val;
+                    }
+                    T *make_room_to_insert( ST from, ST n ) {
+                        ST os = size_;
+                        resize( size_ + n );
+                        for( ST i = os - 1; i >= from; --i )
+                            data_[ i + n ] = data_[ i ];
+                        return data_ + from;
+                    }
+                    void operator=( const SelfType &v ) {
+                        resize( v.size() );
+                        for(unsigned i=0;i<size_;++i)
+                            data_[ i ] = v[ i ];
                     }
             #
         return res

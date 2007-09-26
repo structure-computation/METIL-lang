@@ -23,11 +23,11 @@ class GramSchmidt[ T, normalized, euclidian, TVECLIST = MatVecList[T,ST]  ]
     
     #
     def write_to_stream(f)
-        f<<<join(vec_list,"\n")
+        f <<< join(vec_list,"\n")
     #
     def mul( v ) when v.tensor_order==1
-        ret := Vec[T](vec_list[0]*v[0])
-        for i in 1..v.size
+        ret := LazyVec( vec_list[0] * v[0] )
+        for i in 1 .. v.size
             ret += vec_list[i] * v[i]
         return ret
     #
@@ -97,13 +97,13 @@ def mul(a,b) when ( a.is_a_gramschmidt ) and b.tensor_order==1
 class ClassicalGramSchmidt[ T, normalized, euclidian, TVECLIST = MatVecList[T] ] inherits GramSchmidt[ T, normalized, euclidian, TVECLIST ]
     def orthogonalize( vec )
         tmp := Vec[T]()
-        orthogonalize( vec, tmp )
+        orthogonalize( vec tmp )
     #
-    def orthogonalize( vec , tmp )
+    def orthogonalize( vec, tmp )
         tmp.size = vec_list.nb_cols
-        for i in 0..vec_list.nb_cols
-            tmp[i] = dot ( (@a_vec_list)[i] , vec ) / norm_list[i]
-        for i in 0..vec_list.nb_cols
+        for i in 0 .. vec_list.nb_cols
+            tmp[i] = dot( (@a_vec_list)[i], vec ) / norm_list[i]
+        for i in 0 .. vec_list.nb_cols
             vec -= tmp[i] * vec_list[i]
 
 #~

@@ -10,8 +10,8 @@ import "projector.met"
 *only needs few high level algebraic operations (products and transpositions)
 *constraints are stored and handled using [[Projectors]]
 ~#
-class IterativeSolver[ TA, TPC, T, ST , TVECLIST = MatVecList[T] ]
-    static const Tvec := Vec[ T ]
+class IterativeSolver[ TA, TPC, T, ST, TVECLIST = MatVecList[T] ]
+    static const Tvec := LazyVec
     nb_iteration_min := 0
     nb_iteration_max := Int32::max_representable
     nb_iteration_stagnation := 100 # nb iteration ...
@@ -31,10 +31,10 @@ class IterativeSolver[ TA, TPC, T, ST , TVECLIST = MatVecList[T] ]
         init_using_default_values( self )
         oper.init_using_var( A )
         prec.init_using_var( M )
-        sol.init( size = oper->nb_rows, default_value = 0 )
-        rhs.init( size = oper->nb_cols )
-        y_g.init( size = G_.nb_cols )
-        e_g.init( size = G_.nb_cols )
+        sol.init( size = oper->nb_rows, default_value = T( 0 ) )
+        rhs.init( size = oper->nb_cols, default_value = T( 0 ) )
+        y_g.init( size = G_.nb_cols, default_value = T( 0 ) )
+        e_g.init( size = G_.nb_cols, default_value = T( 0 ) )
         PG.init( M_ , G_ )
         PC.init( A , PG * C_ )
     #
@@ -66,7 +66,7 @@ class IterativeSolver[ TA, TPC, T, ST , TVECLIST = MatVecList[T] ]
 === Krylov solvers === 
 These solvers are characterized by the storage of the subspace, and the need to do orthogonalizations with respect to this subspace. See [Saad:iterative] [Parlet:templates]
 ~#
-class KrylovSolver[ TA, TPC, T = TA::T, ORTHOGONALIZER = ModifiedGramSchmidt, ST = TA::ST ] inherits IterativeSolver[ TA,TPC, T, ST ]
+class KrylovSolver[ TA, TPC, T, ORTHOGONALIZER = ModifiedGramSchmidt, ST = TA::ST ] inherits IterativeSolver[ TA, TPC, T, ST ]
     subspace := ORTHOGONALIZER[T]()
 
 #~
@@ -115,12 +115,12 @@ class ConjugateGradient[ TA, TPC , T = TA::T, ORTHOGONALIZER = ClassicalGramSchm
 * options 
 ** if orthogonalization takes too much time use restarted algorithm @todo
 ~#
-class GMRes[TA, TPC ,T = TA::T, ORTHOGONALIZER = ClassicalGramSchmidt, ST = TA::ST ] inherits KrylovSolver[ TA, TPC , T, ORTHOGONALIZER[ euclidian = true, normalized = true ], ST]
+class GMRes[ TA, TPC, T, ORTHOGONALIZER = ClassicalGramSchmidt, ST = TA::ST ] inherits KrylovSolver[ TA, TPC , T, ORTHOGONALIZER[ euclidian = true, normalized = true ], ST ]
     def solve()
         correct_initial_value()
-        v := Vec[T](PC * (PG * (@prec * ( PG' * (rhs - @oper * sol)))))
-        beta := Vec[T](size = subspace.ortho_keep)
-        givens := Vec[T](size = subspace.ortho_keep)
+        v := LazyVec( PC * (PG * (@prec * ( PG' * (rhs - @oper * sol)))) )
+        beta := Vec[T]( size = subspace.ortho_keep )
+        givens := Vec[T]( size = subspace.ortho_keep )
         hessem := Mat[T,TriSup](subspace.ortho_keep) ; hessem = 0
         beta[0] = norm_2(v)
         stdout<<"Initialization, abs. eucl. norm of the prec. residual = "<<< beta[0]
@@ -156,7 +156,7 @@ class GMRes[TA, TPC ,T = TA::T, ORTHOGONALIZER = ClassicalGramSchmidt, ST = TA::
             beta[iter+1] = -beta[iter] * sqrt(1-givens[iter]^2)
             beta[iter] *= givens[iter]
             ratio *= abs(sqrt(1-givens[iter]^2))
-            stdout<<"Iteration "<<iter<<", GMRes residual "<<< ratio
+            stdout <<< "Iteration $iter, GMRes residual $ratio"
             iter++
         #computation of the solution
         hessem2 := Mat[T,TriSup](hessem[0..iter])
@@ -167,8 +167,8 @@ class GMRes[TA, TPC ,T = TA::T, ORTHOGONALIZER = ClassicalGramSchmidt, ST = TA::
 
 def conjugate_gradient( m, pc, g, c, pp = pc )
     return ConjugateGradient[ type_of(m), type_of(pc) ]( m, pc, g, c, pp )
-def gmres( m, pc, g, c, pp = pc )
-    return GMRes[ type_of(m), type_of(pc) ]( m, pc, g, c, pp )
+def gmres( m, pc, g = MatVecList[m.get_best_type()](), c = MatVecList[m.get_best_type()](), pp = pc, T = m.get_best_type() )
+    return GMRes[ type_of(m), type_of(pc), T ]( m, pc, g, c, pp )
 
 #~
 @todo BiCG

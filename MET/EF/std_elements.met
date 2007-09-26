@@ -1,0 +1,61 @@
+import "SymbolicElement.met"
+
+# 0
+class NodalElement
+    static points   := []
+    static children := []
+    static def interval_var_inter( vi )
+        return [ [], [] ]
+
+# 0 -- 1
+class Bar
+    static vtk_num  := 3
+    static points   := [[0],[1]]
+    static children := [(NodalElement,[0]),(NodalElement,[1])]
+    static def interval_var_inter( vi )
+        return [ [0, 1] ]
+
+#~
+    2
+    |\
+    | \
+    0--1
+~#
+class Triangle
+    property has_a_var_inter_is_inside_method
+    static vtk_num  := 5
+    static points   := [[0,0],[1,0],[0,1]]
+    static children := [(Bar,[0,1]),(Bar,[1,2]),(Bar,[2,0])]
+    static def interval_var_inter( vi )
+        return [ [0,1], [0,1-vi[0]] ]
+    static def var_inter_is_inside( vi, tol = 0 )
+        return heaviside( tol + vi[0] ) * heaviside( tol + vi[1] ) * heaviside( tol + 1 - vi[0] - vi[1] )
+    
+#~
+   2 - 3
+   |   |
+   0 - 1
+~#
+class Quad
+    static vtk_num  := 9
+    static points   := [[0,0],[1,0],[0,1],[1,1]]
+    static children := [(Bar,[0,1]),(Bar,[1,3]),(Bar,[3,2]),(Bar,[2,0])]
+    static def interval_var_inter( vi )
+        return [ [0,1], [0,1] ]
+    
+#~
+         3
+        /|\
+       / | \
+      /  |  \
+     /  /2\  \
+    / /     \ \
+   0/---------\1
+~#
+class Tetra
+    static vtk_num  := 10
+    static points   := [[0,0,0],[1,0,0],[0,1,0],[0,0,1]]
+    static children := [(Triangle,[0,1,2]),(Triangle,[0,1,3]),(Triangle,[0,3,2]),(Triangle,[1,2,3])]
+    static def interval_var_inter( vi )
+        return [ [0,1], [0,1-vi[0]], [0,1-vi[0]-vi[1]] ]
+

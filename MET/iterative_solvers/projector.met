@@ -42,6 +42,7 @@ class ProjectorTrans
     p := InternalVariable()
     def init(PP)
         p.init_using_var(PP)
+    #
     def mul(b)
         if p->C.nb_cols == 0
             return b
@@ -50,9 +51,12 @@ class ProjectorTrans
                 return ( b - ( p->AC * ( @p->coarse_matrix' * ( p->C'* b ) ) ) )
             else
                 return ( b - ( p->C * ( @p->coarse_matrix' * ( p->AC' * b) ) ) ) 
+
 #
 def trans(P) when P.is_a_projector
     return ProjectorTrans(P)
 #
 def mul(a,b) when ( a.is_a_projector ) and b.tensor_order==1
     return(a.mul(b))
+
+

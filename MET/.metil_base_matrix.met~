@@ -275,7 +275,7 @@ class MatAncestor
         return Structure::is_diag
     def get_is_sym
         return Structure::is_sym
-    def __for__( block )
+    def __for__( block ) pertinence 0
         for i in 0 .. get_nb_rows()
             for j in 0 .. get_nb_cols()
                 block( make_varargs( [i,j], select(i,j) ) )
@@ -782,11 +782,15 @@ def trace( m ) when m.is_a_matrix pertinence 10
 
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
 class MatTrans[ST] inherits MatAncestor
+    property is_a_MatTrans
+    
     mat := InternalVariable() #
     
     def init( m )            mat.init_using_var( m )
     def get_nb_rows          return mat->nb_cols
     def get_nb_cols          return mat->nb_rows
+    def get_static_nb_rows   return mat->static_nb_cols
+    def get_static_nb_cols   return mat->static_nb_rows
     def get_known_nb_values  return mat->known_nb_values
     def select( i, j )       return conj( mat->select( j, i ) )
     def conversion_to( b ) when is_of_type_Bool(b) and @op == equal
@@ -825,12 +829,12 @@ def mat_diag( v ) when v.tensor_order == 1
 #~
     Column storage matrix, aka multivector
 ~#
-class MatVecList[T,ST=SizeType] inherits MatAncestor
+class MatVecList[ ST = SizeType ] inherits MatAncestor
     property is_a_MatVecList
     static const known_nb_values := false
     static const static_nb_rows := -1
     static const static_nb_cols := -1
-    data := SplittedVec[Vec[T],4]()
+    data := SplittedVec[LazyVec,4]()
     #
     def get_nb_cols                       return data.size
     def get_nb_rows                       return data[0].size
@@ -842,22 +846,48 @@ class MatVecList[T,ST=SizeType] inherits MatAncestor
     def get_last_item                     return data.last_item
     def col(i) pertinence 2               return data[i] 
     #
-    def mul (v) when v.tensor_order == 1
-        out := Vec[T]( size = data[0].size, default_values = 0 )
+    def mul(v) when v.tensor_order == 1
+        out := LazyVec( size = data[0].size, default_values = 0 )
         for i in 0..data.size
             out += v[i] * data[i]
 #
-def mul(a,b) when (b.is_a_MatVecList and not (a.is_a_MatTrans and a.mat->is_a_MatVecList)) pertinence 5
+def mul(a,b) when ( b.is_a_MatVecList and not ( a.is_a_MatTrans and a.mat->is_a_MatVecList) ) pertinence 5
     out := b
     for w in out 
         w = a*w
     return out
 
 #
-def mul(a,b) when (b.is_a_MatVecList and a.is_a_MatTrans and a.mat->is_a_MatVecList) pertinence 5
-    out := Mat[T = b.T, ST= b.ST](nb_rows = a.mat->nb_cols, nb_cols = b.nb_cols)
-    for i in 0..out.nb_rows
-        for j in 0..out.nb_cols
-            out[i,j] = dot ( a.mat->col(i) , b.col(j) ) 
+def mul(a,b) when ( b.is_a_MatVecList and a.is_a_MatTrans and a.mat->is_a_MatVecList ) pertinence 5
+    out := LazyMat[ ST = b.ST ]()
+    s := new LazyMatPartOperatorMulMatVecList[ Float64, b.ST ]( nb_rows = a.mat->nb_cols, nb_cols = b.nb_cols )
+    # dependencies
+    
+    for lv in a.mat->data
+        for sv in lv.sub_vecs
+            s.add_child( sv )
+    for lv in b.data
+        for sv in lv.sub_vecs
+            s.add_child( sv )
+    
+    out.set_sub_block( 0, 0, s )
     return out
 
+#
+class LazyMatPartOperatorMulMatVecList[ T, ST ] inherits LazyMatPartFull[ T, ST ]
+    a := InternalVariable()
+    b := InternalVariable()
+
+    def init( nr, nc )
+        init_lazy_obj()
+        nb_rows = nr
+        nb_cols = nc
+    
+    virtual def evaluate
+        for i in 0..out.nb_rows
+            for j in 0..out.nb_cols
+                self[i,j] = dot( a.mat->col(i), b.col(j) ) 
+    
+    virtual def write_to_stream( stream )
+        stream << "MulMatVecList"
+    
