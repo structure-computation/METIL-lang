@@ -813,6 +813,7 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     property has_static_sizes
     static const sub_type := T
     static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
+    static const does_not_need_destroy := T::does_not_need_destroy
     
     data := __uninitialised_vec_using_partial_instanciation__( partial_instanciation T, static_size )
     
@@ -873,10 +874,10 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
         assert( vector.size == static_size, "size of vector to initialise is fixed and does not correspond ($(vector.size) != $(static_size))." )
         cpt := 0; for i in vector  __get_data_in_static_vec__( data, cpt++ ).init( i )
     
-    def init( dummy_variable ) pertinence 1.5 # illegal. occurs only if dummy_variable.tensor_order != 1
-        assert( 0, "Vec[].init( something ) is illegal. Use init( size=0, reservation=size ) constructor." )
+    # def init( dummy_variable ) pertinence 1.5 # illegal. occurs only if dummy_variable.tensor_order != 1
+        # assert( 0, "Vec[].init( something ) is illegal. Use init( size=0, reservation=size ) constructor." )
     
-    def init( default_value ) pertinence 1 # vector with initialised with all values == default_value
+    def init( default_value ) pertinence 1.5 # vector with initialised with all values == default_value
         cpt := 0; while cpt < static_size  __get_data_in_static_vec__( data, cpt++ ).init( default_value )
     
     def init( function, size = static_size ) when is_of_type_Lambda(function) pertinence 2 # vector with function(index)
@@ -931,8 +932,10 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     static const is_a_vector := true
     static def EqTypeWithScalarType( TO ) return Vec[ TO, static_size, ST ]
     static const pt ~= T
-    static const does_not_need_destroy := pt.does_not_need_destroy
-    static const needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
+    static const item_does_not_need_destroy := pt.does_not_need_destroy
+    static needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
+    if T.is_a_vec_of_static_size
+        needs_item_init = not ( T::T in [ Float32, Float64, Int32, Int64 ] )
     
     data_ ~= Ptr[ T ]
     size_ ~= ST
@@ -1022,7 +1025,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     def destroy #
         # int32_display(reserved_)
         if reserved_
-            if not does_not_need_destroy
+            if not item_does_not_need_destroy
                 cpt := size_; while cpt-- select( cpt ).destroy() # destroy sub elements
             data_.ptr.free()
             reserved_ = 0
@@ -1300,10 +1303,15 @@ def equal( a, b ) when a.is_a_LittleHeterogeneousArray and b.is_a_LittleHeteroge
     return false
 
 ## make a static vector (Vec[Type,size]) from a LittleHeterogeneousArray ##
-def stat_vec( array ) when have_same_name( type_of(array), LittleHeterogeneousArray )
+def stat_vec( array ) when array.is_a_LittleHeterogeneousArray pertinence 2
     if array.nb_values == 0  return VoidVec()
     assert( array.tensor_order==1, "making a stat_vec from a LittleHeterogeneousArray of size $(array.tensor_order) is weird." )
     return Vec[ type_promote( array.values, reassign ), array.values.nb_unnamed_arguments() ]( array.values )
+
+def stat_vec( array ) when array.tensor_order == 1
+    if array.size == 0  return VoidVec()
+    return Vec[ type_promote( array, reassign ), Int32( array.values.size ) ]( array )
+
 ## make a dynamic sized vector (Vec[Type]) from a LittleHeterogeneousArray ##
 def dyn_vec( array ) when have_same_name( type_of(array), LittleHeterogeneousArray )
     if array.values.nb_unnamed_arguments() == 0  return VoidVec()

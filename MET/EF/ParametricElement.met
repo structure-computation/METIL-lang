@@ -236,7 +236,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 get_children_rec_( children, sub_nvi + 1, cce, po[cpo], nvi )
 
 #
-class ParametricElement[ TE, dim = TE::points[0].size ]
+class ParametricElement[ TE, dim = Int32( TE::points[0].size ) ]
     static const ge := GenerateMethodForParametricElement[ TE, dim ]()
     import ge.filename
     

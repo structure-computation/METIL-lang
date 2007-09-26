@@ -137,7 +137,6 @@ class ColOrRowExtraction[ ST, want_row ]
         for c in self
             c = v
     def select( c ) when c.tensor_order <= 0
-        #return proute
         if want_row
             return m->select( r, c )
         return m->select( c, r )

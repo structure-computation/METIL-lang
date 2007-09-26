@@ -51,7 +51,7 @@ def assumed( cond )
 ## Used to determine if args of classes are identical ##
 def _1_andreassign_2__eq__3( a, b, c ) pertinence 10000
     if a
-        a = assumed( b == c )
+        a = ( b == c )
 
 ##  ##
 def __property_init__( __prop__, varargs )
@@ -106,6 +106,7 @@ def are_similar_for_sure   (A,B) when __is_a_Property__(B) pertinence 10 return 
 
 ## equal for definitions (because partial_instanciation is easier to do in .met files) ##
 def equal( A, B ) when are_of_type_Def( A, B ) pertinence 10000
+    # return are_of_same_type(  )
     if are_radically_different(A,B)
         return false
     if are_similar_for_sure(A,B)
@@ -294,14 +295,14 @@ def add( a, b ) when type_of( a ) == UntypedPtr
 # p := Ptr[Toto]; p = NULL...
 class Null
     property is_a_pointer, is_Null
-    def conversion_to( b ) when b.type == Bool
+    def conversion_to( b ) when is_of_type_Bool( b )
         b.init( false )
-    def conversion_to( b ) when b.type == UntypedPtr
+    def conversion_to( b ) when is_of_type_UntypedPtr( b )
         b.init( 0 )
     
 const NULL := Null()
 
-def equal( a, b ) when a.is_a_Ptr and b.type == Null
+def equal( a, b ) when a.is_a_Ptr and b.is_Null
     return a.ptr == UntypedPtr( 0 )
 
 const SizeType := ( Int32, Int64 )[ size_of(UntypedPtr) == 64 ]
@@ -313,7 +314,7 @@ const SizeType := ( Int32, Int64 )[ size_of(UntypedPtr) == 64 ]
 class String
     static const tensor_order := 0
     property is_a_String
-    def init( s ) when s.type == String pertinence 5
+    def init( s ) when s.is_a_String pertinence 5
         size_.init( s.size_ ); reserved_.init( s.size_ ); encoding_.init( 0 )
         if s.size_
             data_ = allocate( 8, s.size_ )
@@ -331,7 +332,7 @@ class String
             data_ = data
     def init( c_str )                          pertinence -2
         init( size = strlen( UntypedPtr( c_str ) ), data = c_str )
-    def reassign( s ) when s.type == String                    destroy(); init(s)
+    def reassign( s ) when s.is_a_String                    destroy(); init(s)
     def destroy                                                if reserved_  data_.free()
     def write_to_stream( stream )                              stream.write( data_, size_ )
     def conversion_to( val ) when type_of(val)==Bool           val.init( size_ )
@@ -345,7 +346,7 @@ class String
         return true
     def begins_with( str )
         return size_ >= str.size and select(0..str.size) == str
-    def append( p, n ) when p.type == UntypedPtr
+    def append( p, n ) when is_of_type_UntypedPtr( p )
         if size_ + n <= reserved_
             memcpy( data_+size_, p, 8, Int32(n) )
             size_ += n
@@ -374,7 +375,7 @@ class String
         return String( size = size_ - vec.begin, data = data_ + vec.begin )
     def select( vec ) when have_same_name( type_of(vec), Range ) and vec.increment == 1 pertinence 10
         return String( size = vec.end - vec.begin, data = data_ + vec.begin )
-    def equal( str ) when str.type == String
+    def equal( str ) when str.is_a_String
         if size_ != str.size
             return false
         for cpt in 0 .. size_
@@ -449,7 +450,7 @@ def mul( a, n ) when type_of(a) == String
         memcpy( res.data_ + i * a.size_, a.data_, 8, a.size_ )
     return res
 
-def shift_left( s, a ) when s.type == String
+def shift_left( s, a ) when s.is_a_String
     s += a
     return s
     
@@ -457,7 +458,7 @@ def shift_left( s, a ) when s.type == String
 def to_upper(a) return a.upper()
     
 ## return true if s contains v ( like "toto" in "pouetotoxouet" )##
-def __in__( v, s ) when v.type == String and s.type == String pertinence 10
+def __in__( v, s ) when v.is_a_String and s.is_a_String pertinence 10
     for cpt in 0 .. s.size + 1 - v.size
         if v == String( size = v.size, data = s.data_ + cpt )
             return true

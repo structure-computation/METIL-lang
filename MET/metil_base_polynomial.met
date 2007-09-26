@@ -135,7 +135,6 @@ class Poly[ T, static_order=-1 ]
                     info p(vr)
                     plot( (-200 .. 200)/100, p )
                     return 0
-                # assert( validity==false or , "proute with $v" )
         n := 3
         for i in rectilinear( -2 .. 3, n )
             s := symbol("s")

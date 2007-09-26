@@ -10,8 +10,8 @@ class LazyObjectAncestor
     
     sched_id        := 0 # id of scheduler which uses sched_info
     sched_info      := UntypedPtr( NULL ) # pointer to extra data (!= for each scheduler...)
-    parents         := SplittedVec[ Ptr[LazyObjectAncestor], 4 ]() # used to look up for common paths
-    children        := SplittedVec[ PtrWithCptUse[LazyObjectAncestor], 4 ]()
+    # parents         := Vec[ Ptr[LazyObjectAncestor] ]() # used to look up for common paths
+    children        := Vec[ PtrWithCptUse[LazyObjectAncestor] ]()
     cpt_use         := 0
     times_used      := 0 # times it has been executed
     is_a_lazy_leave := 0 # true if referenced in a lazy leave
@@ -37,16 +37,16 @@ class LazyObjectAncestor
         # active_lazy_collection->remove( &self )
         # if is_a_lazy_leave
             # LazyLeaves[ true_type( self ) ]::remove( &self )
-        for c in children
-            i := c->parents.index_of_first_item_equal_to( Ptr[LazyObjectAncestor]( &self ), -1 )
-            assert( i >= 0, "Weird : parent and children lists are non-concordant ($(true_type(self))) (have you used children.push_back instead of add_child ?)" )
-            c->parents.remove_unordered( i )
+        # for c in children
+            # i := c->parents.index_of_first_item_equal_to( Ptr[LazyObjectAncestor]( &self ), -1 )
+            # assert( i >= 0, "Weird : parent and children lists are non-concordant ($(true_type(self))) (have you used children.push_back instead of add_child ?)" )
+            # c->parents.remove_unordered( i )
         free()
         destroy_instanciated_attributes( self )
 
     def add_child( ch )
         children.push_back( ch )
-        ch->parents.push_back( &self )
+        # ch->parents.push_back( &self )
 
 # @see new_lazy_leave( T, varargs )
 # class LazyLeaves[ T ]

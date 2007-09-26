@@ -139,7 +139,7 @@ def greek_letter( num )
 class CodeWriter
     cw ~= CodeWriter_
     
-    def init( T = "double" ) when T.type == String
+    def init( T = "double" ) when T.is_a_String
         cw.init( T )
         
     def destroy
@@ -225,8 +225,7 @@ def polynomial_integration( expr, var, beg, end, deg_poly_max = 5 )
     res := expr.type( 0 )
     d := ( end - beg ) / 2
     for cpt in 0 .. coeffs.size
-        if and_bitwise( cpt, 1 )
-            info coeffs[ cpt ]
+        if not and_bitwise( cpt, 1 )
             res += 2 * coeffs[ cpt ] / ( cpt + 1 ) * pow( d, cpt + 1 )
     return res
 

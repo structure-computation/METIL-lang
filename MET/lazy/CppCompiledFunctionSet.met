@@ -20,7 +20,7 @@ class CppCompiledFunctionSet_
         name_to_func.init()
         
         # base file name
-        met_n := met_name( fs.type )
+        met_n := met_name( type_of( fs ) )
         if met_n.size > 128
             met_n = md5_str( met_n )
         
@@ -92,11 +92,13 @@ class CppCompiledFunctionSet_
             template<class T_,int s> struct V {
                 typedef T_ T;
                 static const int static_size = s;
+                V( const T_ &v ) { for(int i=0;i<s;++i) val[i]=v; }
                 T &operator[](int i) { return val[ i ]; }
                 T val[s];
             };
             
             typedef _Variable_ InternalVariable;
+            typedef _Variable_ MultiPtr;
             
             #define PRINT( A ) \
                 std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl

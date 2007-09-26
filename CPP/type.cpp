@@ -211,7 +211,7 @@ TypeVariable *Type::find_var( Variable *self, Nstring n ) {
     //     std::cout << hash_table[h] << std::endl;
     for(TypeVariable *tv = hash_table[h]; tv; tv=tv->prev_in_hash_table) {
         if ( tv->v.name == n ) {
-            if ( tv->v.is_virtual() and self ) {
+            if ( tv->v.is_virtual() and self and not self->type_of_only() ) {
                 Type *nt = *reinterpret_cast<Type **>( self->data );
                 TypeVariable *tmp = nt->find_var( NULL, n );
                 if ( tmp )

@@ -95,15 +95,13 @@ class LazyMatPartFromFormulation[ Form, TE, T, br, bc, nr, nc ] inherits LazyMat
         exec_ccode_function( make_mat, data, @form, elem_list->data, elem_list->size, @node_list->data, node_list->size )
         
     virtual def write_to_stream( stream )
-        stream << "Mat(Rand)"
+        stream << "Mat($Form)"
     
     def get_src( stream )
         fi := form->make_form_info( TE )
         
         # on elems
         ce := CodeWriter( "T" )
-        info fi.sym_nodal_unk_test
-        info fi.sym_nodal_unknowns
         for sr in 0 .. fi.sym_nodal_unk_test.size
             v := fi.on_elems.diff( fi.sym_nodal_unk_test[ sr ] )
             for sc in 0 .. fi.sym_nodal_unknowns.size
@@ -257,7 +255,7 @@ class Formulation
             if val.is_a_VariableInFormulation
                 if val.interpolation == "nodal"
                     val.val.sub_vecs.push_back(
-                        new LazyVecPartOperatorCstValue[ val.TT, val.default_value, SizeType ]( mesh.node_list.size )
+                        new LazyVecPartOperatorCstValue[ val.TT, SizeType ]( mesh.node_list.size, val.default_value )
                     )
                 else
                     val.val = val.default_value
@@ -293,20 +291,19 @@ class Formulation
         res := 0
         for name, val in AttributeExplorer( self )
             if val.is_a_VariableInFormulation and val.unknown
-                res += val.nb_nodal_values
+                res += val.get_nb_nodal_values()
         return res
     
     def matrix
-        info "be mat"
         mesh := child_cast( support )
         nb_nodal_unknowns_ := get_nb_nodal_unknowns()
         mp := Ptr[ LazyMatPart[ SizeType ] ]( NULL )
         for elem_list in mesh->elem_list.sub_vecs
             TE := elem_list->get_ScalarType()
             #
-            nmp := new LazyMatPartFromFormulation[ type_of( self ), TE, mesh->T, br = nb_nodal_unknowns, bc = nb_nodal_unknowns, nr = 1, nc = 1 ]
-            nmp->nb_rows = nb_nodal_unknowns * mesh->node_list.size
-            nmp->nb_cols = nb_nodal_unknowns * mesh->node_list.size
+            nmp := new LazyMatPartFromFormulation[ type_of( self ), TE, mesh->T, br = nb_nodal_unknowns_, bc = nb_nodal_unknowns_, nr = 1, nc = 1 ]
+            nmp->nb_rows = nb_nodal_unknowns_ * mesh->node_list.size
+            nmp->nb_cols = nb_nodal_unknowns_ * mesh->node_list.size
             nmp->form = &self
             
             nmp->add_child( elem_list )
@@ -321,21 +318,19 @@ class Formulation
             else assert( 0, "TODO" )
         # 
         res := LazyMat()
-        info "en mat"
         if mp
             res.set_sub_block( 0, 0, mp )
         return res
         
     def vector
-        info "be vec"
         mesh := child_cast( support )
         nb_nodal_unknowns_ := get_nb_nodal_unknowns()
         mp := Ptr[ LazyVecPartAncestor[ SizeType ] ]( NULL )
         for elem_list in mesh->elem_list.sub_vecs
             TE := elem_list->get_ScalarType()
             #
-            nmp := new LazyVecPartFromFormulation[ type_of( self ), TE, mesh->T, nb_nodal_unknowns ]
-            nmp->size = nb_nodal_unknowns * mesh->node_list.size
+            nmp := new LazyVecPartFromFormulation[ type_of( self ), TE, mesh->T, nb_nodal_unknowns_ ]
+            nmp->size = nb_nodal_unknowns_ * mesh->node_list.size
             nmp->form = &self
             
             nmp->add_child( elem_list )
@@ -353,7 +348,6 @@ class Formulation
         res := LazyVec()
         if mp
             res.sub_vecs.push_back( mp )
-        info "en vec"
         return res
 
 

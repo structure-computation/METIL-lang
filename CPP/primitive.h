@@ -844,6 +844,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "contains_virtual_method", "ret = a->type->contains_virtual_methods;", /*ret*/"Bool" ).A("any") );
     
+    //     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = str_eq(a,b);", /*ret*/"Bool" ).A("Def").A("Def") );
 }
 
 #endif // PRIMITIVE_H

@@ -72,7 +72,7 @@ class LazyScalarSymbol[ T_ ] inherits LazyScalarObject
 class LazyScalarValue[ T_ ] inherits LazyScalarObject
     value ~= T_
         
-    def init( val ) when val.type == T_
+    def init( val ) when type_of( val ) == T_
         init_lazy_obj()
         value.init( val )
         
@@ -157,13 +157,14 @@ def lazy_scalar_binary_op( a, b, op )
                 return lazy_scalar_binary_op( b, a, op )
     
     # look in parents for similar op
-    BT_ := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]
-    BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
-    for ls in a->parents
-        if true_type( @ls ) == BT
-            t := reinterpret_cast( Ptr[ BT ], ls )
-            if op == t->op and UntypedPtr( t->children[0] ) == UntypedPtr( a ) and UntypedPtr( t->children[1] ) == UntypedPtr( b )
-                return LazyScalar( data = t )
+    BT := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]
+    # BT_ := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]
+    # BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
+    # for ls in a->parents
+        # if true_type( @ls ) == BT
+            # t := reinterpret_cast( Ptr[ BT ], ls )
+            # if op == t->op and UntypedPtr( t->children[0] ) == UntypedPtr( a ) and UntypedPtr( t->children[1] ) == UntypedPtr( b )
+                # return LazyScalar( data = t )
     #
     ls := new BT
     ls->add_child( a )
@@ -211,13 +212,14 @@ def lazy_scalar_unary_op( a, op )
         return LazyScalar( op( a->value ) )
     
     # look in parents for similar op
-    BT_ := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->is_calculable ]
-    BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
-    for ls in a->parents
-        if true_type( @ls ) == BT
-            t := reinterpret_cast( Ptr[ BT ], ls )
-            if op == t->op and UntypedPtr( t->children[0] ) == UntypedPtr( a )
-                return LazyScalar( data = t )
+    BT := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->is_calculable ]
+    # BT_ := LazyScalarUnaryOp[ op.ReturnType( child_cast(a)->T ), op, a->is_calculable ]
+    # BT := type_of( partial_instanciation BT_ ) # because of wrong comparison (TODO in Def.equal)
+    # for ls in a->parents
+        # if true_type( @ls ) == BT
+            # t := reinterpret_cast( Ptr[ BT ], ls )
+            # if op == t->op and UntypedPtr( t->children[0] ) == UntypedPtr( a )
+                # return LazyScalar( data = t )
     #
     ls := new BT
     ls->add_child( a )

@@ -38,7 +38,7 @@ class LazyVec[ ST = SizeType, ExtraData = Int32 ]
     
     # LazyVec with cst value
     def init( size, default_value ) pertinence -1
-        sub_vecs.push_back( new LazyVecPartOperatorCstValue[ default_value.type, default_value, ST ]( size ) )
+        sub_vecs.push_back( new LazyVecPartOperatorCstValue[ type_of( default_value ), ST ]( size, default_value ) )
     
     #
     def size_sub_vec( n )
@@ -121,7 +121,7 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_number and b.is_a_Laz
     tmp := LazyVec()
     tmp.sub_vecs.reserve( b.sub_vecs.size )
     for s in b.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ a.type, a, b.ST ]( s->size )
+        n := new LazyVecPartOperatorCstValue[ type_of( a ), b.ST ]( s->size, a )
         n->add_child( s )
         tmp.sub_vecs.push_back( n )
     #
@@ -132,7 +132,7 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyVec and b.is_a_nu
     tmp := LazyVec()
     tmp.sub_vecs.reserve( a.sub_vecs.size )
     for s in a.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ b.type, b, a.ST ]( s->size )
+        n := new LazyVecPartOperatorCstValue[ type_of( b ), a.ST ]( s->size, b )
         n->add_child( s )
         tmp.sub_vecs.push_back( n )
     #
@@ -194,28 +194,32 @@ class LazyVecPartBaseCompiledFunction[ T, ST ]
         stream <<<< 
             #include <iostream>
             #include <cmath>
-            template<class T> void make_range( T *res, T begin, T end, T incr ) {
-                for( unsigned i = 0; begin < end ; begin += incr, ++i )
-                    res[i] = begin;
-            }
+        if T::is_a_number
+            stream <<<< 
+                template<class T> void make_range( T *res, T begin, T end, T incr ) {
+                    for( unsigned i = 0; begin < end ; begin += incr, ++i )
+                        res[i] = begin;
+                }
+            for tr, ts, tb in [ ("Add","+","0"), ("Mul","*","1") ]
+                stream <<<< 
+                    template<class T,class ST> void reduction_$tr( T &res, const T *vec, ST size ) {
+                        res = $tb;
+                        for( unsigned i = 0; i < size; ++i )
+                            res $ts= vec[i];
+                    }
+        stream <<<< 
             template<class TR,class TV,class ST> void assign_cst_value( TR *res, const TV &value, ST size ) {
                 for(unsigned i=0;i<size;++i)
                     res[i] = value;
             }
-        for tr, ts, tb in [ ("Add","+","0"), ("Mul","*","1") ]
-            stream <<<< 
-                template<class T,class ST> void reduction_$tr( T &res, const T *vec, ST size ) {
-                    res = $tb;
-                    for( unsigned i = 0; i < size; ++i )
-                        res $ts= vec[i];
-                }
     #
     def get_wanted_functions
         res := SplittedVec[ CppFunctionDescription, 16 ]()
-        res.push_back( "make_range", [ Ptr[ T ], T, T, T ] )
+        if T::is_a_number
+            res.push_back( "make_range", [ Ptr[ T ], T, T, T ] )
+            for op in ["Add","Mul"]
+                res.push_back( "reduction_$op", [ T, Ptr[T], ST ] )
         res.push_back( "assign_cst_value", [ Ptr[ T ], T, ST ] )
-        for op in ["Add","Mul"]
-            res.push_back( "reduction_$op", [ T, Ptr[T], ST ] )
         return res
     def get_control_sum
         return 10
@@ -313,14 +317,15 @@ def new_LazyVecPartBinaryOperator( ST, sub_vec_0, sub_vec_1, b0, b1, cs, op )
     T1 := sub_vec_1->get_ScalarType()
     T  := op.ReturnType( T0, T1 )
     
-    BT_ := LazyVecPartBinaryOperator[ op, ST, T0, T1, T ]
-    BT  := type_of( partial_instanciation BT_ ) # hum
-    for p in sub_vec_0->parents
-        TT := true_type( @p )
-        if TT == BT
-            t := Ptr[ TT ]( UntypedPtr( p ) )
-            if op == t->Oper and UntypedPtr(sub_vec_0) == UntypedPtr(t->children[0]) and UntypedPtr(sub_vec_1) == UntypedPtr(t->children[1]) and b0 == t->bs[0] and b1 == t->bs[1] and cs == t->size
-                return t
+    BT := LazyVecPartBinaryOperator[ op, ST, T0, T1, T ]
+    # BT_ := LazyVecPartBinaryOperator[ op, ST, T0, T1, T ]
+    # BT  := type_of( partial_instanciation BT_ ) # hum
+    # for p in sub_vec_0->parents
+        # TT := true_type( @p )
+        # if TT == BT
+            # t := Ptr[ TT ]( UntypedPtr( p ) )
+            # if op == t->Oper and UntypedPtr(sub_vec_0) == UntypedPtr(t->children[0]) and UntypedPtr(sub_vec_1) == UntypedPtr(t->children[1]) and b0 == t->bs[0] and b1 == t->bs[1] and cs == t->size
+                # return t
     # not found -> create a new one
     return new BT( sub_vec_0, sub_vec_1, b0, b1, cs )
 
@@ -440,24 +445,28 @@ class LazyVecPartWriter inherits LazyObjectAncestor
 # ------------------ CONCAT ------------------
 #~
 ~#
-class LazyVecPartOperatorCstValue[ T, val, ST ] inherits LazyVecPart[ T, ST ]
+class LazyVecPartOperatorCstValue[ T, ST ] inherits LazyVecPart[ T, ST ]
     static func := UntypedPtr( NULL )
-    if T in [ Float32 Float64 Float96 Int32 Int64 ]
+    static const LST := [ Float32 Float64 Float96 Int32 Int64 ]
+    if ( T in LST ) or ( T::is_a_vec_of_static_size and ( T::T in LST ) )
         func = CppCompiledFunctionSet[ LazyVecPartBaseCompiledFunction[ T, ST ] ]::get_func("assign_cst_value")
+    val := InternalVariable()
     
-    def init( s )
+    def init( s, v )
         init_lazy_obj()
         size = s
+        val.init_using_var( T( v ) )
 
     def init_would_give_the_same_result( s )
         return size == s
 
     virtual def evaluate
         if func
-            exec_ccode_function( func, data, T( val ), size )
+            exec_ccode_function( func, data, T( @val ), size )
         else
+            info size, T
             for i in 0 .. size
-                data[ i ].init( val )
+                data[ i ].init( @val )
     
     virtual def write_to_stream( stream )
         stream << "VecCst[$val,$size]"

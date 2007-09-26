@@ -23,7 +23,7 @@ class LazyMatPartFunctionnal[ T, ST, TF ] inherits LazyMatPart[ ST ]
 ~#
 def new_LazyMatPartFunctionnal( T, ST, nb_rows, nb_cols, function )
     # else -> create a new one
-    res := new LazyMatPartFunctionnal[ T, ST, function.type ]( function )
+    res := new LazyMatPartFunctionnal[ T, ST, type_of( function ) ]( function )
     res->nb_rows = nb_rows
     res->nb_cols = nb_cols
     return res

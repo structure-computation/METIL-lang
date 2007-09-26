@@ -50,7 +50,7 @@ class FieldSupport
 def grad( field ) when field.is_a_Field
     m := child_cast( field.support )
     #
-    res := Field[ Tensor[ field.ScalarType, field.sizes +++ [ field.dim ] ], field.ST ]()
+    res := Field[ Tensor[ field.ScalarType, stat_size( field.sizes +++ [ field.dim ] ) ], field.ST ]()
     res.data = field.data
     res.support = field.support
     res.unit = field.unit + "/m"

@@ -139,7 +139,7 @@ def greek_letter( num )
 class CodeWriter
     cw ~= CodeWriter_
     
-    def init( T = "double" ) when T.type == String
+    def init( T = "double" ) when T.is_a_String
         cw.init( T )
         
     def destroy
@@ -306,7 +306,7 @@ def lagrange_nd( points, values, variables )
     for pi, val in points, values
         num := T( 1 ); den := T( 1 )
         for d in 0 .. variables.size
-            pushed_in_num := Vec[ pi[d].type ]( [pi[d]] )
+            pushed_in_num := Vec[ type_of( pi[d] ) ]( [pi[d]] )
             for pj in points
                 if not ( pj[d] in pushed_in_num )
                     num *= variables[d] - pj[d]

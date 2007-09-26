@@ -25,6 +25,7 @@ class Map[ K, V, default_value = V() ]
             if keys[cpt] == key
                 keys  .remove_unordered( cpt )
                 values.remove_unordered( cpt )
+                break
     
     def write_to_stream( stream )
         for i in 0 .. keys.size

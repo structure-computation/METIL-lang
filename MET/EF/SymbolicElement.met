@@ -2,7 +2,7 @@ import "ParametricElement.met"
 
 #~
 ~#
-class SymbolicElement[ TE, dim = TE::points[0].size, lmtpp = true ]
+class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     static const pe       := ParametricElement[ TE, dim ]()
     static const nb_nodes := pe.nb_nodes
     static const nvi      := pe.nvi # nb interpolation variables
@@ -94,7 +94,7 @@ class SymbolicElement[ TE, dim = TE::points[0].size, lmtpp = true ]
         
     #
     def make_interpolation( res, interpolation_type, met_name, tex_name ) when interpolation_type == "nodal"
-        val_on_nodes := Vec[ res.val.type, nb_nodes ]()
+        val_on_nodes := Vec[ type_of( res.val ), nb_nodes ]()
         for num_node in 0 .. nb_nodes
             for ind, val in indices_and_values_of( val_on_nodes[ num_node ] )
                 if ind.size
@@ -111,7 +111,7 @@ class SymbolicElement[ TE, dim = TE::points[0].size, lmtpp = true ]
         assert( dim == nvi, "TODO : grad with nb_var_inter != dim ( $nvi != $dim )" )
         #
         inv_jac_  := get_inv_jac_mat()
-        res := Tensor[ Op, tens.sizes +++ [ dim ] ]()
+        res := Tensor[ Op, stat_vec(tens.sizes +++ [ dim ]) ]()
         for ind, val in indices_and_values_of( tens )
             dvi := Vec[ Op, nvi ]( function = val.diff( var_inter[_0] ) )
             tmp := inv_jac_ * dvi # diff / ( X_0, X_1, X_2 ) in jac base
@@ -123,7 +123,7 @@ class SymbolicElement[ TE, dim = TE::points[0].size, lmtpp = true ]
     def grad_sym( tens ) when tens.tensor_order == 1
         assert( tens.sizes.size==1, "grad_sym works only with tensor_order==1 as input." )
         tmp := self.grad( tens )
-        res := Tensor[ Op, [tens.sizes[0],tens.sizes[0]] ]( function = x => 0 )
+        res := Tensor[ Op, stat_vec([tens.sizes[0],tens.sizes[0]]) ]( function = x => 0 )
         for ind, val in res
             val = ( tmp[ ind[0], ind[1] ] + tmp[ ind[1], ind[0] ] ) / 2
         return res

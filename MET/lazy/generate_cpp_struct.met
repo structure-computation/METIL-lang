@@ -6,19 +6,23 @@ def cpp_value( value )
 #~
     Ex : Vec[String] -> Vec_1_6_String (to appear in files and name of struct)
 ~#    
-def met_name( T ) when T.type == Def
+def met_name( T )
     if T::is_a_Ptr
         return met_name( T::T )
     template_attributes := Vec[String]()
     for name, value in TemplateAttributeExplorer( partial_instanciation T )
-        template_attributes.push_back( met_name( value.type ) )
-        tmp := ""
-        for s in cpp_value( value )
-            if s.represents_a_letter or s.represents_a_number or s.represents_an_underscore
-                tmp += s
-            else
-                tmp += "_" + (s.val+128)
-        template_attributes.push_back( tmp.size + "_" + tmp )
+        if is_of_type_Def( value )
+            template_attributes.push_back( "Def" )
+            template_attributes.push_back( met_name( value ) )
+        else
+            template_attributes.push_back( met_name( value.type ) )
+            tmp := ""
+            for s in cpp_value( value )
+                if s.represents_a_letter or s.represents_a_number or s.represents_an_underscore
+                    tmp += s
+                else
+                    tmp += "_" + (s.val+128)
+            template_attributes.push_back( tmp.size + "_" + tmp )
     res := T.base_name()
     if template_attributes.size
         res = "_$(res.size)_$(res)_$(template_attributes.size // 2)_$(join( template_attributes, "_" ))"
@@ -37,79 +41,90 @@ def met_name_in_struct( T, name ) when T.type == Def
 #~
 ~#
 def generate_cpp_struct( stream, T, already_generated = Set[String]() )
-    print "proute"
     # Basic types
-    if T in [ Float32 Float64 Float96 Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 UntypedPtr InternalVariable Bool Def Void Op ]
+    BT := [ Float32 Float64 Float96 Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 UntypedPtr InternalVariable Bool Def Void Op MultiPtr ]
+    if T in BT
         return None
+    
+    # Vec[T,n]
+    if T::is_a_vec_of_static_size
+        generate_cpp_struct( stream, T::T, already_generated )
+        return None
+    
+    #
+    pi ~= T
+    for name, value in StaticAttributeExplorer( pi )
+        if is_of_type_Def( value ) and not ( value in BT )
+            stream <<< "struct $(met_name(value));"
+        else if value.type != String and value.is_a_LittleHeterogeneousArray==false and not ( value.type in BT )
+            stream <<< "struct $(met_name(value.type));"
+    for name, value in AttributeExplorer( pi )
+        if value.is_a_vec_of_static_size==false and value.type==MultiPtr and not ( value.type in BT )
+            stream <<< "struct $(met_name(value.type));"
+    
     
     # T *
     if T::is_a_Ptr
         generate_cpp_struct( stream, T::T, already_generated )
         return None
         
-    # Vec[T,n]
-    if T::is_a_vec_of_static_size
-        generate_cpp_struct( stream, T::T, already_generated )
-        return None
-        
-    
     # else
     cn := met_name( T )
-    if not ( cn in already_generated )
-        already_generated.insert( cn )
-        pi ~= T
-        
-        # dependances
-        for name, value in StaticAttributeExplorer( pi )
-            if is_of_type_Def( value )
-                generate_cpp_struct( stream, value, already_generated )
-            else if value.type != String and value.is_a_LittleHeterogeneousArray==false
-                generate_cpp_struct( stream, value.type, already_generated )
-        for name, value in AttributeExplorer( pi )
-            generate_cpp_struct( stream, value.type, already_generated )
-        
-        # decl
-        stream <<< "struct $cn {"
-        stream <<< "    typedef $cn SelfType;"
-        
-        
-        # static attributes
-        wrote_stat_attr := Set[ String ]()
-        for name, value in StaticAttributeExplorer( pi )
-            if not ( name in wrote_stat_attr )
-                wrote_stat_attr.insert( name )
-                if value.type in [Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64]
-                    stream <<< "    static const $(value.type) $name = $value;"
-                else if is_of_type_Def( value )
-                    if value::is_a_Ptr
-                        stream <<< "    typedef struct $(met_name_in_struct(value,name));"
-                    else
-                        stream <<< "    typedef $(met_name_in_struct(value,name));"
-                else if value.type == String
-                    stream <<< "    static const char *get_$name() { return \"$value\"; }"
-        
-        # virtual ?
-        if contains_virtual_method( pi )
-            stream <<< "    void *real_type;"
-        
-        # attributes
-        for name, value in AttributeExplorer( pi )
-            if value.type == Bool
-                stderr <<< "Warning : Bool has no cpp correspondance (while generating cpp code for $T)."
-            if value.type != Void
-                if value.is_a_Ptr and value.T::is_a_vec_of_static_size
-                    stream <<< "    typedef $(met_name_in_struct( value.T, "T_$name" ));"
-                    stream <<< "    T_$name *$name;"
-                else
-                    stream <<< "    $(met_name_in_struct(value.type,name));"
-        
-        # src
-        add_cpp_meth := pi.get_additional_cpp_methods()
-        if add_cpp_meth
-            stream <<< add_cpp_meth
-        
-        # end decl
-        stream <<< "};"
-        
-        already_generated.insert( cn )
+    if cn in already_generated
+        return None
+    already_generated.insert( cn )
     
+    
+    # dependances
+    for name, value in StaticAttributeExplorer( pi )
+        if is_of_type_Def( value )
+            generate_cpp_struct( stream, value, already_generated )
+        else if value.type != String and value.is_a_LittleHeterogeneousArray==false
+            generate_cpp_struct( stream, value.type, already_generated )
+    for name, value in AttributeExplorer( pi )
+        generate_cpp_struct( stream, value.type, already_generated )
+    
+    # decl
+    stream <<< "struct $cn {"
+    stream <<< "    typedef $cn SelfType;"
+    
+    
+    # static attributes
+    wrote_stat_attr := Set[ String ]()
+    for name, value in StaticAttributeExplorer( pi )
+        if not ( name in wrote_stat_attr )
+            wrote_stat_attr.insert( name )
+            if value.type in [Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64]
+                stream <<< "    static const $(value.type) $name = $value;"
+            else if is_of_type_Def( value )
+                if value::is_a_Ptr
+                    stream <<< "    typedef struct $(met_name_in_struct(value,name));"
+                else
+                    stream <<< "    typedef $(met_name_in_struct(value,name));"
+            else if value.type == String
+                stream <<< "    static const char *get_$name() { return \"$value\"; }"
+    
+    # virtual ?
+    if contains_virtual_method( pi )
+        stream <<< "    void *real_type;"
+    
+    # attributes
+    for name, value in AttributeExplorer( pi )
+        if value.type == Bool
+            stderr <<< "Warning : Bool has no cpp correspondance (while generating cpp code for $T)."
+        if value.type != Void
+            if value.is_a_Ptr and value.T::is_a_vec_of_static_size
+                stream <<< "    typedef $(met_name_in_struct( value.T, "T_$name" ));"
+                stream <<< "    T_$name *$name;"
+            else
+                stream <<< "    $(met_name_in_struct(value.type,name));"
+    
+    # src
+    add_cpp_meth := pi.get_additional_cpp_methods()
+    if add_cpp_meth
+        stream <<< add_cpp_meth
+    
+    # end decl
+    stream <<< "};"
+        
+

@@ -48,7 +48,7 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         return T
         
     virtual def diag_extraction( beg_row, beg_col, size )
-        res := new LazyMatPartSparseDiagExtraction[ self.type ]()
+        res := new LazyMatPartSparseDiagExtraction[ type_of( self ) ]()
         res->beg_row = beg_row
         res->beg_col = beg_col
         res->size    = size

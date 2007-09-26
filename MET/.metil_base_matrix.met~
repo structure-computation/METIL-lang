@@ -870,6 +870,9 @@ def mul(a,b) when ( b.is_a_MatVecList and a.is_a_MatTrans and a.mat->is_a_MatVec
         for sv in lv.sub_vecs
             s.add_child( sv )
     
+    s.a->init_using_var( a )
+    s.b->init_using_var( b )
+    
     out.set_sub_block( 0, 0, s )
     return out
 
@@ -884,9 +887,9 @@ class LazyMatPartOperatorMulMatVecList[ T, ST ] inherits LazyMatPartFull[ T, ST 
         nb_cols = nc
     
     virtual def evaluate
-        for i in 0..out.nb_rows
-            for j in 0..out.nb_cols
-                self[i,j] = dot( a.mat->col(i), b.col(j) ) 
+        for i in 0 .. nb_rows
+            for j in 0 .. nb_cols
+                self[i,j] = dot( a->mat->col(i), b->col(j) ) 
     
     virtual def write_to_stream( stream )
         stream << "MulMatVecList"
