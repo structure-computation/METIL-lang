@@ -29,6 +29,8 @@ inline bool same_op( Op *a, Op *b ) {
 }
 
 Op &Op::new_function( int type, Op &a ) {
+    assert( a.type != Op::NUMBER );
+    
     // look in parents of a or b if function already created somewhere
     for(unsigned i=0;i<a.parents.size();++i) {
         Op *p = a.parents[ i ];
@@ -49,6 +51,10 @@ Op &Op::new_function( int type, Op &a ) {
 }
 
 Op &Op::new_function( int type, Op &a, Op &b ) {
+    assert( a.type != Op::NUMBER or b.type != Op::NUMBER );
+    if ( type == STRING_pow_NUM )
+        assert( not b.is_one() );
+    
     // look in parents of a or b if function already created somewhere
     Op *c = ( a.type != Op::NUMBER ? &a : &b );
     for(unsigned i=0;i<c->parents.size();++i) {
@@ -304,7 +310,8 @@ Op &add_number_and_expr( Op &a, Op &b ) { // a is a number
     // 10 + ( 5 + a )
     if ( b.type == STRING_add_NUM and b.func_data()->children[0]->type == Op::NUMBER ) {
         Op &new_num = Op::new_number( a.number_data()->val + b.func_data()->children[0]->number_data()->val );
-        return Op::new_function( STRING_add_NUM, new_num, *b.func_data()->children[1] );
+        return new_num + *b.func_data()->children[1];
+        //         return Op::new_function( STRING_add_NUM, new_num, *b.func_data()->children[1] );
     }
     return Op::new_function( STRING_add_NUM, a, b );
 }
@@ -325,10 +332,11 @@ Op &make_add_seq( SplittedVec<SumSeq,4,16,true> &items_c ) {
     //
     Op *res = &items_c[0].to_op();
     for(unsigned i=1;i<items_c.size();++i) {
-        if ( res < items_c[i].op )
-            res = &Op::new_function( STRING_add_NUM, *res, items_c[i].to_op() );
-        else
-            res = &Op::new_function( STRING_add_NUM, items_c[i].to_op(), *res );
+        res = &( *res + items_c[i].to_op() );
+        //         if ( res < items_c[i].op )
+        //             res = &Op::new_function( STRING_add_NUM, *res, items_c[i].to_op() );
+        //         else
+        //             res = &Op::new_function( STRING_add_NUM, items_c[i].to_op(), *res );
     }
     return *res;
 }
@@ -639,11 +647,13 @@ Op &pow( Op &a, Op &b ) {
             if ( need_abs_for_pow( a.func_data()->children[0], e0, nn ) ) {
                 if ( nn.is_one() )
                     return abs( *a.func_data()->children[0] );
-                return Op::new_function( STRING_pow_NUM, abs( *a.func_data()->children[0] ), Op::new_number( nn ) );
+                return pow( abs( *a.func_data()->children[0] ), Op::new_number( nn ) );
+                //                 return Op::new_function( STRING_pow_NUM, abs( *a.func_data()->children[0] ), Op::new_number( nn ) );
             } else {
                 if ( nn.is_one() )
                     return a.func_data()->children[0]->inc_ref();
-                return Op::new_function( STRING_pow_NUM, *a.func_data()->children[0], Op::new_number( nn ) );
+                return pow( *a.func_data()->children[0], Op::new_number( nn ) );
+                //                 return Op::new_function( STRING_pow_NUM, *a.func_data()->children[0], Op::new_number( nn ) );
             }
         }
     }

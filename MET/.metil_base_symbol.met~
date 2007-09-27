@@ -99,6 +99,7 @@ def subs( self, from, to ) when is_of_type_Op( from )
     return self.subs( make_varargs(from), make_varargs(Op(to)) )
 
 def subs( self, from, to ) when self.tensor_order == 1 and self.sub_types==[Op] pertinence 20
+    info "1"
     res := Vec[ Op, self.static_size ]( size = self.size )
     for r in 0 .. self.size
         res[r].init( self[r].subs( from, to ) )
@@ -282,7 +283,7 @@ def lagrange( points, values, variable )
         num := T( 1 ); den := T( 1 )
         for j in 0 .. values.size
             if i != j
-                num *= variable - points[j]
+                num *= variable  - points[j]
                 den *= points[i] - points[j]
         res += num / den * values[i]
     return res
@@ -306,7 +307,7 @@ def lagrange_nd( points, values, variables )
     for pi, val in points, values
         num := T( 1 ); den := T( 1 )
         for d in 0 .. variables.size
-            pushed_in_num := Vec[ pi[d].type ]( [pi[d]] )
+            pushed_in_num := Vec[ T ]( [pi[d]] ) # type_promote( pi[d] )
             for pj in points
                 if not ( pj[d] in pushed_in_num )
                     num *= variables[d] - pj[d]

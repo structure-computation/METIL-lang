@@ -5,7 +5,7 @@ def can_contain( self, v )
 ## return true if s contains v ( like 10 in range(15) )##
 def __in__( v, s ) when s.can_contain( v )
     for c in s
-        if v == c
+        if assumed( v == c )
             return true
     return false
 

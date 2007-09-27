@@ -137,7 +137,6 @@ class ColOrRowExtraction[ ST, want_row ]
         for c in self
             c = v
     def select( c ) when c.tensor_order <= 0
-        #return proute
         if want_row
             return m->select( r, c )
         return m->select( c, r )
@@ -593,8 +592,11 @@ def mat_cst( sizes, val )  return MatCst( sizes, val )
     
 # -----------------------------------------------------------------------------------------------------------------------------------
 def mul( mat, vec ) when mat.is_a_matrix and vec.tensor_order==1 pertinence 4
-    # assert( mat.sub_types.size == 1 and vec.sub_types.size == 1, "TODO" )
-    TR := type_promote( type_promote_list( mat.sub_types, vec.sub_types, mul ).map( partial_inst ), reassign )
+    assert( mat.sub_types.size == 1 and vec.sub_types.size == 1, "TODO" )
+    # TR := type_promote( type_promote_list( mat.sub_types, vec.sub_types, mul ).map( partial_inst ), reassign )
+    info vec.T
+    info mat.T
+    TR := type_promote( partial_instanciation vec.T, partial_instanciation mat.T, div )
     res := Vec[ TR, mat.static_nb_rows ]( size = mat.nb_rows )
     for r in mat.ST(0) .. res.size
         res[r].init( dot( mat.row(r), vec, TR(0) ) )
@@ -626,7 +628,8 @@ def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
     if mat.nb_rows <= 4
-        return inv_tiny( mat ) * vec
+        return inv_tiny( mat ) * stat_vec( vec )
+        # return Vec[ type_promote(partial_instanciation mat.T,partial_instanciation vec.T,div) ]( inv_tiny( mat ) * vec )
     return lu( mat ) * vec # mat.solve( vec )
 
 

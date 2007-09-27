@@ -171,7 +171,19 @@ struct BigRat {
     operator Unsigned64() const { return Unsigned64( num / den ); }
     
     operator Float32() const { return Float32(num) / Float32(den); }
-    operator Float64() const { return Float64(num) / Float64(den); }
+    operator Float64() const {
+        static const unsigned lim = unsigned( log( std::numeric_limits<Float64>::max() ) / log( base ) );
+        if ( num.n > lim or den.n > lim ) {
+            BigInt<base,T> n = num;
+            BigInt<base,T> d = den;
+            for(unsigned i=std::max( num.n, den.n );i>lim;--i) { // hum -> TODO
+                if ( n.n ) n.div_by_base();
+                if ( d.n ) d.div_by_base();
+            }
+            return Float64(n) / Float64(d);
+        }
+        return Float64(num) / Float64(den);
+    }
     operator Float96() const { return Float96(num) / Float96(den); }
     
     ///
