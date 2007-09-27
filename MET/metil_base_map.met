@@ -7,7 +7,7 @@ class Map[ K, V, default_value = V() ]
     keys := Vec[K]()
     values := Vec[V]()
     
-    def select( key ) when type_pf( key ) == K
+    def select( key ) when type_of( key ) == K
         for i in 0 .. keys.size
             if assumed( key == keys[i] )
                 return values[i]
