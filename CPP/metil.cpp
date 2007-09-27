@@ -53,6 +53,7 @@ void signal_mgr(int sig) {
             exit( EXIT_FAILURE );
             break;
         case SIGUSR1:
+            std::cout << "SIGUSR1" << std::endl;
             main_thread->display_stack( NULL );
             break;
         default:

@@ -211,8 +211,9 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "__uninitialised_vec_using_partial_instanciation__", "uninitialised_vec_using_partial_instanciation( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__get_data_in_static_vec__", "return __get_data_in_static_vec__( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     
-    primitive_functions.push_back( PrimitiveFunction( "allocate", "ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "allocate", "if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), (a+7)/8 * b ); else ret = malloc( (a+7)/8 * b );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), s ); else ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
+    //  if(s==48) th->display_stack(tok);
     primitive_functions.push_back( PrimitiveFunction( "memcpy", "memcpy( a, b, (c+7)/8 * d );" ).A("UntypedPtr").A("UntypedPtr").A("Int32").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)(Int64)self;" ).M("UntypedPtr").A("Int32") );
@@ -843,6 +844,8 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "true_type", "return get_def_from_type( th, tok, sp, ret, a->type->contains_virtual_methods and a->data ? *reinterpret_cast<Type**>(a->data) : a->type );", /*ret*/"Def" ).A("any") );
     
     primitive_functions.push_back( PrimitiveFunction( "contains_virtual_method", "ret = a->type->contains_virtual_methods;", /*ret*/"Bool" ).A("any") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "has_cached_type", "ret = (bool)a.cached_type;", /*ret*/"Bool" ).A("Def") );
     
     //     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = str_eq(a,b);", /*ret*/"Bool" ).A("Def").A("Def") );
 }

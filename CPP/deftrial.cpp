@@ -307,6 +307,10 @@ void fill_callable_lists( DefTrial *def_trial, Thread *th, const void *tok, Vari
 }
 
 const void *instantiate( DefTrial *def_trial, Thread *th, const void *tok, Variable *&sp, Type *type ) {
+    //
+    if ( def_trial->def )
+        def_trial->def->cached_type = type;
+    
     // partial_instanciation
     if ( def_trial->partial_instanciation ) {
         if ( def_trial->return_var )

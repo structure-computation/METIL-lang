@@ -199,9 +199,10 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
         }
     }
     
-    // check property in template args
+    // check that template args are not properties
     for(unsigned i=0;i<def_data->nb_args;++i) {
-        Variable *v = &find_var( NULL, def_data->args[n] )->v;
+        Variable *v = &find_var( NULL, def_data->args[i] )->v;
+        std::cout << v->name << " " << v->type->name << std::endl;
         if ( v->type == global_data.Property ) {
             std::cout << reinterpret_cast<Property *>( v->data )->get_() << std::endl;
             main_thread->add_error( "property in template args is forbiden.", NULL );

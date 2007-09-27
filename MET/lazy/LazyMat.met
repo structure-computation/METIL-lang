@@ -58,7 +58,7 @@ class LazyMat[ ST = SizeType, default_value = 0 ]
     
     #
     def select( i, j )
-        stack_info()
+        # stack_info()
         i_ := i; j_ := j
         sb := sub_block_for_rc_( i_, j_ )
         if not sb

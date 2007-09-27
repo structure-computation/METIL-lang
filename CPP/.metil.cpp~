@@ -7,7 +7,9 @@
 #include "globaldata.h"
 #include "autorestore.h"
 #include "lexer.h"
-#include "mpi_wrap.h"
+extern "C" {
+    #include "mpi_wrap.h"
+}
 
 #include <iostream>
 #ifndef WITHOUT_SIGNAL

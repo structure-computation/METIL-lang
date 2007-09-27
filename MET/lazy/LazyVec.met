@@ -301,7 +301,7 @@ class LazyVecPartBinaryOperator[ Oper, ST, T0, T1, T ] inherits LazyVecPart[ T, 
             # data[i] = op( ch_0[i+b_0], ch_1[i+b_1] )
     
     virtual def write_to_stream( stream )
-        stream << Oper
+        stream << Oper << "(V)"
         # stream << "$Oper( $(ch[0].ptr), $(ch[1].ptr) ) -> $(&self)"
     
     virtual def simplify

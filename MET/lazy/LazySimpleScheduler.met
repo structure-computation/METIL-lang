@@ -74,7 +74,7 @@ class LazySimpleScheduler
             f := front.pop_back()
             was_done := f->lazy_obj->done
             if not was_done
-                print "execution of ", @f->lazy_obj
+                # print "execution of ", @f->lazy_obj
                 f->lazy_obj->allocate()
                 f->lazy_obj->evaluate()
             # look for parents to execute

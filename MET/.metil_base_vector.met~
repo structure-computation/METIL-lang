@@ -898,6 +898,7 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
         cpt := 0; while cpt < static_size  block( __get_data_in_static_vec__( data, cpt++ ) )
         
     def select( i ) when i.tensor_order <= 0
+        assert( i < static_size, "indice > size ( $i > $s ) in vec of type $T" )
         return __get_data_in_static_vec__( data, Int32(i) )
     
     def nb_attributes
@@ -1053,6 +1054,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                 old_ptr.free()
                 
     def resize( ns )
+        info size_
         while size_ > ns
             size_--
             select( size_ ).destroy()
@@ -1131,6 +1133,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         cpt := 0; while cpt < size_  block( __get_data_in_dyn_vec__( data_.ptr, partial_instanciation T, cpt++ ) )
         
     def select( n ) when n.is_a_number
+        assert( n < size_, "indice > size ( $n > $size_ ) in vec of type $T" )
         return __get_data_in_dyn_vec__( data_.ptr, pt, Int32(n) )
         
     def get_back
@@ -1310,7 +1313,7 @@ def stat_vec( array ) when array.is_a_LittleHeterogeneousArray pertinence 2
 
 def stat_vec( array ) when array.tensor_order == 1
     if array.size == 0  return VoidVec()
-    return Vec[ type_promote( array, reassign ), Int32( array.values.size ) ]( array )
+    return Vec[ type_promote( array, reassign ), Int32( array.size ) ]( array )
 
 ## make a dynamic sized vector (Vec[Type]) from a LittleHeterogeneousArray ##
 def dyn_vec( array ) when have_same_name( type_of(array), LittleHeterogeneousArray )
@@ -1719,7 +1722,7 @@ def norm_1( vec ) when vec.tensor_order == 1
     return sum( abs( vec ) )
     
 def norm_2( vec ) when vec.tensor_order == 1
-    return sqrt( sum( vec ** 2 ) )
+    return sqrt( sum( vec ^ 2 ) )
 
 def norm_2_square( vec ) when vec.tensor_order == 1
     return sum( vec ** 2 )

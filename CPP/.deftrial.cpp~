@@ -307,6 +307,10 @@ void fill_callable_lists( DefTrial *def_trial, Thread *th, const void *tok, Vari
 }
 
 const void *instantiate( DefTrial *def_trial, Thread *th, const void *tok, Variable *&sp, Type *type ) {
+    //
+    if ( def_trial->def )
+        def_trial->def->cached_type = type;
+    
     // partial_instanciation
     if ( def_trial->partial_instanciation ) {
         if ( def_trial->return_var )
@@ -478,6 +482,7 @@ const void *play_with_ok_callables_after_all_trials_are_done( DefTrial *def_tria
             th->set_current_sourcefile( c->def_data->sourcefile );
             return c->def_data->block;
         }
+        // third simple case : static args are cached
         // else, we have to test arguments
         c->testing_type_nb = 0;
         return test_static_args( th, tok, c, sp );

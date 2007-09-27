@@ -199,7 +199,7 @@ void Type::init( DefinitionData *dd, Variable *last_named_variable ) {
         }
     }
     
-    // check property in template args
+    // check that template args are not properties
     for(unsigned i=0;i<def_data->nb_args;++i) {
         Variable *v = &find_var( NULL, def_data->args[i] )->v;
         if ( v->type == global_data.Property ) {

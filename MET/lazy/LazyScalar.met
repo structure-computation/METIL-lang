@@ -110,7 +110,7 @@ class LazyScalarFunction[ T_, calculable_ ] inherits LazyScalarObject
 ~#
 class LazyScalarBinaryOp[ T_, op, calculable_ ] inherits LazyScalarFunction[ T_, calculable_ ]
     virtual def write_to_stream( stream )
-        stream << op
+        stream << op << "(S)"
     
     virtual def evaluate
         if calculable_
@@ -178,6 +178,9 @@ def mul( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10  retu
 def div( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10  return lazy_scalar_binary_op( child_cast( a.data ), child_cast( b.data ), Div() )
 def pow( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10  return lazy_scalar_binary_op( child_cast( a.data ), child_cast( b.data ), Pow() )
 
+def inferior( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10  return lazy_scalar_binary_op( child_cast( a.data ), child_cast( b.data ), Inferior() )
+def superior( a, b ) when a.is_a_LazyScalar and b.is_a_LazyScalar pertinence 10  return lazy_scalar_binary_op( child_cast( a.data ), child_cast( b.data ), Superior() )
+
 def pow( a, b ) when a.is_a_LazyScalar and b.is_an_integer_number pertinence 100
     return lazy_scalar_binary_op( child_cast( a.data ), new_lazy_leave( LazyScalarValue[ type_of( b ) ], b ), Pow() )
 
@@ -189,11 +192,12 @@ def pow( a, b ) when a.is_a_LazyScalar and b.is_an_integer_number pertinence 100
 ~#
 class LazyScalarUnaryOp[ T_, op, calculable_ ] inherits LazyScalarFunction[ T_, calculable_ ]
     virtual def write_to_stream( stream )
-        stream << op
+        stream << op << "(S)"
     
     virtual def evaluate
         if calculable_
-            value.init( op( child_cast( children[0] )->value, child_cast( children[1] )->value ) )
+            info child_cast( children[0] )->value
+            value.init( op( child_cast( children[0] )->value ) )
             done_ = true
         
     virtual def write_met_form( stream, precedance )
@@ -238,3 +242,29 @@ def type_promote( a, b, op ) when b.is_a_LazyScalar pertinence 15
 def type_promote( a, b, op ) when a.is_a_LazyScalar pertinence 15
     return LazyScalar
 
+
+#
+def type_promote( a, b, op ) when a.is_a_LazyVec and b.is_a_LazyScalar pertinence 15
+    return LazyVec
+
+#
+def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyVec and b.is_a_LazyScalar
+    tmp := LazyVec()
+    tmp.sub_vecs.reserve( a.sub_vecs.size )
+    for s in a.sub_vecs
+        n := new LazyVecPartOperatorCstValue[ b.get_T(), a.ST ]( s->size, b )
+        n->add_child( s )
+        tmp.sub_vecs.push_back( n )
+    #
+    return op( a, tmp )
+
+#
+def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyScalar and b.is_a_LazyVec
+    tmp := LazyVec()
+    tmp.sub_vecs.reserve( b.sub_vecs.size )
+    for s in b.sub_vecs
+        n := new LazyVecPartOperatorCstValue[ a.get_T(), b.ST ]( s->size, a )
+        n->add_child( s )
+        tmp.sub_vecs.push_back( n )
+    #
+    return op( tmp, b )

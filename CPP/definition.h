@@ -36,6 +36,7 @@ struct Definition {
     Variable self;
     Float64 max_pertinence;
     bool want_self;
+    Type *cached_type;
 };
 
 const void *destroy( Definition &d, Thread *th, Variable * &sp );

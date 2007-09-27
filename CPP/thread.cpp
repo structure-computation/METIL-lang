@@ -71,7 +71,7 @@ Thread::Thread( Scope *main_scope_, ErrorList *error_list_, Thread *parent_, uns
     compile_mode = false;
     max_recursive_depth = 500;
     
-    display_stack_file.open("ticks");
+//     display_stack_file.open("ticks");
 }
 
 Thread::~Thread() {
@@ -487,9 +487,9 @@ void __line_str_at_stack_level__( Thread *th, const void *tok, Int32 level, Int3
 int Thread::display_stack(const void *tok) {
     for(Int32 i=0;i<__nb_stack_level__(this, tok);++i) {
         ErrorList::Provenance e = __get_info_on_stack_level__( this, tok, i );
-        display_stack_file << i << " " << e.provenance << " " << e.line << " " << e.col << std::endl;
+        std::cerr << i << " " << e.provenance << " " << e.line << " " << e.col << std::endl;
     }
-    display_stack_file << std::endl;
+    std::cerr << std::endl;
     return 0;
 }
 

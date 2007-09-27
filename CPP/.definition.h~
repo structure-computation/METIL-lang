@@ -40,7 +40,7 @@ struct Definition {
 
 const void *destroy( Definition &d, Thread *th, Variable * &sp );
 std::ostream &operator<<( std::ostream &os, const Definition &d );
-const void *get_type_of( Thread *th, const void *tok, Variable *&sp, Definition &ret, Variable *a );
+const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Definition &ret, Type *type );
 bool are_radically_different( Definition &a, Definition &b );
 bool are_similar_for_sure( Definition &a, Definition &b );
 

@@ -25,6 +25,7 @@ void Definition::init( DefinitionData *def_data_ ) {
     self.type = NULL;
     max_pertinence = FLOAT64_MAX_VAL;
     want_self = false;
+    cached_type = NULL;
 }
     
 void Definition::reassign( Definition *d, Thread *th, Variable * &sp ) {
@@ -60,6 +61,10 @@ void Definition::init( Definition *def, unsigned nb_supplementary_uargs, unsigne
         self.type = NULL;
    
     max_pertinence = def->max_pertinence;
+    if ( nb_supplementary_uargs + nb_supplementary_nargs )
+        cached_type = NULL;
+    else
+        cached_type = def->cached_type;
 }
 
 const void *destroy( Definition &d, Thread *th, Variable * &sp ) {
@@ -116,6 +121,7 @@ const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Defin
     DefinitionData *dd = type->def_data;
     unsigned nb_args = dd->nb_args + dd->has_varargs();
     
+    ret.cached_type = type;
     ret.def_data = dd; dd->inc_this_and_children_cpt_use();
     ret.nb_uargs = nb_args;
     ret.nb_nargs = 0;
@@ -155,6 +161,8 @@ const void *get_def_from_type( Thread *th, const void *tok, Variable *&sp, Defin
 bool are_radically_different( Definition &a, Definition &b ) {
     if ( a.def_data->name != b.def_data->name )
         return true;
+    if ( a.cached_type and b.cached_type and a.cached_type != b.cached_type )
+        return true;
     for(unsigned i=0;i<std::min(a.nb_uargs,b.nb_uargs);++i) {
         if ( a.args[i].type != b.args[i].type )
             return true;
@@ -173,6 +181,8 @@ bool are_radically_different( Definition &a, Definition &b ) {
 
 
 bool are_similar_for_sure( Definition &a, Definition &b ) {
+    if ( a.cached_type and b.cached_type and a.cached_type == b.cached_type )
+        return true;
     if ( a.def_data == b.def_data and a.nb_nargs==0 and b.nb_nargs==0 and a.nb_uargs==b.nb_uargs ) {
         for(unsigned i=0;i<b.nb_uargs;++i) {
             if ( a.args[i].type != b.args[i].type )

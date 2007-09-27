@@ -7,8 +7,11 @@ import "LazyOperatorFieldProjection.met"
 class VariableInFormulation[ interpolation, nb_dim, unknown, default_value ]
     property is_a_VariableInFormulation
     static const T    := Float64
-    static const TT   := [ T , Vec[T ,nb_dim[0]] ][ nb_dim.size ]
-    static const TO   := [ Op, Vec[Op,nb_dim[0]] ][ nb_dim.size ]
+    static nd0        := 0
+    if nb_dim.size
+        nd0 = nb_dim[0]
+    static const TT   := [ T , Vec[T ,nd0] ][ nb_dim.size ]
+    static const TO   := [ Op, Vec[Op,nd0] ][ nb_dim.size ]
     static const TVAL := [ LazyVec, TT ][ interpolation == "global" ]
     static const TVCP := [ Vec[TT], TT ][ interpolation == "global" ]
     

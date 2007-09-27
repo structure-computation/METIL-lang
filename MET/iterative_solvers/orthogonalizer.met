@@ -97,7 +97,7 @@ def mul(a,b) when ( a.is_a_gramschmidt ) and b.tensor_order==1
 class ClassicalGramSchmidt[ T, normalized, euclidian, TVECLIST = MatVecList[T] ] inherits GramSchmidt[ T, normalized, euclidian, TVECLIST ]
     def orthogonalize( vec )
         tmp := Vec[T]()
-        orthogonalize( vec tmp )
+        orthogonalize( vec, tmp )
     #
     def orthogonalize( vec, tmp )
         tmp.size = vec_list.nb_cols
