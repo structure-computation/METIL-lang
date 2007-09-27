@@ -1054,10 +1054,10 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                 old_ptr.free()
                 
     def resize( ns )
-        info size_
         while size_ > ns
-            size_--
+            s := size_ - 1
             select( size_ ).destroy()
+            size_ = s
         reserve( ns )
         
         if needs_item_init
