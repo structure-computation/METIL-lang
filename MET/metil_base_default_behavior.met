@@ -38,6 +38,9 @@ def self_div( a, b )      a = a / b
 def self_div_int( a, b )  a = a // b
 def self_mod( a, b )      a = a % b
 
+def self_shift_right( a, b )      a = a >> b
+def self_shift_left ( a, b )      a = a << b
+
 def post_inc( a )         r := a; a += 1; return r
 def post_dec( a )         r := a; a -= 1; return r
 

@@ -272,8 +272,8 @@ def get_byte_size_if_in_vec( self )
     return ( size_of_if_in_vec( partial_instanciation self ) + 7 ) // 8
 
 # ------------- type promote -----------
-def type_promote( a, b, op ) pertinence -5
-    return false
+# def type_promote( a, b, op ) pertinence -5
+    # return false
 
 # ...
 def type_promote( a, b, op ) when are_of_same_type( a, b ) pertinence 10 return type_of( a )

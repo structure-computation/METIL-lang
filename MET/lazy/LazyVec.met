@@ -25,6 +25,11 @@ class LazyVec[ ST = SizeType, ExtraData = Int32 ]
             for v in @s
                 block( v )
     
+    #
+    # def reassign( old_vec ) when old_vec.is_a_LazyVec
+        # print 
+        # sub_vecs = old_vec.sub_vecs
+    
     # LazyVec( 0 .. 100 )
     def init( r, n = default_byte_size_of_sub_vec ) when r.is_a_Range_vector
         init_using_default_values( self )
@@ -121,9 +126,7 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_number and b.is_a_Laz
     tmp := LazyVec()
     tmp.sub_vecs.reserve( b.sub_vecs.size )
     for s in b.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ type_of( a ), b.ST ]( s->size, a )
-        n->add_child( s )
-        tmp.sub_vecs.push_back( n )
+        tmp.sub_vecs.push_back( new LazyVecPartOperatorCstValue[ type_of( a ), b.ST ]( s->size, a ) )
     #
     return op( tmp, b )
 
@@ -132,9 +135,7 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyVec and b.is_a_nu
     tmp := LazyVec()
     tmp.sub_vecs.reserve( a.sub_vecs.size )
     for s in a.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ type_of( b ), a.ST ]( s->size, b )
-        n->add_child( s )
-        tmp.sub_vecs.push_back( n )
+        tmp.sub_vecs.push_back( new LazyVecPartOperatorCstValue[ type_of( b ), a.ST ]( s->size, b ) )
     #
     return op( a, tmp )
 
@@ -296,6 +297,12 @@ class LazyVecPartBinaryOperator[ Oper, ST, T0, T1, T ] inherits LazyVecPart[ T, 
     virtual def evaluate
         # info children[0]->done, children[1]->done
         # info child_cast( children[0] )->data, child_cast( children[1] )->data, @children[0], @children[1], children[0], children[1]
+        # info true_type( @children[0] )
+        # info true_type( @children[1] )
+        # info children[0]
+        # info children[1]
+        # info child_cast( children[0] )->data[0]
+        # info child_cast( children[1] )->data[0]
         exec_ccode_function( func, data, child_cast( children[0] )->data, child_cast( children[1] )->data, bs[0], bs[1], size )
         # for i in 0 .. size
             # data[i] = op( ch_0[i+b_0], ch_1[i+b_1] )
@@ -450,26 +457,52 @@ class LazyVecPartOperatorCstValue[ T, ST ] inherits LazyVecPart[ T, ST ]
     static const LST := [ Float32 Float64 Float96 Int32 Int64 ]
     if ( T in LST ) or ( T::is_a_vec_of_static_size and ( T::T in LST ) )
         func = CppCompiledFunctionSet[ LazyVecPartBaseCompiledFunction[ T, ST ] ]::get_func("assign_cst_value")
-    val := InternalVariable()
+    val := T()
     
     def init( s, v )
         init_lazy_obj()
         size = s
-        val.init_using_var( T( v ) )
-
+        val = v
+        
     def init_would_give_the_same_result( s )
         return size == s
 
     virtual def evaluate
         if func
-            exec_ccode_function( func, data, T( @val ), size )
+            exec_ccode_function( func, data, val, size )
         else
-            info size, T
             for i in 0 .. size
-                data[ i ].init( @val )
+                data[ i ].init( val )
     
     virtual def write_to_stream( stream )
         stream << "VecCst[$val,$size]"
+
+#~
+~#
+class LazyVecPartOperatorCstValueFromLazyScalar[ T, ST ] inherits LazyVecPart[ T, ST ]
+    static func := UntypedPtr( NULL )
+    static const LST := [ Float32 Float64 Float96 Int32 Int64 ]
+    if ( T in LST ) or ( T::is_a_vec_of_static_size and ( T::T in LST ) )
+        func = CppCompiledFunctionSet[ LazyVecPartBaseCompiledFunction[ T, ST ] ]::get_func("assign_cst_value")
+    
+    def init( s, v )
+        init_lazy_obj()
+        size = s
+        add_child( v.data )
+        
+    # def init_would_give_the_same_result( s, v )
+        # return size == s and 
+
+    virtual def evaluate
+        v := T( child_cast( children[0] )->value )
+        if func
+            exec_ccode_function( func, data, v, size )
+        else
+            for i in 0 .. size
+                data[ i ].init( v )
+    
+    virtual def write_to_stream( stream )
+        stream << "VecCst[$size]"
 
 # ------------------ CONCAT ------------------
 

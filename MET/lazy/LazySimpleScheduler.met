@@ -9,6 +9,7 @@ class LazySimpleSchedulerExtraData
         init_using_default_values( self )
         lazy_obj = lo
         
+cpt_sched := 0
 #~
 ~#
 class LazySimpleScheduler
@@ -29,7 +30,7 @@ class LazySimpleScheduler
                 add_expr_to_evaluate( lazy_obj )
             else
                 lazy_obj.apply_lazy_objects( add_expr_to_evaluate )
-                
+        
     #
     def add_expr_to_evaluate( lazy_obj ) # when lazy_obj.is_a_PtrWithCptUse
         expr_to_evaluate.push_back( lazy_obj )
@@ -41,12 +42,13 @@ class LazySimpleScheduler
             #
             lazy_obj->sched_info.init( &extra_data.push_back( lazy_obj ) )
             
-            leave := lazy_obj->done
-            if not leave
-                leave = true
+            leave := true
+            if lazy_obj->children.size
                 for c in lazy_obj->children
                     leave = leave and c->done
-            
+            else
+                leave = not lazy_obj->done
+
             if leave
                 leaves.push_back( lazy_obj->sched_info )
             else
@@ -55,7 +57,7 @@ class LazySimpleScheduler
                     Ptr[ED]( c->sched_info )->parents.push_back( lazy_obj->sched_info )
             
     #
-    def execute( disp = false )
+    def execute( disp = true )
         # simplify
         # for lazy_obj in expr_to_evaluate
             # lazy_obj = simplify( lazy_obj )
@@ -66,15 +68,19 @@ class LazySimpleScheduler
             display( String( @_0.lazy_obj ) + " " + _0.lazy_obj->done ) #  + _0.lazy_obj->cpt_use
         #
         front := leaves
+        
         # print "----------- front ----------"
         # for f in front
             # info @f->lazy_obj, f->lazy_obj->done
         # print "--------- end front --------"
+        
         while front.size
             f := front.pop_back()
             was_done := f->lazy_obj->done
             if not was_done
                 # print "execution of ", @f->lazy_obj
+                # if cpt_sched++ == 35
+                    # display( String( @_0.lazy_obj ) + " " + _0.lazy_obj->done ) #  + _0.lazy_obj->cpt_use
                 f->lazy_obj->allocate()
                 f->lazy_obj->evaluate()
             # look for parents to execute
@@ -92,13 +98,13 @@ class LazySimpleScheduler
                 for c in f->lazy_obj->children
                     c->times_used++
                     if c->times_used == c->cpt_use # nb_times_to_be_used # cs->parents.size
-                        # print "free ", @c
-                        # c->free()
-                        pass
+                        # print "free ", c, @c
+                        c->free()
                     
     #
     def write_graph( function, f )
         f <<< "digraph \"popo\" {"
+        f <<< "    "
         for n in extra_data
             f <<< "    node$(n.lazy_obj) [label=\"$(function(n))\",fontsize=14];"
             for d in n.lazy_obj->children

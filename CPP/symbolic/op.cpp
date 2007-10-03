@@ -508,10 +508,12 @@ Op &make_mul_seq( SplittedVec<MulSeq,4,16,true> &items_c ) {
     for(unsigned i=1;i<items_c.size();++i) {
         if ( items_c[i].op->type == Op::NUMBER )
             n *= items_c[i].to_op().number_data()->val;
-        else if ( res < items_c[i].op )
-            res = &Op::new_function( STRING_mul_NUM, *res, items_c[i].to_op() ); // &( *res * items_c[i].to_op() ); // 
         else
-            res = &Op::new_function( STRING_mul_NUM, items_c[i].to_op(), *res ); // &( items_c[i].to_op() * *res ); // 
+            res = &( *res * items_c[i].to_op() );
+        // else if ( res < items_c[i].op )
+        //     res = &Op::new_function( STRING_mul_NUM, *res, items_c[i].to_op() ); // &( *res * items_c[i].to_op() ); // 
+        // else
+        //     res = &Op::new_function( STRING_mul_NUM, items_c[i].to_op(), *res ); // &( items_c[i].to_op() * *res ); // 
     }
     if ( n.is_one() )
         return *res;

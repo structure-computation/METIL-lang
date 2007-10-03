@@ -252,9 +252,7 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyVec and b.is_a_La
     tmp := LazyVec()
     tmp.sub_vecs.reserve( a.sub_vecs.size )
     for s in a.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ b.get_T(), a.ST ]( s->size, b )
-        n->add_child( s )
-        tmp.sub_vecs.push_back( n )
+        tmp.sub_vecs.push_back( new LazyVecPartOperatorCstValueFromLazyScalar[ b.get_T(), a.ST ]( s->size, b ) )
     #
     return op( a, tmp )
 
@@ -263,8 +261,6 @@ def op_with_ret_using_type_promote( a, b, op ) when a.is_a_LazyScalar and b.is_a
     tmp := LazyVec()
     tmp.sub_vecs.reserve( b.sub_vecs.size )
     for s in b.sub_vecs
-        n := new LazyVecPartOperatorCstValue[ a.get_T(), b.ST ]( s->size, a )
-        n->add_child( s )
-        tmp.sub_vecs.push_back( n )
+        tmp.sub_vecs.push_back( new LazyVecPartOperatorCstValueFromLazyScalar[ a.get_T(), b.ST ]( s->size, a ) )
     #
     return op( tmp, b )
