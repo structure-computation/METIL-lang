@@ -540,3 +540,28 @@ def sum( v, default_value = 0 ) when v.is_a_LazyVec
     return res
     
     
+# -------------------- FLATTER -------------------- 
+class LazyVecPartOperatorFlatter[ T, static_size, ST ] inherits LazyVecPart[ T, ST ]
+    def init( sub_vec )
+        init_lazy_obj()
+        size = sub_vec->size * static_size
+        add_child( sub_vec )
+
+    virtual def evaluate
+        ch := child_cast( children[0] )
+        for i in 0 .. size // static_size
+            for s in 0 .. static_size
+                data[ static_size*i + s ].init( ch->data[i][s] )
+    
+    virtual def write_to_stream( stream )
+        stream << "Flatter"
+
+
+def flatter( v ) when v.is_a_LazyVec
+    res := LazyVec()
+    for sub_vec in v.sub_vecs
+        TV := sub_vec->get_ScalarType()
+        res.sub_vecs.push_back( new LazyVecPartOperatorFlatter[ TV::T, TV::static_size, v.ST ]( sub_vec ) )
+    return res
+    
+    

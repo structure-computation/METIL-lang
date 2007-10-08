@@ -1091,7 +1091,10 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         resize( os + 1 )
         for i in ( pos .. os ).reversed
             select( i+1 ) = select( i )
-        return select( pos )
+        res := ref select( pos )
+        res.destroy()
+        res.init()
+        return res
         
     def insert_before( item, value )
         pos := &item - data_
