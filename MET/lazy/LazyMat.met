@@ -233,11 +233,16 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
     for br in 0 .. m.sub_blocks.size
         for ic in 0 .. m.sub_blocks[br].indices.size
             bc := m.sub_blocks[br].indices[ic]
-            #
-            res.c.sub_blocks[br].indices.push_back( bc )
-            res.c.sub_blocks[br].values .push_back( 
-                m.sub_blocks[br].values[ ic ]->chol( res.c.sub_blocks[bc], res.c.sub_blocks[br], bc, incomp )
-            )
+            if bc > br
+                break
+            # diag
+            if bc == br
+                res.c.sub_blocks[br].indices.push_back( bc )
+                res.c.sub_blocks[br].values .push_back( 
+                    m.sub_blocks[br].values[ ic ]->chol( res.c.sub_blocks[bc], res.c.sub_blocks[br], bc, incomp )
+                )
+            else
+    
     return res
 
 #

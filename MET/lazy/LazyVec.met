@@ -25,11 +25,6 @@ class LazyVec[ ST = SizeType, ExtraData = Int32 ]
             for v in @s
                 block( v )
     
-    #
-    # def reassign( old_vec ) when old_vec.is_a_LazyVec
-        # print 
-        # sub_vecs = old_vec.sub_vecs
-    
     # LazyVec( 0 .. 100 )
     def init( r, n = default_byte_size_of_sub_vec ) when r.is_a_Range_vector
         init_using_default_values( self )
@@ -434,11 +429,11 @@ class LazyVecPartWriter inherits LazyObjectAncestor
         filename = f
         mode     = m
         add_child( s )
-        
+    
     
     virtual def get_done
         return done_
-        
+    
     virtual def evaluate
         f := File( filename, mode )
         ch := child_cast( children[0] )

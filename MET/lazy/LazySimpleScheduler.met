@@ -57,7 +57,7 @@ class LazySimpleScheduler
                     Ptr[ED]( c->sched_info )->parents.push_back( lazy_obj->sched_info )
             
     #
-    def execute( disp = true )
+    def execute( disp = false )
         # simplify
         # for lazy_obj in expr_to_evaluate
             # lazy_obj = simplify( lazy_obj )
