@@ -143,7 +143,7 @@ class LazyMatPart[ ST ] inherits LazyObjectAncestor
     virtual def diag_extraction( beg_row, beg_col, size )
         abstract
 
-    virtual def chol( big_c, big_r, bc, incomp )
+    virtual def chol( incomplete )
         abstract
     
     virtual def solve_tri( sub_vec, mat_offset, vec_offset, inf )
@@ -231,18 +231,28 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
     res.c.sub_blocks.resize( m.sub_blocks.size )
     res.c.block_offsets = m.block_offsets
     for br in 0 .. m.sub_blocks.size
-        for ic in 0 .. m.sub_blocks[br].indices.size
-            bc := m.sub_blocks[br].indices[ic]
-            if bc > br
-                break
-            # diag
-            if bc == br
-                res.c.sub_blocks[br].indices.push_back( bc )
-                res.c.sub_blocks[br].values .push_back( 
-                    m.sub_blocks[br].values[ ic ]->chol( res.c.sub_blocks[bc], res.c.sub_blocks[br], bc, incomp )
-                )
+        for ind, val in m.sub_blocks[br].starting_from_first_nz_value( up_to = br + 1 )
+            b := val
+            for ind_l, val_c, val_r in common_nz( res.sub_blocks[ind], res.sub_blocks[br] )
+                val_ := res.sub_blocks[ ind ][ ind_r ]
+                b = chol_sub( b, child_cast( val_r ), val_c, incomp )
+            if ind == br
+                if b
+                    b = b->chol()
             else
-    
+                b = chol_sub( b, m.sub_blocks[ ind ][ ind ], incomp )
+            res.sub_blocks[br].values.push_back( ind )
+            res.sub_blocks[br].values.push_back(  b  )
+        # for ic in 0 .. m.sub_blocks[br].indices.size
+            # bc := m.sub_blocks[br].indices[ic]
+            # # diag
+            # if bc == br
+                # res.c.sub_blocks[br].indices.push_back( bc )
+                # res.c.sub_blocks[br].values .push_back( 
+                    # m.sub_blocks[br].values[ ic ]->chol( res.c.sub_blocks[bc], res.c.sub_blocks[br], bc, incomp )
+                # )
+            # not diag
+            # else
     return res
 
 #

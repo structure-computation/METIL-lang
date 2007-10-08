@@ -1761,6 +1761,7 @@ gives
     v -> 0 0 0 10 0 0 1 0 0 7 0 0 0 0 0 0 0 0 0 
 ~#
 class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
+    property is_a_VecSparse
     static const tensor_order := 1
     indices := Vec[ST]()
     values := Vec[T]()
@@ -1786,6 +1787,31 @@ class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
     def select( n )
         r := VecSparseDelayedAccess[ST]( self, n )
         return r.var
+        
+    #
+    class StartingFromFirstNzValue[ ST ]
+        v := InternalVariable()
+        up_to := ST()
+        def init( s, u )
+            v.init_using_var( s )
+            up_to.init( u )
+        def __for__( block )
+            if v->indices.size and v->indices[0] < up_to
+                block( (v->indices[0], v->values[0]) )
+                #
+                for ni in 1 .. v->indices.size
+                    for i in v->indices[ni-1]+1 .. v->indices[ni]
+                        block( ( i, v->default_value ) )
+                    if v->indices[ni] >= up_to
+                        break
+                    block( ( v->indices[ni],v->values[ni] ) )
+                #
+                for i in v->indices.back+1 .. min( up_to, v->size_ )
+                    block( (i, v->default_value) )
+            
+    #
+    def starting_from_first_nz_value( up_to = ST::max_representable )
+        return StartingFromFirstNzValue[ ST ]( self, up_to )
         
     #
     def __for__( block )
@@ -1838,6 +1864,28 @@ class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
         def init_var( v )
             reassign_var( v )
 
+class CommonNz
+    v1 := InternalVariable()
+    v2 := InternalVariable()
+    def init( v1_, v2_ )
+        v1.init_using_var( v1_ )
+        v2.init_using_var( v2_ )
+    def __for__( block )
+        if v1->indices.size and v2->indices.size
+            i1 := 0; i2 := 0
+            while true
+                if v1->indices[ i1 ] == v2->indices[ i2 ]
+                    block( ( v1->indices[ i1 ], v1->values[ i1 ], v2->values[ i2 ] ) )
+                    if pre_inc( i1 ) == v1->indices.size  break
+                    if pre_inc( i2 ) == v2->indices.size  break
+                else if v1->indices[ i1 ] > v2->indices[ i2 ]
+                    if pre_inc( i2 ) == v2->indices.size  break
+                else
+                    if pre_inc( i1 ) == v1->indices.size  break
+#
+def common_nz( v1, v2 ) when v1.is_a_VecSparse and v2.is_a_VecSparse
+    return CommonNz( v1, v2 )
+                
 # -----------------------------------------------------------------------------------------------------------
 # def get_recursive_tensor_order_rec( v, res ) when v.tensor_order <= 0
     # res.push_back( 0 )

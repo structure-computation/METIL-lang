@@ -402,5 +402,6 @@ class MultiPtrWithCptUse
 #~
 ~#
 def child_cast( p )
-    return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
-
+    if p
+        return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
+    return p

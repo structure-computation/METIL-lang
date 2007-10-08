@@ -55,13 +55,25 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         res->add_child( &self )
         return res
 
-    virtual def chol( big_c, big_r, bc_, incomp )
-        assert( big_r.indices.size <= 1, "TODO -> several sub_blocks" )
-        #
+    virtual def chol( incomp )
         res := new LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ]()
-        res->nb_rows = nb_rows
-        res->nb_cols = nb_cols
+        res->nb_rows = nb_rows; res->nb_cols = nb_cols
         res->add_child( &self )
+        return res
+        
+    virtual def chol_sub( incomp, block_r, block_c )
+        res := new LazyMatPartSparseCholSub2[ T, ST, br, bc, nr, nc, simd_size, incomp ]()
+        res->nb_rows = nb_rows; res->nb_cols = nb_cols
+        res->add_child( &self   )
+        res->add_child( block_r )
+        res->add_child( block_c )
+        return res
+    
+    virtual def chol_sub( incomp, block_d )
+        res := new LazyMatPartSparseCholSub1[ T, ST, br, bc, nr, nc, simd_size, incomp ]()
+        res->nb_rows = nb_rows; res->nb_cols = nb_cols
+        res->add_child( &self   )
+        res->add_child( block_d )
         return res
         
     virtual def solve_tri( sub_vec, mat_offset, vec_offset, inf )

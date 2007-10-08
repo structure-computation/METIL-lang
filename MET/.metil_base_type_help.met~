@@ -323,7 +323,7 @@ class PtrWithCptUse[ T ]
     
 #
 def equal( a, b ) when a.is_a_PtrWithCptUse and b.is_a_PtrWithCptUse
-    return a.ptr == b.ptr
+    return a.ptr.ptr == b.ptr.ptr
     
     
 #~
