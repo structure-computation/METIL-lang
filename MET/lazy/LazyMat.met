@@ -232,15 +232,15 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
     res.c.block_offsets = m.block_offsets
     for br in 0 .. m.sub_blocks.size
         for ind, val in m.sub_blocks[br].starting_from_first_nz_value( up_to = br + 1 )
-            b := child_cast( val )
+            b := Ptr[ LazyMatPart[ m.ST ] ]( val )
             for ind_l, val_c, val_r in common_nz( res.c.sub_blocks[ind], res.c.sub_blocks[br] )
-                val_ := res.c.sub_blocks[ ind ][ ind_r ]
-                b = chol_sub( b, child_cast( val_r ), child_cast( val_c ), incomp )
+                val_ := res.c.sub_blocks[ ind ][ ind_l ]
+                b = chol_sub( child_cast( b ), child_cast( val_r ), child_cast( val_c ), incomp )
             if ind == br
                 if b
-                    b = b->chol( incomp )
+                    b = child_cast( b )->chol( incomp )
             else
-                b = chol_sub( b, child_cast( m.sub_blocks[ ind ][ ind ] ), incomp )
+                b = chol_sub( child_cast( b ), child_cast( m.sub_blocks[ ind ][ ind ] ), incomp )
             res.c.sub_blocks[br].indices.push_back( ind )
             res.c.sub_blocks[br].values .push_back(  b  )
         # for ic in 0 .. m.sub_blocks[br].indices.size
@@ -263,12 +263,14 @@ def mul( ch, v ) when ch.is_a_LazyChol and v.is_a_LazyVec
     
     # L
     for r in 0 .. ch.c.sub_blocks.size
-        tmp := PtrWithCptUse[ LazyVecPartAncestor[ ST ] ]( v.sub_vecs[0] )
+        tmp := LazyVec()
+        tmp.sub_vecs.push_back( v.sub_vecs[0] )
         for ind, val in ch.c.sub_blocks[r].indices, ch.c.sub_blocks[r].values
             if ind == r
-                res.sub_vecs.push_back( val->solve_tri( tmp, 0, ch.c.block_offsets[0][r], inf = true ) )
+                res.sub_vecs.push_back( val->solve_tri( tmp.sub_vecs[0], 0, ch.c.block_offsets[0][r], inf = true ) )
             else
-                assert( 0, "TODO -> M*V in tri solve" )
+                assert( 0, "pouet" )
+                # tmp -= val->mul_vec( v.sub_vecs[ ind ], offset_mat_col = 0, offset_vec = 0, cs = val->nb_rows, NST = ST )
     
     # L^T
     sol := LazyVec[ ST ]()

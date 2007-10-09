@@ -61,21 +61,6 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         res->add_child( &self )
         return res
         
-    virtual def chol_sub( incomp, block_r, block_c )
-        res := new LazyMatPartSparseCholSub2[ T, ST, br, bc, nr, nc, simd_size, incomp ]()
-        res->nb_rows = nb_rows; res->nb_cols = nb_cols
-        res->add_child( &self   )
-        res->add_child( block_r )
-        res->add_child( block_c )
-        return res
-    
-    virtual def chol_sub( incomp, block_d )
-        res := new LazyMatPartSparseCholSub1[ T, ST, br, bc, nr, nc, simd_size, incomp ]()
-        res->nb_rows = nb_rows; res->nb_cols = nb_cols
-        res->add_child( &self   )
-        res->add_child( block_d )
-        return res
-        
     virtual def solve_tri( sub_vec, mat_offset, vec_offset, inf )
         assert( mat_offset == 0, "TODO -> ..." )
         TR := type_promote( partial_instanciation T, partial_instanciation sub_vec->get_ScalarType(), mul )
@@ -86,6 +71,8 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         res->add_child( &self )
         res->add_child( sub_vec )
         return res
+
+# ------------------------------------------------------------------------------------------------------------
 
 #
 class LazyMatPartSparseRowDataIndexCalculator[ bit_field, br, bc, nr, nc, simd_size ]
@@ -420,6 +407,8 @@ class LazyMatPartSparseMatVecCompiledFunction[ RD, T1, T, ST, br, bc, nr, nc ]
     def get_control_sum
         return 50
 
+# ------------------------------------------------------------------------------------------------------------
+
 # M should be a SparsePart, and TV and VecPart
 class LazyMatPartSparseMulVecPart[ TM, VecScalarType, T, ST ] inherits LazyVecPart[ T, ST ]
     static const func := CppCompiledFunctionSet[ LazyMatPartSparseMatVecCompiledFunction[ TM::RD, VecScalarType, T, ST, TM::br, TM::bc, TM::nr, TM::nc ] ]::get_func("mat_mult_vec")
@@ -442,6 +431,8 @@ class LazyMatPartSparseMulVecPart[ TM, VecScalarType, T, ST ] inherits LazyVecPa
     virtual def write_to_stream( stream )
         stream << "Mat*Vec"
 
+# ------------------------------------------------------------------------------------------------------------
+
 #
 def new_LazyMatPartSparseMulVecPart( mat_sub_part, vec_sub_part, offset_mat_row, offset_mat_col, offset_vec, cs, NST )
     # look for similar ..
@@ -457,6 +448,8 @@ def new_LazyMatPartSparseMulVecPart( mat_sub_part, vec_sub_part, offset_mat_row,
     res->add_child( vec_sub_part )
     return res
 
+
+# ------------------------------------------------------------------------------------------------------------
 
 #
 class LazyMatPartSparseDiagExtraction[ TM ] inherits LazyVecPart[ TM::T, TM::ST ]
@@ -530,6 +523,7 @@ class LazyMatPartSparseDiagExtraction[ TM ] inherits LazyVecPart[ TM::T, TM::ST 
     def get_control_sum
         return 100
 
+# ------------------------------------------------------------------------------------------------------------
 
 #~
 ~#
@@ -668,11 +662,49 @@ class LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ] inherits
         return 100
 
 
-def chol_sub(  )
+# ------------------------------------------------------------------------------------------------------------
+class LazyMatPartSparseCholSub1[ T, ST, br, bc, nr, nc, simd_size, incomp ] inherits LazyMatPartSparse[ T, ST, br, bc, nr, nc ]
+    static const RD := LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
+    static const nb_row_per_block := br * nr
+    static const nb_col_per_block := bc * nc
+    static const several_blocks := ( nr * nc > 1 )
+    static const dot_ind := ".col" * several_blocks
+
+    virtual def evaluate
+        assert( 0, "TODO" )
+
+class LazyMatPartSparseCholSub2[ T, ST, br, bc, nr, nc, simd_size, incomp ] inherits LazyMatPartSparse[ T, ST, br, bc, nr, nc ]
+    static const RD := LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
+    static const nb_row_per_block := br * nr
+    static const nb_col_per_block := bc * nc
+    static const several_blocks := ( nr * nc > 1 )
+    static const dot_ind := ".col" * several_blocks
+
+    virtual def evaluate
+        assert( 0, "TODO" )
 
 
-#~
-~#
+#
+def chol_sub( b, block_r, incomp )
+    res := new LazyMatPartSparseCholSub1[ b->T, b->ST, b->br, b->bc, b->nr, b->nc, b->simd_size, incomp ]
+    res->nb_rows = b->nb_rows; res->nb_cols = b->nb_cols
+    res->add_child( b )
+    res->add_child( block_r )
+    return res
+
+#
+def chol_sub( b, block_r, block_c, incomp )
+    res := new LazyMatPartSparseCholSub2[ b->T, b->ST, b->br, b->bc, b->nr, b->nc, b->simd_size, incomp ]
+    res->nb_rows = b->nb_rows; res->nb_cols = b->nb_cols
+    res->add_child( b )
+    res->add_child( block_r )
+    res->add_child( block_c )
+    return res
+
+
+# ------------------------------------------------------------------------------------------------------------
+
+#
 class LazyVecPartSparseSolveTri[ TR, TM, TV,  ST, br, bc, nr, nc, simd_size, inf ] inherits LazyVecPart[ TR, ST ]
     static const RD := LazyMatPartSparseRowData[ TM, ST, br, bc, nr, nc, simd_size ]
     static const nb_row_per_block := br * nr

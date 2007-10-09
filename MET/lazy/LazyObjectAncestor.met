@@ -21,7 +21,8 @@ class LazyObjectAncestor
 
     virtual def nb_flop_estimation  pertinence 0  return 0
     virtual def nb_bytes_of_result  pertinence 0  return 0
-    virtual def nb_bytes_fo_func    pertinence 0  return 0
+    virtual def nb_bytes_for_func   pertinence 0  return 0
+    
     virtual def get_done            pertinence 0  abstract
     virtual def evaluate            pertinence 0  abstract
     virtual def free                pertinence 0  pass
