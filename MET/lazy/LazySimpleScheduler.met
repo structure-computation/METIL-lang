@@ -99,7 +99,8 @@ class LazySimpleScheduler
                     c->times_used++
                     if c->times_used == c->cpt_use # nb_times_to_be_used # cs->parents.size
                         # print "free ", c, @c
-                        c->free()
+                        # c->free()
+                        pass
                     
     #
     def write_graph( function, f )
