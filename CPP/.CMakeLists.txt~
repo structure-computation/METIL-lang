@@ -109,7 +109,9 @@ ADD_LIBRARY( metil_thread STATIC
 ADD_DEPENDENCIES( metil_thread ${ARITHMETIC_OPERATION_OUT} )
 
 # lib_mpi_wrap
-ADD_LIBRARY( metil_mpi_wrap STATIC mpi_wrap.c )
+IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
+    ADD_LIBRARY( metil_mpi_wrap STATIC mpi_wrap.c )
+ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 ADD_LIBRARY( metil_mpi_wrap_no STATIC mpi_wrap_no.c )
 
 # main executable
