@@ -667,6 +667,12 @@ class LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ] inherits
     def get_control_sum
         return 100
 
+
+def chol_sub(  )
+
+
+#~
+~#
 class LazyVecPartSparseSolveTri[ TR, TM, TV,  ST, br, bc, nr, nc, simd_size, inf ] inherits LazyVecPart[ TR, ST ]
     static const RD := LazyMatPartSparseRowData[ TM, ST, br, bc, nr, nc, simd_size ]
     static const nb_row_per_block := br * nr

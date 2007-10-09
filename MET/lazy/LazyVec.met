@@ -5,8 +5,9 @@ import "CppCompiledFunctionSet.met"
 #~
     Vector consisting of one or several LazyObject (sub-parts)
     ExtraData -> type of extr attribute for each sub_vec
+    items_are_scalar -> TODO
 ~#
-class LazyVec[ ST = SizeType, ExtraData = Int32 ]
+class LazyVec[ ST = SizeType, ExtraData = Int32, items_are_scalar = false ]
     property is_a_LazyVec
     static default_byte_size_of_sub_vec := 10e6
     static const TSubVec := LazyVecPartAncestor[ ST, ExtraData ]
