@@ -30,7 +30,7 @@ def read_mesh( m, filename ) when filename.is_a_String
     m.node_list.sub_vecs.reserve( ( nb_nodes + nps - 1 ) // nps )
     while nb_nodes
         size := min( nb_nodes, nps ) # how many ?
-        m.node_list.sub_vecs.push_back( 
+        m.node_list.sub_vecs_push_back( 
             new_lazy_leave( LazyVecPartOperatorReadFromFile[ m.Pvec, Vec[Float64,dim], m.ST ], beg, size, filename )
         )
         beg += size * m.Pvec.byte_size # nb
@@ -46,7 +46,7 @@ def read_mesh( m, filename ) when filename.is_a_String
         m.elem_list.sub_vecs.reserve( m.elem_list.sub_vecs.size + ( nb_elems + eps - 1 ) // eps )
         while nb_elems
             size := min( nb_elems, eps ) # how many ?
-            m.elem_list.sub_vecs.push_back(
+            m.elem_list.sub_vecs_push_back(
                 new_lazy_leave( LazyElemListOperatorReadFromFile[ TE, m.ST ], beg, size, filename, num_node_list_beg, nps )
             )
             beg += size * Int32.byte_size * TE::nb_nodes # Int32

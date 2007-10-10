@@ -824,6 +824,9 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     def get_sizes        return [ static_size ]
     
     def get_scalar_type  return T
+        
+    def get_sub_types
+        return [ T ]
     
     def reassign_size( ns )  resize( ns )
     
@@ -935,6 +938,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     static const pt ~= T
     static const item_does_not_need_destroy := pt.does_not_need_destroy
     static needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
+    static const sub_type := T
     if T.is_a_vec_of_static_size
         needs_item_init = not ( T::T in [ Float32, Float64, Int32, Int64 ] )
     
@@ -947,6 +951,9 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     
     def get_sizes
         return [ size_ ]
+        
+    def get_sub_types
+        return [ T ]
     
     def get_reserved
         res := reserved_

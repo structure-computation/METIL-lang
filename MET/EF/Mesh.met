@@ -33,7 +33,7 @@ class Mesh[ dim = 3, T = Float64, ST = SizeType ] inherits FieldSupport
         for TE in elem_list.sub_types
             TE::sym_elt.make_interpolation( res.interpolations[ String(TE::NE) ], interpolation, met_name, tex_name )
         for nl in node_list.sub_vecs
-            res.data.sub_vecs.push_back(
+            res.data.sub_vecs_push_back(
                  new LazyVecPartOperatorCstValue[ res.T, ST ]( nl->size, 0 )
             )
 

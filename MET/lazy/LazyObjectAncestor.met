@@ -1,5 +1,6 @@
 import "LazyCollection.met"
 import "LazySimpleScheduler.met"
+import "LazyComputerInfo.met"
 
 #~
 ~#
@@ -19,16 +20,24 @@ class LazyObjectAncestor
     def init pertinence 0
         init_lazy_obj()
 
-    virtual def nb_flop_estimation  pertinence 0  return 0
-    virtual def nb_bytes_of_result  pertinence 0  return 0
-    virtual def nb_bytes_for_func   pertinence 0  return 0
+    virtual def nb_flop_estimation        pertinence 0  return 0
+    virtual def nb_inst_estimation        pertinence 0  return 0
+    virtual def nb_rw_estimation          pertinence 0  return 0
+    virtual def nb_hd_rw_estimation       pertinence 0  return 0
+    virtual def produced_data_estimation  pertinence 0  return 0
+    virtual def nb_bytes_for_func         pertinence 0  return 0
     
-    virtual def get_done            pertinence 0  abstract
-    virtual def evaluate            pertinence 0  abstract
-    virtual def free                pertinence 0  pass
-    virtual def allocate            pertinence 0  pass
-    virtual def simplify            pertinence 0  pass
-    virtual def write_to_stream(s)  pertinence 0  abstract
+    virtual def get_done                  pertinence 0  abstract
+    virtual def evaluate                  pertinence 0  abstract
+    virtual def free                      pertinence 0  pass
+    virtual def allocate                  pertinence 0  pass
+    virtual def simplify                  pertinence 0  pass
+    virtual def write_to_stream(s)        pertinence 0  abstract
+
+    virtual def timing_on( cpu )
+        return nb_flop_estimation() / cpu.flops + 
+               nb_inst_estimation() / cpu.ops +
+               nb_rw_estimation() / cpu.main_memory->read_rate
 
     virtual def init_lazy_obj
         init_using_default_values( self )

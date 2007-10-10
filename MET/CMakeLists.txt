@@ -64,6 +64,7 @@ SET( MET_FILES_LAZY
     lazy/LazyVec.met
     lazy/std_operators.met
     lazy/UnknownType.met
+    lazy/LazyComputerInfo.met
 )
 SET( MET_FILES_ITER_SOLV
     iterative_solvers/iterative_solver.met

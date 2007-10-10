@@ -935,6 +935,7 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     static const pt ~= T
     static const item_does_not_need_destroy := pt.does_not_need_destroy
     static needs_item_init := not ( T in [ Float32, Float64, Int32, Int64 ] )
+    static const sub_type := T
     if T.is_a_vec_of_static_size
         needs_item_init = not ( T::T in [ Float32, Float64, Int32, Int64 ] )
     
@@ -947,6 +948,9 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
     
     def get_sizes
         return [ size_ ]
+        
+    def get_sub_types
+        return [ T ]
     
     def get_reserved
         res := reserved_
@@ -1871,17 +1875,17 @@ class CommonNz
         v1.init_using_var( v1_ )
         v2.init_using_var( v2_ )
     def __for__( block )
-        if v1.indices.size and v2.indices.size
+        if v1->indices.size and v2->indices.size
             i1 := 0; i2 := 0
             while true
-                if v1.indices[ i1 ] == v2.indices[ i2 ]
-                    block( ( v1.indices[ i1 ], v1.values[ i1 ], v2.values[ i2 ] ) )
-                    if pre_inc( i1 ) == v1.indices.size  break
-                    if pre_inc( i2 ) == v2.indices.size  break
-                else if v1.indices[ i1 ] > v2.indices[ i2 ]
-                    if pre_inc( i2 ) == v2.indices.size  break
+                if v1->indices[ i1 ] == v2->indices[ i2 ]
+                    block( ( v1->indices[ i1 ], v1->values[ i1 ], v2->values[ i2 ] ) )
+                    if pre_inc( i1 ) == v1->indices.size  break
+                    if pre_inc( i2 ) == v2->indices.size  break
+                else if v1->indices[ i1 ] > v2->indices[ i2 ]
+                    if pre_inc( i2 ) == v2->indices.size  break
                 else
-                    if pre_inc( i1 ) == v1.indices.size  break
+                    if pre_inc( i1 ) == v1->indices.size  break
 #
 def common_nz( v1, v2 ) when v1.is_a_VecSparse and v2.is_a_VecSparse
     return CommonNz( v1, v2 )

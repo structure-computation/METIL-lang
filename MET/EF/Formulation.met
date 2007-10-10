@@ -52,7 +52,7 @@ class VariableInFormulation[ interpolation, nb_dim, unknown, default_value ]
                 for nl in om->node_list.sub_vecs
                     op->add_child( nl )
                 
-                tmp.sub_vecs.push_back( op )
+                tmp.sub_vecs_push_back( op )
             if res.size  res += tmp
             else         res = tmp
         return res
@@ -257,7 +257,7 @@ class Formulation
         for name, val in AttributeExplorer( self )
             if val.is_a_VariableInFormulation
                 if val.interpolation == "nodal"
-                    val.val.sub_vecs.push_back(
+                    val.val.sub_vecs_push_back(
                         new LazyVecPartOperatorCstValue[ val.TT, SizeType ]( mesh.node_list.size, val.default_value )
                     )
                 else
@@ -350,7 +350,7 @@ class Formulation
         # 
         res := LazyVec()
         if mp
-            res.sub_vecs.push_back( mp )
+            res.sub_vecs_push_back( mp )
         return res
 
 

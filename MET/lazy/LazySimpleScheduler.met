@@ -9,7 +9,7 @@ class LazySimpleSchedulerExtraData
         init_using_default_values( self )
         lazy_obj = lo
         
-cpt_sched := 0
+# cpt_sched := 0
 #~
 ~#
 class LazySimpleScheduler
@@ -56,8 +56,10 @@ class LazySimpleScheduler
                     make_extra_data_rec( c )
                     Ptr[ED]( c->sched_info )->parents.push_back( lazy_obj->sched_info )
             
+    def timing( lo, cpu )
+        return lo.lazy_obj->timing_on( cpu )
     #
-    def execute( disp = false )
+    def execute( disp = false, computer_info = NULL )
         # simplify
         # for lazy_obj in expr_to_evaluate
             # lazy_obj = simplify( lazy_obj )
@@ -65,7 +67,10 @@ class LazySimpleScheduler
         for lazy_obj in expr_to_evaluate
             make_extra_data_rec( lazy_obj )
         if disp
-            display( String( @_0.lazy_obj ) + " " + _0.lazy_obj->done ) #  + _0.lazy_obj->cpt_use
+            if computer_info
+                display( String( @_0.lazy_obj ) + " " + timing( _0, computer_info->cpus[0] ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
+            else
+                display( String( @_0.lazy_obj ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
         #
         front := leaves
         
@@ -114,7 +119,7 @@ class LazySimpleScheduler
     
     def display( function, fn = ".res.dot", x = true )
         write_graph( function, File( fn, "w" ) )
-        system( "dot -Tps $fn > $fn.eps && epstopdf $fn.eps" )
+        system( "dot -Tpdf $fn > $fn.pdf" )
         if x
-            system( "gv $fn.eps" )
+            system( "kpdf $fn.pdf" )
     

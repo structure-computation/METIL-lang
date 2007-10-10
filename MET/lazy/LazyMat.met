@@ -109,7 +109,7 @@ class LazyMat[ ST = SizeType, default_value = 0 ]
                 beg := max( block_offsets[0][big_r  ], block_offsets[1][ind  ] )
                 end := min( block_offsets[0][big_r+1], block_offsets[1][ind+1] )
                 if end > beg
-                    res.sub_vecs.push_back( data->diag_extraction( block_offsets[0][big_r  ] - beg, block_offsets[1][ind  ] - beg, end - beg ) )
+                    res.sub_vecs_push_back( data->diag_extraction( block_offsets[0][big_r  ] - beg, block_offsets[1][ind  ] - beg, end - beg ) )
         return res
 
     # Ex : if sub_blocks[i][j] contains Float32 and Float64 types, returns Float64
@@ -180,7 +180,7 @@ def mul( M, V ) when M.is_a_LazyMat and V.is_a_LazyVec
                     tmp = new_LazyVecPartBinaryOperator( ST, tmp, mt, 0, 0, tmp->size, Add() )
                 else
                     tmp = mt
-        res.sub_vecs.push_back( tmp )
+        res.sub_vecs_push_back( tmp )
     return res
 
 
@@ -200,7 +200,7 @@ def mul( M, N ) when M.is_a_LazyMat and N.is_a_LazyMat
                     tmp = new_LazyVecPartOperatorGen( T, T, ST, tmp, mt, 0, 0, tmp->size, Add() )
                 else
                     tmp = mt
-        res.sub_vecs.push_back( tmp )
+        res.sub_vecs_push_back( tmp )
     return res
     
 # -------------------------------------------------------------------------------------------------------------------------------------
@@ -209,7 +209,11 @@ class LazyChol[ ST ]
     property is_a_LazyChol
     
     c := LazyMat[ ST ]()
+    
 
+    def apply_lazy_objects( op )
+        c.apply_lazy_objects( op )
+    
     def write_to_stream( stream )
         res := Mat[String]( c.nb_rows, c.nb_cols )
         for i in 0 .. c.nb_rows
@@ -231,18 +235,20 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
     res.c.sub_blocks.resize( m.sub_blocks.size )
     res.c.block_offsets = m.block_offsets
     for br in 0 .. m.sub_blocks.size
-        for ind, val in m.sub_blocks[br].starting_from_first_nz_value( up_to = br + 1 )
+        for bc, val in m.sub_blocks[br].starting_from_first_nz_value( up_to = br + 1 )
+            if incomp and not val
+                continue
+            #
             b := Ptr[ LazyMatPart[ m.ST ] ]( val )
-            for ind_l, val_c, val_r in common_nz( res.c.sub_blocks[ind], res.c.sub_blocks[br] )
-                val_ := res.c.sub_blocks[ ind ][ ind_l ]
+            for ind_l, val_c, val_r in common_nz( res.c.sub_blocks[bc], res.c.sub_blocks[br] )
                 b = chol_sub( child_cast( b ), child_cast( val_r ), child_cast( val_c ), incomp )
-            if ind == br
-                if b
+            if b
+                if br == bc
                     b = child_cast( b )->chol( incomp )
-            else
-                b = chol_sub( child_cast( b ), child_cast( m.sub_blocks[ ind ][ ind ] ), incomp )
-            res.c.sub_blocks[br].indices.push_back( ind )
-            res.c.sub_blocks[br].values .push_back(  b  )
+                else
+                    b = chol_sub_and_div( child_cast( b ), child_cast( res.c.sub_blocks[ bc ][ bc ] ), incomp )
+                res.c.sub_blocks[br].indices.push_back( bc )
+                res.c.sub_blocks[br].values .push_back( b  )
         # for ic in 0 .. m.sub_blocks[br].indices.size
             # bc := m.sub_blocks[br].indices[ic]
             # # diag
@@ -256,32 +262,42 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
     return res
 
 #
-def mul( ch, v ) when ch.is_a_LazyChol and v.is_a_LazyVec
-    ST := type_promote( partial_instanciation ch.ST, partial_instanciation v.ST, add )
+def mul( ch, b ) when ch.is_a_LazyChol and b.is_a_LazyVec
+    ST := type_promote( partial_instanciation ch.ST, partial_instanciation b.ST, add )
     res := LazyVec[ ST ]()
-    assert( v.sub_vecs.size == 1 and v.size >= ch.c.nb_rows, "TODO -> tri_solve with several sub_vecs" )
+    
+    # first thing : convert v to a vector partitionned as the rows and the columns of the matrix
+    assert( ch.c.block_offsets[0] == ch.c.block_offsets[1], "solve tri works only symmetric partitions." )
+    v := b.partitionned( ch.c.block_offsets[0] )
     
     # L
     for r in 0 .. ch.c.sub_blocks.size
-        tmp := LazyVec()
-        tmp.sub_vecs.push_back( v.sub_vecs[0] )
+        assert( ch.c.block_row_size( r ) == ch.c.block_col_size( r ), "works only for square pant matrices :-)" )
+        #
+        tmp := LazyVec( with_sub_vec = v.sub_vecs[ r ] )
         for ind, val in ch.c.sub_blocks[r].indices, ch.c.sub_blocks[r].values
-            if ind == r
-                res.sub_vecs.push_back( val->solve_tri( tmp.sub_vecs[0], 0, ch.c.block_offsets[0][r], inf = true ) )
-            else
-                assert( 0, "pouet" )
-                # tmp -= val->mul_vec( v.sub_vecs[ ind ], offset_mat_col = 0, offset_vec = 0, cs = val->nb_rows, NST = ST )
+            if ind >= r
+                break
+            tmp -= LazyVec( with_sub_vec = val->mul_vec( v.sub_vecs[ind], offset_mat_col = 0, offset_vec = 0, cs = val->nb_rows, NST = ST ) ) # hum
+        assert( tmp.sub_vecs.size == 1, "..." )
+        assert( ch.c.sub_blocks[r][r], "no diag block in tri solve !" )
+        res.sub_vecs_push_back( ch.c.sub_blocks[r][r]->solve_tri( tmp.sub_vecs[0], 0, 0, inf = true ) )
     
     # L^T
-    sol := LazyVec[ ST ]()
-    for s in res.sub_vecs
-        sol.sub_vecs.push_back( s )
-    
+    # sol := LazyVec[ ST ]()
+    # for s in res.sub_vecs
+        # sol.sub_vecs_push_back( s )
+    sol := res
     for r in ( 0 .. ch.c.sub_blocks.size ).reversed
+        sol.sub_vecs[r] = ch.c.sub_blocks[r][r]->solve_tri( sol.sub_vecs[r], 0, 0, inf = false )
+        #
         for ind, val in ch.c.sub_blocks[r].indices, ch.c.sub_blocks[r].values
-            if ind == r
-                sol.sub_vecs[r] = val->solve_tri( sol.sub_vecs[r], 0, 0, inf = false )
-            else
-                assert( 0, "TODO -> M*V in tri solve" )
+            if ind >= r
+                break
+            tmp := LazyVec( with_sub_vec = sol.sub_vecs[ ind ] ) # hum
+            tmp -= LazyVec( with_sub_vec = val->mul_vec( sol.sub_vecs[r], offset_mat_col = 0, offset_vec = 0, cs = val->nb_rows, NST = ST ) )
+            sol.sub_vecs[ ind ] = tmp.sub_vecs[0]
     return sol
     
+
+
