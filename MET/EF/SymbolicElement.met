@@ -138,16 +138,16 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return newton_raphson_minimize_iteration_rec( dot(d,d), var_inter, nb_iterations, old_values = get_center_of_var_inter() )
 
     #
-    def point_is_inside( p, nb_iterations = 1 )
+    def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
         vi := var_inter_for_pos( p, nb_iterations )
         if TE::has_a_var_inter_is_inside_method
-            return TE::var_inter_is_inside( vi )
+            return TE::var_inter_is_inside( vi, tolerance )
         # -> generic case (not optimized)
         interval_var_inter := pe.interval_var_inter( vi ) 
         res := Op( 1 )
         for interval, var_inter in interval_var_inter, vi
-            res *= heaviside( var_inter - interval[0] )
-            res *= heaviside( interval[1] - var_inter )
+            res *= heaviside( tolerance + var_inter - interval[0] )
+            res *= heaviside( tolerance + interval[1] - var_inter )
         return res
     #
     def var_inter_is_inside( vi, tolerance )
