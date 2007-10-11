@@ -68,7 +68,7 @@ class LazySimpleScheduler
             make_extra_data_rec( lazy_obj )
         if disp
             if computer_info
-                display( String( @_0.lazy_obj ) + " " + timing( _0, computer_info->cpus[0] ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
+                display( String( @_0.lazy_obj ) + "\\n" + timing( _0, computer_info->cpus[0] ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
             else
                 display( String( @_0.lazy_obj ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
         #

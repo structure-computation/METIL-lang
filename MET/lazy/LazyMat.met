@@ -149,6 +149,12 @@ class LazyMatPart[ ST ] inherits LazyObjectAncestor
     virtual def solve_tri( sub_vec, mat_offset, vec_offset, inf )
         abstract
     
+    virtual def get_density
+        abstract
+    
+    virtual def reassign_density
+        abstract
+    
 import "LazyMatPartFull.met"
 import "LazyMatPartSparse.met"
 import "LazyMatPartFunctionnal.met"
@@ -242,6 +248,7 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
             b := Ptr[ LazyMatPart[ m.ST ] ]( val )
             for ind_l, val_c, val_r in common_nz( res.c.sub_blocks[bc], res.c.sub_blocks[br] )
                 b = chol_sub( child_cast( b ), child_cast( val_r ), child_cast( val_c ), incomp )
+                b->density = val_r->density * Float64( val_r->nb_rows ) ^ 0.63
             if b
                 if br == bc
                     b = child_cast( b )->chol( incomp )
@@ -249,16 +256,11 @@ def chol( m, incomp = false ) when m.is_a_LazyMat
                     b = chol_sub_and_div( child_cast( b ), child_cast( res.c.sub_blocks[ bc ][ bc ] ), incomp )
                 res.c.sub_blocks[br].indices.push_back( bc )
                 res.c.sub_blocks[br].values .push_back( b  )
-        # for ic in 0 .. m.sub_blocks[br].indices.size
-            # bc := m.sub_blocks[br].indices[ic]
-            # # diag
-            # if bc == br
-                # res.c.sub_blocks[br].indices.push_back( bc )
-                # res.c.sub_blocks[br].values .push_back( 
-                    # m.sub_blocks[br].values[ ic ]->chol( res.c.sub_blocks[bc], res.c.sub_blocks[br], bc, incomp )
-                # )
-            # not diag
-            # else
+    # density update (...)
+    for br in 0 .. m.sub_blocks.size
+        for ind, val_m, val_r in common_nz( m.sub_blocks[br], res.c.sub_blocks[br] )
+            val_r->density = val_m->density * Float64( val_m->nb_rows ) ^ 0.63
+    
     return res
 
 #

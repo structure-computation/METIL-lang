@@ -12,7 +12,13 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
     static const several_blocks := ( nr * nc > 1 )
     
     data := Ptr[ RD ]( NULL ) # row_data
-    density := Float64( 12 ) # ~ nb blocks per line
+    density_ := Float64( 12 ) # ~ nb blocks per line
+
+    virtual def get_density
+        return density_
+
+    virtual def reassign_density( val )
+        density_ = val
 
     def get_data_size_estimation
         return nb_rows * nb_col_per_block * density
@@ -63,7 +69,7 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         res := new LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ]
         res->nb_rows = nb_rows; res->nb_cols = nb_cols
         res->add_child( &self )
-        res->density = density ^ 2
+        # res->density = density * Float64( nb_rows ) ^ 0.63
         return res
         
     virtual def solve_tri( sub_vec, mat_offset, vec_offset, inf )
@@ -77,7 +83,7 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         res->add_child( sub_vec )
         return res
 
-# ------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------²-------------------------------------------------------
 
 #
 class LazyMatPartSparseRowDataIndexCalculator[ bit_field, br, bc, nr, nc, simd_size ]
@@ -559,10 +565,10 @@ class LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ] inherits
     static cpp_func ~= CppCompiledFunctionSet_
 
     virtual def nb_rw_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block * T.byte_size
+        return nb_rows * density * nb_col_per_block * T.byte_size
     
     virtual def nb_flop_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block
+        return nb_rows * Float64( density ) ^ 1.5 * nb_col_per_block
 
     virtual def evaluate
         if not func
@@ -697,10 +703,10 @@ class LazyMatPartSparseCholSub[ T, ST, br, bc, nr, nc, simd_size, incomp ] inher
     static const dot_ind := ".col" * several_blocks
 
     virtual def nb_rw_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block * T.byte_size
+        return nb_rows * density * nb_col_per_block * T.byte_size
     
     virtual def nb_flop_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block
+        return nb_rows * Float64( density ) ^ 1.5 * nb_col_per_block
     
     virtual def evaluate
         assert( 0, "TODO" )
@@ -716,10 +722,10 @@ class LazyMatPartSparseCholSubAndDiv[ T, ST, br, bc, nr, nc, simd_size, incomp ]
     static const dot_ind := ".col" * several_blocks
 
     virtual def nb_rw_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block * T.byte_size
+        return nb_rows * density * nb_col_per_block * T.byte_size
     
     virtual def nb_flop_estimation
-        return Float64( nb_rows ) ^ 1.5 * density ^ 2 * nb_col_per_block
+        return nb_rows * Float64( density ) ^ 1.5 * nb_col_per_block
     
     virtual def evaluate
         assert( 0, "TODO" )
@@ -736,7 +742,8 @@ def chol_sub( b, block_r, block_c, incomp ) when b
     res->add_child( block_r )
     if block_r != block_c
         res->add_child( block_c )
-    res->density = max( b->density, block_r->density, block_c->density )
+    #
+    # res->density = max( b->density, block_r->density, block_c->density ) * Float64( b->nb_rows ) ^ 0.63
     return res
 
 #
@@ -745,7 +752,8 @@ def chol_sub( b, block_r, block_c, incomp ) when not b
     res->nb_rows = block_r->nb_rows; res->nb_cols = block_c->nb_cols
     res->add_child( block_r )
     res->add_child( block_c )
-    res->density = max( block_r->density, block_c->density )
+    #
+    # res->density = max( block_r->density, block_c->density ) * Float64( block_r->nb_rows ) ^ 0.63
     return res
 
 
@@ -755,7 +763,8 @@ def chol_sub_and_div( b, block_r, incomp ) when b
     res->nb_rows = b->nb_rows; res->nb_cols = b->nb_cols
     res->add_child( b )
     res->add_child( block_r )
-    res->density = max( b->density, block_r->density )
+    #
+    # res->density = max( b->density, block_r->density ) * Float64( block_r->nb_rows ) ^ 0.63
     return res
 
 
