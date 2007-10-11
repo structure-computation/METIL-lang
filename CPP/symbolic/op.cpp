@@ -77,7 +77,7 @@ Op &Op::new_function( int type, Op &a, Op &b ) {
 }
 
 void Op::destroy() {
-    assert( parents.size() == 0 );
+//     assert( parents.size() == 0 );
     parents.destroy();
     if ( type == SYMBOL ) {
         free( symbol_data()->cpp_name_str );

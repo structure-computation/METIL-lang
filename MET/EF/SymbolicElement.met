@@ -142,9 +142,13 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         vi := var_inter_for_pos( p, nb_iterations )
         if TE::has_a_var_inter_is_inside_method
             return TE::var_inter_is_inside( vi )
-        # ->
-        assert( 0, "TODO : generic point_is_inside" )
-        
+        # -> generic case (not optimized)
+        interval_var_inter := pe.interval_var_inter( vi ) 
+        res := Op( 1 )
+        for interval, var_inter in interval_var_inter, vi
+            res *= heaviside( var_inter - interval_var_inter[i][0] )
+            res *= heaviside( interval_var_inter[i][1] - var_inter )
+        return res
     #
     def var_inter_is_inside( vi, tolerance )
         return TE::var_inter_is_inside( vi, tolerance )

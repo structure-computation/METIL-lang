@@ -15,6 +15,14 @@ class Bar
     static def interval_var_inter( vi )
         return [ [0, 1] ]
 
+# 0 -- 2 -- 1
+class Bar_3
+    static vtk_num  := 3
+    static points   := [[0],[1],[0.5]]
+    static children := [(NodalElement,[0]),(NodalElement,[1])]
+    static def interval_var_inter( vi )
+        return [ [0, 1] ]
+
 #~
     2
     |\
