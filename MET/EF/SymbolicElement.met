@@ -146,8 +146,8 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         interval_var_inter := pe.interval_var_inter( vi ) 
         res := Op( 1 )
         for interval, var_inter in interval_var_inter, vi
-            res *= heaviside( var_inter - interval_var_inter[i][0] )
-            res *= heaviside( interval_var_inter[i][1] - var_inter )
+            res *= heaviside( var_inter - interval[0] )
+            res *= heaviside( interval[1] - var_inter )
         return res
     #
     def var_inter_is_inside( vi, tolerance )

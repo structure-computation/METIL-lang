@@ -77,7 +77,7 @@ Op &Op::new_function( int type, Op &a, Op &b ) {
 }
 
 void Op::destroy() {
-//     assert( parents.size() == 0 );
+    assert( parents.size() == 0 );
     parents.destroy();
     if ( type == SYMBOL ) {
         free( symbol_data()->cpp_name_str );
@@ -330,7 +330,7 @@ Op &make_add_seq( SplittedVec<SumSeq,4,16,true> &items_c ) {
     if ( not items_c.size() )
         return Op::new_number( 0 );
     //
-    Op *res = &items_c[0].to_op();
+    Op *res = &items_c[0].to_op(); res->inc_ref();
     for(unsigned i=1;i<items_c.size();++i) {
         res = &( *res + items_c[i].to_op() );
         //         if ( res < items_c[i].op )
@@ -503,7 +503,7 @@ Op &make_mul_seq( SplittedVec<MulSeq,4,16,true> &items_c ) {
     if ( not items_c.size() )
         return Op::new_number( 1 );
     //
-    Op *res = &items_c[0].to_op();
+    Op *res = &items_c[0].to_op(); res->inc_ref();
     Rationnal n = 1;
     for(unsigned i=1;i<items_c.size();++i) {
         if ( items_c[i].op->type == Op::NUMBER )
