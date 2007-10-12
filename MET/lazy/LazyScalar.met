@@ -159,6 +159,11 @@ def lazy_scalar_binary_op( a, b, op )
             if UntypedPtr( a ) > UntypedPtr( b )
                 return lazy_scalar_binary_op( b, a, op )
     
+    # some trivial simplifications
+    if op.is_an_Add
+        if a->done and a->value == 0
+            return LazyScalar( data = b )
+    
     # look in parents for similar op
     BT := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->get_is_calculable() and b->get_is_calculable() ]
     # BT_ := LazyScalarBinaryOp[ op.ReturnType( child_cast(a)->T, child_cast(b)->T ), op, a->is_calculable and b->is_calculable ]

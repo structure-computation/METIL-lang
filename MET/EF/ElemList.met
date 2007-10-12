@@ -159,7 +159,7 @@ class LazyElemListOperatorReadFromFile[ TE, ST ] inherits LazyVecPart[ TE, ST, V
         exec_ccode_function( func, data, filename, beg_seek, size, num_node_list_beg, nb_nodes_per_sub_vec, extr )
     
     virtual def write_to_stream( stream )
-        stream << "ElemsFromFile[$TE,$filename,$beg_seek,$size]"
+        stream << "EFF" # [$TE,$filename,$beg_seek,$size]
 
 #~
 ~#
@@ -189,7 +189,7 @@ class LazyElemListOperatorWriter[ TE, ST ] inherits LazyObjectAncestor
         done_ = true
     
     virtual def write_to_stream( s )
-        s << "ElemListWriter"
+        s << "EL_W"
 
 #~
 ~#
@@ -217,7 +217,7 @@ class LazyElemListTypeElemWriter[ TE, ST ] inherits LazyObjectAncestor
         done_ = true
     
     virtual def write_to_stream( s )
-        s << "ElemListTypeWriter"
+        s << "EL_TW"
 
 #~
 ~#
@@ -247,4 +247,4 @@ class LazyElemListOffsetElemWriter[ TE, ST ] inherits LazyObjectAncestor
         done_ = true
     
     virtual def write_to_stream( s )
-        s << "ElemListOffsetWriter"
+        s << "EL_OW"

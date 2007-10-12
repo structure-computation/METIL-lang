@@ -523,7 +523,7 @@ class LazyVecPartOperatorReadFromFile[ T, FT, ST ] inherits LazyVecPart[ T, ST ]
         f.read( p = data, nb_bytes = size * T.byte_size )
     
     virtual def write_to_stream( stream )
-        stream << "VecFromFile[$filename,$beg_seek,$size]"
+        stream << "VF" # ecFromFile[$filename,$beg_seek,$size]
 
 #~
 ~#
@@ -581,7 +581,7 @@ class LazyVecPartOperatorCstValue[ T, ST ] inherits LazyVecPart[ T, ST ]
                 data[ i ].init( val )
     
     virtual def write_to_stream( stream )
-        stream << "VecCst[$val,$size]"
+        stream << "VC" # [$val,$size]
 
 #~
 ~#
@@ -649,11 +649,18 @@ class LazyVecPartOperatorReduction[ T_, Oper, ST ] inherits LazyScalarFunction[ 
 
 
 #
+def sum_sub_vecs_rec_( sub_vecs )
+    s := sub_vecs.size
+    if s == 1
+        sv := sub_vecs[0]
+        return LazyScalar( data = new LazyVecPartOperatorReduction[ sv->get_ScalarType(), Add(), sv->ST ]( sv ) )
+    return sum_sub_vecs_rec( v.sub_vecs[ 0 .. s / 2 ] ) + sum_sub_vecs_rec( v.sub_vecs[ s / 2 .. s ] )
+
+#
 def sum( v, default_value = 0 ) when v.is_a_LazyVec
-    res := LazyScalar( 0 )
-    for s in v.sub_vecs
-        res += LazyScalar( data = new LazyVecPartOperatorReduction[ s->get_ScalarType(), Add(), v.ST ]( s ) )
-    return res
+    if v.sub_vecs.size
+        return sum_sub_vecs_rec_( v.sub_vecs )
+    return LazyScalar( default_value )
     
     
 # -------------------- FLATTER -------------------- 

@@ -59,18 +59,20 @@ class LazySimpleScheduler
     def timing( lo, cpu )
         return lo.lazy_obj->timing_on( cpu )
     #
-    def execute( disp = false, computer_info = NULL )
+    def execute( disp = false, computer_info = NULL, display_graph_only = false )
         # simplify
         # for lazy_obj in expr_to_evaluate
             # lazy_obj = simplify( lazy_obj )
         # fill sched_info
         for lazy_obj in expr_to_evaluate
             make_extra_data_rec( lazy_obj )
-        if disp
+        if disp or display_graph_only
             if computer_info
                 display( String( @_0.lazy_obj ) + "\\n" + timing( _0, computer_info->cpus[0] ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
             else
                 display( String( @_0.lazy_obj ) ) #  + _0.lazy_obj->cpt_use + " " + _0.lazy_obj->done
+            if display_graph_only
+                return none
         #
         front := leaves
         
@@ -119,7 +121,6 @@ class LazySimpleScheduler
     
     def display( function, fn = ".res.dot", x = true )
         write_graph( function, File( fn, "w" ) )
-        system( "dot -Tpdf $fn > $fn.pdf" )
-        if x
-            system( "kpdf $fn.pdf" )
+        system( "dot -Tgtk $fn" )
+        # if x system( "kpdf $fn.pdf" )
     

@@ -1,17 +1,19 @@
 import "Field.met"
 import "ElemList.met"
 import "read_mesh.met"
+import "InterfaceExtraction.met"
 
 #~
 ~#
 class Mesh[ dim = 3, T = Float64, ST = SizeType ] inherits FieldSupport
     property is_a_Mesh
     static const Pvec := Vec[ T, dim ]
+    static const ExtraData_ElemList := Vec[ST]
 
     nb_nodes_per_sub_vec := 50000
     nb_elems_per_sub_vec := 50000
     
-    elem_list := LazyVec[ ST, Vec[ST] ]()
+    elem_list := LazyVec[ ST, ExtraData_ElemList ]()
     node_list := LazyVec[ ST ]()
     
     def init( str ) when str.type == String and str.ends_by(".metmesh")

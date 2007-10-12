@@ -11,7 +11,7 @@ class LazyObjectAncestor
     
     sched_id        := 0 # id of scheduler which uses sched_info
     sched_info      := UntypedPtr( NULL ) # pointer to extra data (!= for each scheduler...)
-    # parents         := Vec[ Ptr[LazyObjectAncestor] ]() # used to look up for common paths
+    parents         := Vec[ Ptr[LazyObjectAncestor] ]() # used to look up for common paths
     children        := Vec[ PtrWithCptUse[LazyObjectAncestor] ]()
     cpt_use         := 0
     times_used      := 0 # times it has been executed
@@ -47,28 +47,28 @@ class LazyObjectAncestor
         # active_lazy_collection->remove( &self )
         # if is_a_lazy_leave
             # LazyLeaves[ true_type( self ) ]::remove( &self )
-        # for c in children
-            # i := c->parents.index_of_first_item_equal_to( Ptr[LazyObjectAncestor]( &self ), -1 )
-            # assert( i >= 0, "Weird : parent and children lists are non-concordant ($(true_type(self))) (have you used children.push_back instead of add_child ?)" )
-            # c->parents.remove_unordered( i )
+        for c in children
+            i := c->parents.index_of_first_item_equal_to( Ptr[LazyObjectAncestor]( &self ), -1 )
+            assert( i >= 0, "Weird : parent and children lists are non-concordant ($(true_type(self))) (have you used children.push_back instead of add_child ?)" )
+            c->parents.remove_unordered( i )
         free()
         destroy_instanciated_attributes( self )
 
     def add_child( ch )
         children.push_back( ch )
-        # ch->parents.push_back( &self )
+        ch->parents.push_back( &self )
 
 # @see new_lazy_leave( T, varargs )
-# class LazyLeaves[ T ]
-    # static friends := Vec[ Ptr[ T ] ]()
+class LazyLeaves[ T ]
+    static friends := Vec[ Ptr[ T ] ]()
 
-    # def register( p )
-        # friends.push_back( p )
+    def register( p )
+        friends.push_back( p )
     
-    # def remove( p )
-        # i := friends.index_of_first_item_equal_to( Ptr[T]( p ), -1 )
-        # assert( i >= 0, "Object of type $T has not been registered" )
-        # friends.remove_unordered( i )
+    def remove( p )
+        i := friends.index_of_first_item_equal_to( Ptr[T]( p ), -1 )
+        assert( i >= 0, "Object of type $T has not been registered" )
+        friends.remove_unordered( i )
 
 #~
     Look for a similar lazy obj. If not found, create new one.
