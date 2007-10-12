@@ -1061,8 +1061,8 @@ template<int compile_mode,int want_while> const void *exec_tok_if_or_while(const
         if ( cond < 0 ) {
             // case unknown
             if ( cond_var->type == global_data.Op ) {
-                if ( reinterpret_cast<Op *>( cond_var->data )->type == Op::NUMBER ) {
-                    cond = not reinterpret_cast<Op *>( cond_var->data )->number_data()->val.is_zero();
+                if ( reinterpret_cast<Ex *>( cond_var->data )->known_at_compile_time() ) {
+                    cond = reinterpret_cast<Ex *>( cond_var->data )->value() != 0;
                 } else {
                     th->add_error( "TODO: if or while with symbolic conditions unknown at compile time", tok );
                     make_copy( th->variables_to_del_at_next_end_block.new_elem(), cond_var ); --sp;
@@ -1207,7 +1207,7 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
         for(unsigned i=0;i<th->main_scope->properties.size();++i) {
             if ( th->main_scope->properties[i] == name ) {
                 Type *true_type = *reinterpret_cast<Type **>( v->data );
-                if ( true_type )
+                if ( true_type ) // may be uninitialised
                     tv = true_type->find_var( v, name );
                 break;
             }

@@ -87,6 +87,7 @@ ADD_LIBRARY( metil_thread STATIC
 
     mutex.cpp
     dlloader.cpp
+    symbolic/ex.cpp
     symbolic/op.cpp
     symbolic/codewriter.cpp
     thread.cpp

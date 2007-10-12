@@ -160,7 +160,7 @@ int main(int argc,char **argv) {
     
     fh << "inline unsigned num_primitive(const std::string &type) {\n";
     for(unsigned i=0;i<primitive_classes.size();++i)
-        fh << "    if ( type == \"" << primitive_classes[i].sar_name << "\" ) return " << i << ";\n";
+        fh << "    if ( type == \"" << primitive_classes[i].met_name << "\" ) return " << i << ";\n";
     fh << "    std::cerr << \"internal error : not a primitive \" << type << std::endl; return 0;\n";
     fh << "}\n\n";
 

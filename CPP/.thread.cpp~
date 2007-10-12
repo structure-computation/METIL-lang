@@ -22,8 +22,7 @@
 #include "functionnal.h"
 #include "md5.h"
 #include "metil_interactive.h"
-#include "symbolic/codewriter.h"
-#include "symbolic/op.h"
+#include "symbolic/ex.h"
 #include "lambda.h"
 #include "label.h"
 #include "compiledfunctionset.h"
@@ -489,7 +488,7 @@ int Thread::display_stack(const void *tok) {
         ErrorList::Provenance e = __get_info_on_stack_level__( this, tok, i );
         std::cerr << i << " " << e.provenance << " " << e.line << " " << e.col << std::endl;
     }
-    display_stack_file << std::endl;
+    std::cerr << std::endl;
     return 0;
 }
 

@@ -281,7 +281,7 @@ void write_register_primitive_classes( ostream &ftc, const vector<PrimitiveClass
         ftc << "    dd->nb_args = 0;\n";
         ftc << "    dd->next_with_same_name = NULL;\n\n";
         // type init
-        ftc << "    global_data." << iter->sar_name << " = types.new_elem();\n";
+        ftc << "    global_data." << iter->sar_name << " = types->new_elem();\n";
         ftc << "    *dd->type_cache.new_elem() = global_data." << iter->sar_name << ";\n";
         ftc << "    global_data." << iter->sar_name << "->init( " << nb_methods + iter->attributes.size() << " );\n";
         ftc << "    global_data." << iter->sar_name << "->init_md5_attributes_control_sum( " << cpt_prim << " );\n";
@@ -382,6 +382,7 @@ void write_direct_conv_to_bool( std::ostream &ftc, const vector<PrimitiveClass> 
              primitive_classes[i].sar_name!="Lambda" and
              primitive_classes[i].sar_name!="CompiledFunctionSet_" and
              primitive_classes[i].sar_name!="Op" and
+             primitive_classes[i].sar_name!="Pthread" and
              primitive_classes[i].sar_name!="Semaphore" and
              primitive_classes[i].sar_name!="BlockOfTok" )
             ftc << "    if ( v->type == global_data." << primitive_classes[i].sar_name << " ) return bool( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) );\n";
@@ -401,6 +402,7 @@ void write_direct_conv_to_Float64( std::ostream &ftc, const vector<PrimitiveClas
              primitive_classes[i].sar_name!="UntypedPtr" and
              primitive_classes[i].sar_name!="CFile" and
              primitive_classes[i].sar_name!="Op" and
+             primitive_classes[i].sar_name!="Pthread" and
              primitive_classes[i].sar_name!="Semaphore" and
              primitive_classes[i].sar_name!="BlockOfTok" )
             ftc << "    if ( v->type == global_data." << primitive_classes[i].sar_name << " ) { res = Float64( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) ); return true; }\n";

@@ -251,8 +251,9 @@ def integration_with_disc_func_rec_( ds, var, beg, end, deg_poly_max, T )
 def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order <= 0
     if var.type != Op
         return expr * ( end - beg )
-    dsc := discontinuities_separation( expr, make_varargs( var ) )
-    return integration_with_disc_func_rec_( dsc, var, beg, end, deg_poly_max, expr.type )
+    return __integration__( Op( expr ), var, Op( beg ), Op( end ), Int32( deg_poly_max ) )
+    # dsc := discontinuities_separation( expr, make_varargs( var ) )
+    # return integration_with_disc_func_rec_( dsc, var, beg, end, deg_poly_max, expr.type )
 
 ## integration des expr par rapport a var de beg a end. deg_poly_max pour les approximations de taylor ##
 def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order > 0

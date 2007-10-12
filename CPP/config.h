@@ -319,6 +319,8 @@ inline Rationnal pow_96( const Rationnal &a, const Rationnal &b ) {
     return pow( Float96(a), Float96(b) );
 }
 
+inline Rationnal atan2_96 ( const Rationnal &a, const Rationnal &b ) { return Rationnal( atan2( Float96(a), Float96(b) ) ); }
+
 inline Rationnal log_96   ( const Rationnal &a ) { return Rationnal( log ( Float96(a) ) ); }
 inline Rationnal exp_96   ( const Rationnal &a ) { return Rationnal( exp ( Float96(a) ) ); }
 inline Rationnal sin_96   ( const Rationnal &a ) { return Rationnal( sin ( Float96(a) ) ); }

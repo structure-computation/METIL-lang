@@ -3,6 +3,7 @@
 
 #include "splittedvec.h"
 #include "config.h"
+#include <usual_strings.h>
 
 struct Type;
 struct Thread;
@@ -29,41 +30,6 @@ struct Op {
         char *cpp_name_str;
         char *tex_name_str;
     };
-    /// if something like a**2 + 2*b + ...
-    struct SumSeqData {
-        SumSeqData() : sum(0) {}
-        void add_( Op &a, const Rationnal &ma, Op *res_op );
-        bool necessary_positive_or_null() const;
-        void sort_data(); /// arrange data such as two equivalent sumseq
-        struct MulSeq {
-            MulSeq() : coeff(1) {}
-            void mul_( Op &a, const Rationnal &ea, Op *res_op );
-            struct MulItem {
-                MulItem() : expo(1) {}
-                void init( Op *v, const Rationnal &e ) {
-                    val = &v->inc_ref();
-                    init_arithmetic( expo, e );
-                    may_need_abs = false;
-                    assume_val_pos = ( e.is_integer()==false or v->necessary_positive_or_null() );
-                }
-                void init( const MulItem &mi ) {
-                    val = &mi.val->inc_ref();
-                    init_arithmetic( expo, mi.expo );
-                    may_need_abs = mi.may_need_abs;
-                    assume_val_pos = mi.assume_val_pos;
-                }
-                bool need_abs() const { return may_need_abs and assume_val_pos==false; }
-                bool operator==( const MulItem &m ) const { return val==m.val and expo==m.expo; }
-                Op *val;
-                Rationnal expo;
-                bool may_need_abs, assume_val_pos;
-            };
-            SplittedVec<MulItem,8,16> items;
-            Rationnal coeff;
-        };
-        SplittedVec<MulSeq,8,16> data;
-        Rationnal sum;
-    };
     /// if type >= 0
     struct FuncData {
         static const unsigned max_nb_children = 2;
@@ -75,9 +41,6 @@ struct Op {
     static Op &new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si );
     static Op &new_function( int type, Op &a );
     static Op &new_function( int type, Op &a, Op &b );
-    static Op &new_sumseq();
-    static Op &new_sumseq_sum( Op &a, const Rationnal &ma, Op &b, const Rationnal &mb );
-    static Op &new_sumseq_mul( Op &a, const Rationnal &ea, Op &b, const Rationnal &eb );
     void clear_additional_info_rec();
     void clear_additional_info_rec( unsigned clear_id );
     Op &inc_ref() { ++cpt_use; return *this; }
@@ -88,10 +51,9 @@ struct Op {
     bool is_minus_one();
     bool necessary_positive_or_null();
     
-    // ..._data
+    // ..._data 
     NumberData *number_data() { return reinterpret_cast<NumberData *>( this + 1 ); }
     SymbolData *symbol_data() { return reinterpret_cast<SymbolData *>( this + 1 ); }
-    SumSeqData *sumseq_data() { return reinterpret_cast<SumSeqData *>( this + 1 ); }
     FuncData   *func_data  () { return reinterpret_cast<FuncData   *>( this + 1 ); }
 };
 
@@ -116,6 +78,9 @@ inline std::ostream &operator<<(std::ostream &os,Op &op) { cpp_repr( os, &op ); 
 inline void dec_ref( Op *op ) { if ( not op->cpt_use ) { op->destroy(); free( op ); } else --op->cpt_use; }
 
 inline bool are_nb(Op &a,Op &b) { return a.type==Op::NUMBER and b.type==Op::NUMBER; }
+inline bool is_a_sub( Op &a ) { return a.type == STRING_mul_NUM and a.func_data()->children[0]->is_minus_one(); }
+inline bool is_a_inv( Op &a ) { return a.type == STRING_pow_NUM and a.func_data()->children[1]->is_minus_one(); }
+inline bool is_a_mul_by_neg_number( Op &a ) { return a.type == STRING_mul_NUM and a.func_data()->children[0]->type == Op::NUMBER and a.func_data()->children[0]->number_data()->val.is_neg(); }
 
 Op &operator+( Op &a, Op &b );
 Op &operator-( Op &a, Op &b );
@@ -141,6 +106,8 @@ Op &atan     ( Op &a );
 Op &sinh     ( Op &a );
 Op &cosh     ( Op &a );
 Op &tanh     ( Op &a );
+
+Op *__integration__( Thread *th, const void *tok, Op *expr, Op *var, Op *beg, Op *end, Int32 deg_poly_max );
 
 #endif
 

@@ -13,7 +13,7 @@ struct PrimitiveClass {
     struct Attr {
         std::string name, type, value;
     };
-    PrimitiveClass(std::string s, std::string c ) : sar_name(s), cpp_name(c) {
+    PrimitiveClass(std::string s, std::string c ) : met_name(s), cpp_name(c) {
         reassign_using_mem_copy = true;
     }
     PrimitiveClass &avoid_reassign_using_mem_copy() {
@@ -28,7 +28,7 @@ struct PrimitiveClass {
         attributes.push_back( attr );
     }
     
-    std::string sar_name;
+    std::string met_name;
     std::string cpp_name;
     bool reassign_using_mem_copy;
     std::vector<Attr> attributes;
@@ -102,48 +102,48 @@ struct PrimitiveFunction {
 };
 
 bool float_class( const PrimitiveClass &pc ) {
-    return pc.sar_name=="Float32" or
-           pc.sar_name=="Float64" or
-           pc.sar_name=="Float96";
+    return pc.met_name=="Float32" or
+           pc.met_name=="Float64" or
+           pc.met_name=="Float96";
 }
 bool signed_arithmetic_class( const PrimitiveClass &pc ) {
-    return pc.sar_name=="Int8" or 
-           pc.sar_name=="Int16" or 
-           pc.sar_name=="Int32" or 
-           pc.sar_name=="Int64" or 
-           pc.sar_name=="Rationnal" or 
+    return pc.met_name=="Int8" or 
+           pc.met_name=="Int16" or 
+           pc.met_name=="Int32" or 
+           pc.met_name=="Int64" or 
+           pc.met_name=="Rationnal" or 
            float_class( pc );
 }
 bool unsigned_arithmetic_class( const PrimitiveClass &pc ) {
-    return pc.sar_name=="Bool" or 
-           pc.sar_name=="Unsigned8" or 
-           pc.sar_name=="Unsigned16" or 
-           pc.sar_name=="Unsigned32" or 
-           pc.sar_name=="Unsigned64";
+    return pc.met_name=="Bool" or 
+           pc.met_name=="Unsigned8" or 
+           pc.met_name=="Unsigned16" or 
+           pc.met_name=="Unsigned32" or 
+           pc.met_name=="Unsigned64";
 }
 bool integer_class( const PrimitiveClass &pc ) {
-    return pc.sar_name=="Int8" or 
-           pc.sar_name=="Int16" or 
-           pc.sar_name=="Int32" or 
-           pc.sar_name=="Int64" or 
-           pc.sar_name=="Unsigned8" or 
-           pc.sar_name=="Unsigned16" or 
-           pc.sar_name=="Unsigned32" or 
-           pc.sar_name=="Unsigned64";
+    return pc.met_name=="Int8" or 
+           pc.met_name=="Int16" or 
+           pc.met_name=="Int32" or 
+           pc.met_name=="Int64" or 
+           pc.met_name=="Unsigned8" or 
+           pc.met_name=="Unsigned16" or 
+           pc.met_name=="Unsigned32" or 
+           pc.met_name=="Unsigned64";
 }
 std::string signed_correspondance( const PrimitiveClass &pc ) {
-    if ( pc.sar_name=="Unsigned8"  ) return "Int8";
-    if ( pc.sar_name=="Unsigned16" ) return "Int16";
-    if ( pc.sar_name=="Unsigned32" ) return "Int32";
-    if ( pc.sar_name=="Unsigned64" ) return "Int64";
-    if ( pc.sar_name=="Bool"       ) return "Int8";
-    return pc.sar_name;
+    if ( pc.met_name=="Unsigned8"  ) return "Int8";
+    if ( pc.met_name=="Unsigned16" ) return "Int16";
+    if ( pc.met_name=="Unsigned32" ) return "Int32";
+    if ( pc.met_name=="Unsigned64" ) return "Int64";
+    if ( pc.met_name=="Bool"       ) return "Int8";
+    return pc.met_name;
 }
 
 std::string after_op( const PrimitiveClass &pc ) {
     if ( integer_class( pc ) )
         return "Rationnal";
-    return pc.sar_name;
+    return pc.met_name;
 }
 
 bool arithmetic_class( const PrimitiveClass &pc ) {
@@ -211,8 +211,9 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "__uninitialised_vec_using_partial_instanciation__", "uninitialised_vec_using_partial_instanciation( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__get_data_in_static_vec__", "return __get_data_in_static_vec__( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     
-    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; ret = malloc( s ); if(s==48) th->display_stack(tok);", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), s ); else ret = malloc( s ); if(s==48) th->display_stack(tok);", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), s ); else ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
+    //  if(s==48) th->display_stack(tok);
     primitive_functions.push_back( PrimitiveFunction( "memcpy", "memcpy( a, b, (c+7)/8 * d );" ).A("UntypedPtr").A("UntypedPtr").A("Int32").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = (Int32)(Int64)self;" ).M("UntypedPtr").A("Int32") );
@@ -318,59 +319,60 @@ inline void get_primitives_Functionnal( std::vector<PrimitiveClass> &primitive_c
     primitive_functions.push_back( PrimitiveFunction( "is_a_Ref_on_Functionnal", "ret = ( a.type == global_data.Functionnal );", /*ret*/"Bool" ).A("InternalVariable") );
 }
 void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
-    primitive_classes.push_back( PrimitiveClass( "Op", "Op *" ).avoid_reassign_using_mem_copy() );
+    primitive_classes.push_back( PrimitiveClass( "Op", "Ex" ).avoid_reassign_using_mem_copy() );
     
-    primitive_functions.push_back( PrimitiveFunction( "destroy", "dec_ref( self );" ).M("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self = &Op::new_number(0);" ).M("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self = &a->inc_ref();" ).A("Op").M("Op",/*modify*/"true") );
-    primitive_functions.push_back( PrimitiveFunction( "reassign", "Op *old = self; self = &a->inc_ref(); dec_ref(old);" ).A("Op").M("Op",/*modify*/"self != a") );
+    primitive_functions.push_back( PrimitiveFunction( "destroy", "self.destroy();" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init();" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("Op").M("Op",/*modify*/"true") );
+    primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( a );" ).A("Op").M("Op",/*modify*/"self.op != a.op") );
     
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) ) {
-            primitive_functions.push_back( PrimitiveFunction( "init", "self = &Op::new_number( Rationnal(a) );" ).A(primitive_classes[i].sar_name).M("Op",/*modify*/"true") );
-            primitive_functions.push_back( PrimitiveFunction( "reassign", "dec_ref(self); self = &Op::new_number( Rationnal(a) );" ).A(primitive_classes[i].sar_name).M("Op",/*modify*/"true") );
+            primitive_functions.push_back( PrimitiveFunction( "init", "self.init( Rationnal(a) );" ).A(primitive_classes[i].met_name).M("Op",/*modify*/"true") );
+            primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( Rationnal(a) );" ).A(primitive_classes[i].met_name).M("Op",/*modify*/"true") );
         }
     }
     
     //
-    primitive_functions.push_back( PrimitiveFunction( "add", "ret = &(*a + *b);", /*ret*/"Op" ).A("Op").A("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "sub", "ret = &(*a - *b);", /*ret*/"Op" ).A("Op").A("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "sub", "ret = &(   - *a);", /*ret*/"Op" ).A("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "mul", "ret = &(*a * *b);", /*ret*/"Op" ).A("Op").A("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "div", "ret = &(*a / *b);", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "add", "ret.init( a + b );", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "sub", "ret.init( a - b );", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "sub", "ret.init(   - a );", /*ret*/"Op" ).A("Op")         );
+    primitive_functions.push_back( PrimitiveFunction( "mul", "ret.init( a * b );", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "div", "ret.init( a / b );", /*ret*/"Op" ).A("Op").A("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "pow", "ret = &pow(*a, *b);", /*ret*/"Op" ).A("Op").A("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "mod", "ret = &mod(*a, *b);", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "pow", "ret.init( pow( a, b ) );", /*ret*/"Op" ).A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "mod", "ret.init( mod( a, b ) );", /*ret*/"Op" ).A("Op").A("Op") );
     
     static const char *f[] = { "log", "heaviside", "abs", "eqz", "exp", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", NULL };
     for(unsigned i=0;f[i];++i)
-        primitive_functions.push_back( PrimitiveFunction( f[i], "ret = &"+std::string( f[i] )+"(*a);", /*ret*/"Op" ).A("Op") );
+        primitive_functions.push_back( PrimitiveFunction( f[i], "ret.init( "+std::string( f[i] )+"( a ) );", /*ret*/"Op" ).A("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "known_at_compile_time", "ret = ( a->type == Op::NUMBER );", /*ret*/"Bool" ).A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "known_at_compile_time", "ret = a.known_at_compile_time();", /*ret*/"Bool" ).A("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "symbol", "ret = &Op::new_symbol( *(const char **)a->data, *(Int32 *)((const char **)a->data+1), *(const char **)b->data, *(Int32 *)((const char **)b->data+1) );", /*ret*/"Op" ).A("any").A("any").
+    primitive_functions.push_back( PrimitiveFunction( "symbol", "ret.init( *(const char **)a->data, *(Int32 *)((const char **)a->data+1), *(const char **)b->data, *(Int32 *)((const char **)b->data+1) );", /*ret*/"Op" ).A("any").A("any").
         set_supplementary_cond("args[0]->type == global_data.String").set_supplementary_cond("args[1]->type == global_data.String") );
         
-    primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=graphviz_repr(self); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "cpp_string", "if (return_var) {std::string s=cpp_repr(self); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
-    primitive_functions.push_back( PrimitiveFunction( "tex_string", "if (return_var) {std::string s=tex_repr(self); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "cpp_string"     , "if (return_var) {std::string s=self.cpp_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "tex_string"     , "if (return_var) {std::string s=self.tex_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "value", "if (self->type==Op::NUMBER) init_arithmetic( ret, self->number_data()->val ); else { init_arithmetic( ret, 0 ); th->add_error(\"method value works only with expressions which do not depend on any symbol.\",tok); }",
+    primitive_functions.push_back( PrimitiveFunction( "value", "if (self.known_at_compile_time()) init_arithmetic( ret, self.value() ); else { init_arithmetic( ret, 0 ); th->add_error(\"method value works only with expressions which do not depend on any symbol.\",tok); }",
         /*ret*/"Rationnal" ). M("Op") );
 
-    primitive_functions.push_back( PrimitiveFunction( "diff", "ret = diff( th, tok, self, a );", /*ret*/"Op" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "subs", "ret = subs( th, tok, self, a, b );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
+    primitive_functions.push_back( PrimitiveFunction( "subs", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
     
-    primitive_functions.push_back( PrimitiveFunction( "depends_on", "ret = depends_on_rec( self, a );", /*ret*/"Bool" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "depends_on", "ret = self.depends_on( a );", /*ret*/"Bool" ).M("Op").A("Op") );
         
     for(unsigned i=0;i<primitive_classes.size();++i)
         if ( arithmetic_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "apply", "init_arithmetic( ret, subs_numerical( th, tok, self, Rationnal(a) ) );", /*ret*/after_op(primitive_classes[i]) ).M("Op").A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "apply", "init_arithmetic( ret, self.subs_numerical( th, tok, Rationnal(a) ) );", /*ret*/after_op(primitive_classes[i]) ).M("Op").A(primitive_classes[i].met_name) );
         
-    primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
-        
+    //     primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "__integration__", "ret.init( integration( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
 }
 
 std::string nb_bits_in_mantissa(std::string class_name) {
@@ -391,22 +393,22 @@ std::string nb_bits_in_mantissa(std::string class_name) {
 }
     
 void get_primitives_CodeWriter( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
-    primitive_classes.push_back( PrimitiveClass( "CodeWriter_", "CodeWriter" ).avoid_reassign_using_mem_copy() );
-    
-    primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriter_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriter_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ));" ).A("any").M("CodeWriter_").set_pertinence(1e5).
-             set_supplementary_cond( "args[0]->type == global_data.String" ) );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
-    primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
-    
-    primitive_functions.push_back( PrimitiveFunction( "add_expr", "self.add_expr( th, tok, a, b, c );" ).M("CodeWriter_",/*modify*/"true").
-        A("any").
-        A("Op").
-        A("Def").set_supplementary_cond("args[0]->type == global_data.String")
-    );
-    
-    primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
+//     primitive_classes.push_back( PrimitiveClass( "CodeWriter_", "CodeWriter" ).avoid_reassign_using_mem_copy() );
+//     
+//     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriter_") );
+//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriter_") );
+//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ));" ).A("any").M("CodeWriter_").set_pertinence(1e5).
+//              set_supplementary_cond( "args[0]->type == global_data.String" ) );
+//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
+//     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
+//     
+//     primitive_functions.push_back( PrimitiveFunction( "add_expr", "self.add_expr( th, tok, a, b, c );" ).M("CodeWriter_",/*modify*/"true").
+//         A("any").
+//         A("Op").
+//         A("Def").set_supplementary_cond("args[0]->type == global_data.String")
+//     );
+//     
+//     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
 }
 
 void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -543,33 +545,33 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     // attributes
     for(unsigned i=0;i<primitive_classes.size();++i) {
-        if ( primitive_classes[i].sar_name != "Property" ) {
-            primitive_classes[i].push_attr( "is_a_number", "Bool", ( arithmetic_class(primitive_classes[i]) or primitive_classes[i].sar_name=="Op" ? "true" : "false" ) );
-            primitive_classes[i].push_attr( "is_a_float_number", "Bool", ( float_class(primitive_classes[i]) or primitive_classes[i].sar_name=="Op" ? "true" : "false" ) );
+        if ( primitive_classes[i].met_name != "Property" ) {
+            primitive_classes[i].push_attr( "is_a_number", "Bool", ( arithmetic_class(primitive_classes[i]) or primitive_classes[i].met_name=="Op" ? "true" : "false" ) );
+            primitive_classes[i].push_attr( "is_a_float_number", "Bool", ( float_class(primitive_classes[i]) or primitive_classes[i].met_name=="Op" ? "true" : "false" ) );
             primitive_classes[i].push_attr( "is_an_integer_number", "Bool", ( integer_class(primitive_classes[i]) ? "true" : "false" ) );
             primitive_classes[i].push_attr( "is_a_signed_number", "Bool", ( signed_arithmetic_class(primitive_classes[i]) ? "true" : "false" ) );
-            primitive_classes[i].push_attr( "is_a_rationnal_number", "Bool", ( primitive_classes[i].sar_name=="Rationnal" or primitive_classes[i].sar_name=="Op" ? "true" : "false" ) );
-            primitive_classes[i].push_attr( "is_a_vector", "Bool", ( primitive_classes[i].sar_name == "VarArgs" ? "true" : "false" ) );
+            primitive_classes[i].push_attr( "is_a_rationnal_number", "Bool", ( primitive_classes[i].met_name=="Rationnal" or primitive_classes[i].met_name=="Op" ? "true" : "false" ) );
+            primitive_classes[i].push_attr( "is_a_vector", "Bool", ( primitive_classes[i].met_name == "VarArgs" ? "true" : "false" ) );
             primitive_classes[i].push_attr( "is_an_array", "Bool", "false" );
             primitive_classes[i].push_attr( "is_a_matrix", "Bool", "false" );
-            primitive_classes[i].push_attr( "tensor_order", "Int32", ( primitive_classes[i].sar_name == "VarArgs" ? "1" : "-1" ) );
-            primitive_classes[i].push_attr( "is_a_function", "Bool", ( primitive_classes[i].sar_name=="Functionnal" or primitive_classes[i].sar_name=="Lambda" ? "true" : "false" ) );
+            primitive_classes[i].push_attr( "tensor_order", "Int32", ( primitive_classes[i].met_name == "VarArgs" ? "1" : "-1" ) );
+            primitive_classes[i].push_attr( "is_a_function", "Bool", ( primitive_classes[i].met_name=="Functionnal" or primitive_classes[i].met_name=="Lambda" ? "true" : "false" ) );
             
             if ( arithmetic_class( primitive_classes[i] ) ) {
-                if ( primitive_classes[i].sar_name != "Rationnal" ) {
-                    primitive_classes[i].push_attr( "max_representable", primitive_classes[i].sar_name, "std::numeric_limits<"+primitive_classes[i].cpp_name+">::max()" );
-                    primitive_classes[i].push_attr( "min_representable", primitive_classes[i].sar_name, "std::numeric_limits<"+primitive_classes[i].cpp_name+">::min()" );
+                if ( primitive_classes[i].met_name != "Rationnal" ) {
+                    primitive_classes[i].push_attr( "max_representable", primitive_classes[i].met_name, "std::numeric_limits<"+primitive_classes[i].cpp_name+">::max()" );
+                    primitive_classes[i].push_attr( "min_representable", primitive_classes[i].met_name, "std::numeric_limits<"+primitive_classes[i].cpp_name+">::min()" );
                 }
-                primitive_classes[i].push_attr( "nb_bits_in_mantissa", "Int32", nb_bits_in_mantissa(primitive_classes[i].sar_name) );
-                primitive_classes[i].push_attr( "nb_bits_in_denominator_mantissa", "Int32", ( primitive_classes[i].sar_name=="Rationnal" ? "INT32_MAX_VAL" : "0" ) );
+                primitive_classes[i].push_attr( "nb_bits_in_mantissa", "Int32", nb_bits_in_mantissa(primitive_classes[i].met_name) );
+                primitive_classes[i].push_attr( "nb_bits_in_denominator_mantissa", "Int32", ( primitive_classes[i].met_name=="Rationnal" ? "INT32_MAX_VAL" : "0" ) );
             }
             
             primitive_classes[i].push_attr( "does_not_need_destroy", "Bool", primitive_classes[i].reassign_using_mem_copy ? "true" : "false" );
         }
-        primitive_classes[i].push_attr( "is_a_pointer", "Bool", ( primitive_classes[i].sar_name=="UntypedPtr" ? "true" : "false" ) );
-        primitive_classes[i].push_attr( "is_a_Property", "Bool", ( primitive_classes[i].sar_name=="Property" ? "true" : "false" ) );
+        primitive_classes[i].push_attr( "is_a_pointer", "Bool", ( primitive_classes[i].met_name=="UntypedPtr" ? "true" : "false" ) );
+        primitive_classes[i].push_attr( "is_a_Property", "Bool", ( primitive_classes[i].met_name=="Property" ? "true" : "false" ) );
         if ( arithmetic_class( primitive_classes[i] ) and primitive_classes[i].reassign_using_mem_copy )
-            primitive_functions.push_back( PrimitiveFunction( "init", "fake_func(self);" ).M(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "init", "fake_func(self);" ).M(primitive_classes[i].met_name) );
     }
     primitive_functions.push_back( PrimitiveFunction( "get_epsilon", "ret = std::numeric_limits<Float32>::epsilon();", /*ret*/"Float32" ).M("Float32") );
     primitive_functions.push_back( PrimitiveFunction( "get_epsilon", "ret = std::numeric_limits<Float64>::epsilon();", /*ret*/"Float64" ).M("Float64") );
@@ -579,12 +581,12 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; if (return_var) assign_string( th, tok, return_var, &ss.str()[0], ss.str().size() );", /*ret*/"manual" ).M("Rationnal") );
     for(unsigned i=0;i<primitive_classes.size();++i) {
-        if ( integer_class( primitive_classes[i] ) or float_class( primitive_classes[i] ) or primitive_classes[i].sar_name=="UntypedPtr" )
+        if ( integer_class( primitive_classes[i] ) or float_class( primitive_classes[i] ) or primitive_classes[i].met_name=="UntypedPtr" )
             primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
-                    M(primitive_classes[i].sar_name) );
+                    M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
             primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
-                    M(primitive_classes[i].sar_name).A("Int32") );
+                    M(primitive_classes[i].met_name).A("Int32") );
     }
     
     primitive_functions.push_back( PrimitiveFunction( "system"  , "ret = system_( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) );", /*ret*/"Int32" ).
@@ -592,7 +594,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     // is_of_type_...
     for(unsigned i=0;i<primitive_classes.size();++i)
-        primitive_functions.push_back( PrimitiveFunction( "is_of_type_"+primitive_classes[i].sar_name, "ret = (a->type == global_data."+primitive_classes[i].sar_name+");", /*ret*/"Bool" ).A("any") );
+        primitive_functions.push_back( PrimitiveFunction( "is_of_type_"+primitive_classes[i].met_name, "ret = (a->type == global_data."+primitive_classes[i].met_name+");", /*ret*/"Bool" ).A("any") );
 
     
     // destroy
@@ -623,11 +625,11 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     
     // reassign
     for(unsigned i=0;i<primitive_classes.size();++i) {
-        std::string type_conv = ", global_data." + primitive_classes[i].sar_name;
+        std::string type_conv = ", global_data." + primitive_classes[i].met_name;
         for(unsigned j=0;j<=i;++j) // reassign from types with less information
             if ( arithmetic_class(primitive_classes[i]) and arithmetic_class(primitive_classes[j]) )
                 primitive_functions.push_back( PrimitiveFunction( "reassign", "init_arithmetic( self, a ); reassign_transient_data( th, self_var->transient_data, args[0]->transient_data );" ).
-                    A(primitive_classes[j].sar_name). M(primitive_classes[i].sar_name,/*modify*/"are_different(self,a)") );
+                    A(primitive_classes[j].met_name). M(primitive_classes[i].met_name,/*modify*/"are_different(self,a)") );
     }
                     
     primitive_functions.push_back( PrimitiveFunction( "type_promote", "fake_func(a); fake_func(b); fake_func(c); fake_func(ret);", /*ret*/"Error" )
@@ -640,11 +642,11 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     // init    
     for(unsigned i=0;i<primitive_classes.size();++i) {
         std::string conv_to = ( primitive_classes[i].cpp_name=="Bool" ? "bool" : primitive_classes[i].cpp_name );
-        std::string type_conv = ", global_data." + primitive_classes[i].sar_name;
+        std::string type_conv = ", global_data." + primitive_classes[i].met_name;
         for(unsigned j=0;j<primitive_classes.size();++j)
             if ( arithmetic_class(primitive_classes[i]) and arithmetic_class(primitive_classes[j]) )
                 primitive_functions.push_back( PrimitiveFunction( "init", "init_arithmetic( self, ("+conv_to+")a ); reassign_transient_data( th, self_var->transient_data, args[0]->transient_data );" ).
-                        A(primitive_classes[j].sar_name).M(primitive_classes[i].sar_name,/*modify*/"true") );
+                        A(primitive_classes[j].met_name).M(primitive_classes[i].met_name,/*modify*/"true") );
     }
     
     primitive_functions.push_back( PrimitiveFunction( "init", "fake_func(a); fake_func(self);" ).A("any").
@@ -671,28 +673,28 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     const char *arithmetic_operations[] = {"add","sub","mul",NULL};
     for( const char **a=arithmetic_operations; *a; ++a )
         for(unsigned i=0;i<primitive_classes.size();++i)
-            if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].sar_name != "Bool" )
-                primitive_functions.push_back( PrimitiveFunction( *a, "init_arithmetic( ret, METIL_NS::"+std::string(*a)+"(a,b) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+            if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].met_name != "Bool" )
+                primitive_functions.push_back( PrimitiveFunction( *a, "init_arithmetic( ret, METIL_NS::"+std::string(*a)+"(a,b) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     primitive_functions.push_back( PrimitiveFunction( "mul", "ret = a * b;", /*ret*/"Bool" ).A("Bool").A("Bool") );
     primitive_functions.push_back( PrimitiveFunction( "add", "ret = Int32(a) + Int32(b);", /*ret*/"Int32" ).A("Bool").A("Bool") );
     primitive_functions.push_back( PrimitiveFunction( "sub", "ret = Int32(a) - Int32(b);", /*ret*/"Int32" ).A("Bool").A("Bool") );
     // pow
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( float_class(primitive_classes[i]) ) {
-            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
-            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A("Rationnal") );
+            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A("Rationnal") );
         }
         if ( integer_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/"Rationnal" ).A("Rationnal").A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "pow", "init_arithmetic( ret, METIL_NS::pow(a,b) );", /*ret*/"Rationnal" ).A("Rationnal").A(primitive_classes[i].met_name) );
     }
     // div
     for(unsigned i=0;i<primitive_classes.size();++i)
-        if ( float_class(primitive_classes[i]) or primitive_classes[i].sar_name=="Rationnal" )
-            primitive_functions.push_back( PrimitiveFunction( "div", "init_arithmetic( ret, a / b );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+        if ( float_class(primitive_classes[i]) or primitive_classes[i].met_name=="Rationnal" )
+            primitive_functions.push_back( PrimitiveFunction( "div", "init_arithmetic( ret, a / b );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( integer_class(primitive_classes[i]) ) {
-            primitive_functions.push_back( PrimitiveFunction( "div_int", "init_arithmetic( ret, a / b );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
-            primitive_functions.push_back( PrimitiveFunction( "div", "ret.init(); ret.num = a; ret.den = b; ret.cannonicalize();", /*ret*/"Rationnal" ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "div_int", "init_arithmetic( ret, a / b );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "div", "ret.init(); ret.num = a; ret.den = b; ret.cannonicalize();", /*ret*/"Rationnal" ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
         }
     }
     // exp, log, ...
@@ -700,20 +702,20 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     for( const char **a=fps_arithmetic_operations; *a; ++a ) {
         for(unsigned i=0;i<primitive_classes.size();++i)
             if ( float_class(primitive_classes[i]) )
-                primitive_functions.push_back( PrimitiveFunction( *a, "init_arithmetic( ret, "+std::string(*a)+"( a ) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name) );
+                primitive_functions.push_back( PrimitiveFunction( *a, "init_arithmetic( ret, "+std::string(*a)+"( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
     }
     for(unsigned i=0;i<primitive_classes.size();++i)
         if ( arithmetic_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "sub", "init_arithmetic( ret, -a );", /*ret*/signed_correspondance(primitive_classes[i]) ).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "sub", "init_arithmetic( ret, -a );", /*ret*/signed_correspondance(primitive_classes[i]) ).A(primitive_classes[i].met_name) );
     for(unsigned i=0;i<primitive_classes.size();++i) {
-        if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].sar_name != "Bool" ) {
-            primitive_functions.push_back( PrimitiveFunction( "mod", "init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
-            primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name) );
+        if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].met_name != "Bool" ) {
+            primitive_functions.push_back( PrimitiveFunction( "mod", "init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
         }
     }
     for(unsigned i=0;i<primitive_classes.size();++i)
         if ( integer_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "shift_right", "init_arithmetic( ret, a >> b );", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "shift_right", "init_arithmetic( ret, a >> b );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
             
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float32" ).A("Float32").A("Float32") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float64" ).A("Float64").A("Float64") );
@@ -722,11 +724,11 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     // heaviside, eqz
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( unsigned_arithmetic_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = true; fake_func( a );", /*ret*/"Bool" ).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = true; fake_func( a );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
         else if ( arithmetic_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = ( a >= 0 );", /*ret*/"Bool" ).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = ( a >= 0 );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
         if ( arithmetic_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "eqz", "ret = ( not a );", /*ret*/"Bool" ).A(primitive_classes[i].sar_name) );
+            primitive_functions.push_back( PrimitiveFunction( "eqz", "ret = ( not a );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
     }
     
     // eq, ineq
@@ -735,7 +737,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     for( const char **a=eq_ineq_operations, **o=eq_ineq_operators; *a; ++a,++o ) {
         for(unsigned i=0;i<primitive_classes.size();++i)
             if ( arithmetic_class(primitive_classes[i]) )
-                primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/"Bool" ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+                primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/"Bool" ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     }
     // &, |, ...
     const char *bb_operations[] = {"and_bitwise","or_bitwise","xor_bitwise",NULL};
@@ -743,7 +745,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     for( const char **a=bb_operations, **o=bb_operators; *a; ++a,++o ) {
         for(unsigned i=0;i<primitive_classes.size();++i)
             if ( integer_class(primitive_classes[i]) )
-                primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name).A(primitive_classes[i].sar_name) );
+                primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     }
     // ~, ...
     const char *bnb_operations[] = {"not_bitwise",NULL};
@@ -751,7 +753,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     for( const char **a=bnb_operations, **o=bnb_operators; *a; ++a,++o ) {
         for(unsigned i=0;i<primitive_classes.size();++i)
             if ( integer_class(primitive_classes[i]) )
-                primitive_functions.push_back( PrimitiveFunction( *a, "ret = "+std::string(*o)+" a;", /*ret*/primitive_classes[i].sar_name ).A(primitive_classes[i].sar_name) );
+                primitive_functions.push_back( PrimitiveFunction( *a, "ret = "+std::string(*o)+" a;", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
     }
     
     primitive_functions.push_back( PrimitiveFunction( "are_of_same_type", "ret = ( a->type == b->type );", /*ret*/"Bool" ).A("any").A("any") );

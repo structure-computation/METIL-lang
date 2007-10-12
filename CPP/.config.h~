@@ -11,9 +11,6 @@ typedef BigInt<Rationnal::base> BigInteger;
 
 #include "basic_type_promote.h"
 
-#include <pthread.h>
-typedef pthread_t Pthread;
-
 typedef long int SignedSize;
 typedef void *UntypedPtr;
                 

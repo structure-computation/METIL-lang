@@ -4,7 +4,7 @@
 #include "typeconfig.h"
 #include "splittedvec.h"
 #include "variable.h"
-#include "symbolic/op.h"
+#include "symbolic/ex.h"
 #include <string>
 #include <map>
 #include <simplevector.h>
@@ -17,8 +17,8 @@ struct CodeWriter {
     void init( const char *s, Int32 si );
     void init( CodeWriter &c );
     void reassign( Thread *th, const void *tok, CodeWriter &c );
-    void add_expr( Thread *th, const void *tok, Variable *str, Op *expr, Definition &b );
-    void add_expr( Op *op, Nstring method, char *name );
+    void add_expr( Thread *th, const void *tok, Variable *str, const Ex &expr, Definition &b );
+    void add_expr( const Ex &op, Nstring method, char *name );
     std::string to_string( Thread *th, const void *tok, Int32 nb_spaces );
     
     operator bool() const { return true; }
@@ -62,8 +62,8 @@ struct CodeWriter {
     char *basic_type;
 private:
     void write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front, Int32 nb_spaces, bool &put_a_cr );
-    void write_code_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, Op *cond, Int32 nb_spaces, SplittedVec<Op *,1024,4096> &of );
-    void write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated );
+//     void write_code_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, Op *cond, Int32 nb_spaces, SplittedVec<Op *,1024,4096> &of );
+//     void write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated );
 };
     
     

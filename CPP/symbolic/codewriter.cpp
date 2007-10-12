@@ -2,8 +2,8 @@
 #include "definition.h"
 #include "definitiondata.h"
 #include "transientdata.h"
-// #include "simplification_op.h"
 #include "globaldata.h"
+#include "op.h"
 #include <usual_strings.h>
 #include "basic_string_manip.h"
 #include <iostream>
@@ -37,34 +37,34 @@ void CodeWriter::reassign(  Thread *th, const void *tok, CodeWriter &c ) {
     std::cout << "TODO " << __FILE__ << " " << __LINE__ << std::endl;
 }
 
-void CodeWriter::add_expr( Thread *th, const void *tok, Variable *str, Op *expr, Definition &b ) {
+void CodeWriter::add_expr( Thread *th, const void *tok, Variable *str, const Ex &expr, Definition &b ) {
     const char *s = *reinterpret_cast<const char **>(str->data);
     Int32 si = *reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(str->data) + 1 );
     if ( b.def_data->name == STRING_init_NUM )
         has_init_methods = true;
         
-    if ( expr->type == Op::NUMBER ) {
+    if ( expr.op->type == Op::NUMBER ) {
         NumberToWrite *ow = nb_to_write.new_elem();
-        init_arithmetic( ow->n, expr->number_data()->val );
+        init_arithmetic( ow->n, expr.op->number_data()->val );
         ow->method = b.def_data->name;
         ow->name = strdupp0( s, si );
     } else {
         OpToWrite *ow = op_to_write.new_elem();
-        ow->op = &expr->inc_ref();
+        ow->op = expr.op->inc_ref();
         ow->method = b.def_data->name;
         ow->name = strdupp0( s, si );
     }
 }
 
-void CodeWriter::add_expr( Op *expr, Nstring method, char *name ) {
-    if ( expr->type == Op::NUMBER ) {
+void CodeWriter::add_expr( const Ex &expr, Nstring method, char *name ) {
+    if ( expr.op->type == Op::NUMBER ) {
         NumberToWrite *ow = nb_to_write.new_elem();
-        init_arithmetic( ow->n, expr->number_data()->val );
+        init_arithmetic( ow->n, expr.op->number_data()->val );
         ow->method = method;
         ow->name = strdup( name );
     } else {
         OpToWrite *ow = op_to_write.new_elem();
-        ow->op = &expr->inc_ref();
+        ow->op = expr.op->inc_ref();
         ow->method = method;
         ow->name = strdup( name );
     }
@@ -86,7 +86,7 @@ void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_wr
     }
 }
 
-void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
+void disp_res( std::ostream &os, const Ex &op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     for(unsigned i=0;i<ponr->res.size();++i) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
         switch ( ponr->res[i]->method.v ) {
@@ -108,7 +108,7 @@ void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, u
 
 
 void disp_codewriter_number( std::ostream &os, const Rationnal &r ) {
-    if ( r.is_integer() and r.positive_or_null() )
+    if ( r.is_integer() and r.is_pos_or_null() )
         os << r;
     else if ( r.den.n==0 and ( r.den.val==2 or r.den.val==4 or r.den.val==8 ) )
         os << double( r );
@@ -260,8 +260,9 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
 }
 
 void get_parents( Op *expr, SplittedVec<CodeWriter::ParentsOpAndNumReg,256,1024,true> &parents ) {
-    if ( expr->additional_info ) // already done ?
+    if ( expr->op_id == Op::current_op ) // already done ?
         return;
+    expr->op_id = Op::current_op;
         
     // creation of a new parent list
     CodeWriter::ParentsOpAndNumReg *po = parents.new_elem();
@@ -331,69 +332,69 @@ void add_to_used_rec( Op *expr, int val, SimpleVector<CodeWriter::AlreadyCalcula
             add_to_used_rec( expr->func_data()->children[i], val, already_calculated );
 }
     
-void CodeWriter::write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated ) {
-    CodeWriter *cw = (CodeWriter *)malloc( sizeof(CodeWriter) );
-    cw->init( basic_type, basic_type ? strlen(basic_type) : 0 );
-    cw->free_registers = free_registers;
-    cw->already_calculated = already_calculated;
-    for(unsigned i=0;i<op_to_write.size();++i)
-        cw->add_expr( subs_values[i], op_to_write[i].method, op_to_write[i].name );
-    // write code
-    os << cw->to_string( th, tok, nb_spaces + 4 );
-    
-    destroy( th, tok, *cw );
-    free(cw);
-}
-
-void CodeWriter::write_code_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, Op *cond, Int32 nb_spaces, SplittedVec<Op *,1024,4096> &of ) {
-    // substitutions op_to_write -> op_to_write.subs( cond == 0 or 1 )
-    SplittedVec<Op *,32> subs_values[2];
-    for(unsigned val_cond=0;val_cond<2;++val_cond) {
-        for(unsigned i=0;i<op_to_write.size();++i) { // leaves and parents
-            op_to_write[i].op->clear_additional_info_rec();
-            cond->additional_info = &Op::new_number( val_cond );
-            of.push_back( cond->additional_info );
-            subs_values[val_cond].push_back( &subs_rec( th, tok, *op_to_write[i].op, of ) );
-        }
-    }
-    for(unsigned val_cond=0;val_cond<2;++val_cond)
-        for(unsigned i=0;i<op_to_write.size();++i)
-            subs_values[val_cond][i]->clear_additional_info_rec();
-    //
-    cond->clear_additional_info_rec();
-    for(unsigned i=0;i<already_calculated.size();++i)
-        already_calculated[i].op->clear_additional_info_rec();
-            
-    // cond preparation
-    SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
-    get_parents( cond, parents );
-    for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
-        if ( already_calculated[i].op->additional_info )
-            reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
-    // front
-    SplittedVec<Op *,256,1024> front;
-    get_front( cond, front );
-    
-    // say that some calculations may be re-used
-    SimpleVector<AlreadyCalculated> already_calculated;
-    for(unsigned v=0;v<2;++v) for(unsigned i=0;i<op_to_write.size();++i) add_to_used_rec( subs_values[v][i], -1, already_calculated );
-    // write
-    bool put_a_cr = false;
-    write_code( os, front, nb_spaces, put_a_cr );
-    if ( not put_a_cr ) os << '\n'; for(int k=0;k<nb_spaces;++k) os << ' ';
-    for(unsigned i=0;i<already_calculated.size();++i)
-        already_calculated[i].num_reg = reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg;
-    
-    // write each particular cases using new CodeWriter
-    os << "if ( " << "R_" << reinterpret_cast<ParentsOpAndNumReg *>( cond->additional_info )->num_reg << " ) {\n";
-    write_particular_cases_with_cond_0_and_1( th, tok, os, subs_values[1], nb_spaces, already_calculated );
-    for(int k=0;k<nb_spaces;++k) os << ' '; os << "} else {\n"; put_a_cr = true;
-    write_particular_cases_with_cond_0_and_1( th, tok, os, subs_values[0], nb_spaces, already_calculated );
-    for(int k=0;k<nb_spaces;++k) os << ' '; os << "}\n"; put_a_cr = true;
-
-    // dec_ref
-    // for(unsigned v=0;v<2;++v) for(unsigned i=0;i<op_to_write.size();++i) dec_ref( subs_values[v][i] );
-}
+// void CodeWriter::write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated ) {
+//     CodeWriter *cw = (CodeWriter *)malloc( sizeof(CodeWriter) );
+//     cw->init( basic_type, basic_type ? strlen(basic_type) : 0 );
+//     cw->free_registers = free_registers;
+//     cw->already_calculated = already_calculated;
+//     for(unsigned i=0;i<op_to_write.size();++i)
+//         cw->add_expr( subs_values[i], op_to_write[i].method, op_to_write[i].name );
+//     // write code
+//     os << cw->to_string( th, tok, nb_spaces + 4 );
+//     
+//     destroy( th, tok, *cw );
+//     free(cw);
+// }
+// 
+// void CodeWriter::write_code_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, Op *cond, Int32 nb_spaces, SplittedVec<Op *,1024,4096> &of ) {
+//     // substitutions op_to_write -> op_to_write.subs( cond == 0 or 1 )
+//     SplittedVec<Op *,32> subs_values[2];
+//     for(unsigned val_cond=0;val_cond<2;++val_cond) {
+//         for(unsigned i=0;i<op_to_write.size();++i) { // leaves and parents
+//             op_to_write[i].op->clear_additional_info_rec();
+//             cond->additional_info = &Op::new_number( val_cond );
+//             of.push_back( cond->additional_info );
+//             subs_values[val_cond].push_back( &subs_rec( th, tok, *op_to_write[i].op, of ) );
+//         }
+//     }
+//     for(unsigned val_cond=0;val_cond<2;++val_cond)
+//         for(unsigned i=0;i<op_to_write.size();++i)
+//             subs_values[val_cond][i]->clear_additional_info_rec();
+//     //
+//     cond->clear_additional_info_rec();
+//     for(unsigned i=0;i<already_calculated.size();++i)
+//         already_calculated[i].op->clear_additional_info_rec();
+//             
+//     // cond preparation
+//     SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
+//     get_parents( cond, parents );
+//     for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
+//         if ( already_calculated[i].op->additional_info )
+//             reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
+//     // front
+//     SplittedVec<Op *,256,1024> front;
+//     get_front( cond, front );
+//     
+//     // say that some calculations may be re-used
+//     SimpleVector<AlreadyCalculated> already_calculated;
+//     for(unsigned v=0;v<2;++v) for(unsigned i=0;i<op_to_write.size();++i) add_to_used_rec( subs_values[v][i], -1, already_calculated );
+//     // write
+//     bool put_a_cr = false;
+//     write_code( os, front, nb_spaces, put_a_cr );
+//     if ( not put_a_cr ) os << '\n'; for(int k=0;k<nb_spaces;++k) os << ' ';
+//     for(unsigned i=0;i<already_calculated.size();++i)
+//         already_calculated[i].num_reg = reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg;
+//     
+//     // write each particular cases using new CodeWriter
+//     os << "if ( " << "R_" << reinterpret_cast<ParentsOpAndNumReg *>( cond->additional_info )->num_reg << " ) {\n";
+//     write_particular_cases_with_cond_0_and_1( th, tok, os, subs_values[1], nb_spaces, already_calculated );
+//     for(int k=0;k<nb_spaces;++k) os << ' '; os << "} else {\n"; put_a_cr = true;
+//     write_particular_cases_with_cond_0_and_1( th, tok, os, subs_values[0], nb_spaces, already_calculated );
+//     for(int k=0;k<nb_spaces;++k) os << ' '; os << "}\n"; put_a_cr = true;
+// 
+//     // dec_ref
+//     // for(unsigned v=0;v<2;++v) for(unsigned i=0;i<op_to_write.size();++i) dec_ref( subs_values[v][i] );
+// }
 
 std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces ) {
     if ( op_to_write.size() + nb_to_write.size() == 0 )
@@ -412,58 +413,59 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
     }
     
     if ( op_to_write.size() ) {
-        SplittedVec<Op *,1024,4096> of;
+        //         SplittedVec<Op *,1024,4096> of;
         // preparation
-        for(unsigned i=0;i<op_to_write.size();++i)
-            op_to_write[i].op->clear_additional_info_rec();
-        for(unsigned i=0;i<already_calculated.size();++i)
-            already_calculated[i].op->clear_additional_info_rec();
+        //         for(unsigned i=0;i<op_to_write.size();++i)
+        //             op_to_write[i].op->clear_additional_info_rec();
+        //         for(unsigned i=0;i<already_calculated.size();++i)
+        //             already_calculated[i].op->clear_additional_info_rec();
         // get heavisides
-        SplittedVec<Op *,32,256> heavisides;
+        //         SplittedVec<Op *,32,256> heavisides;
         //         for(unsigned i=0;i<op_to_write.size();++i)
         //             get_heavisides_rec( op_to_write[i].op, heavisides );
             
-        if ( heavisides.size() ) {
-            write_code_with_cond_0_and_1( th, tok, ss, heavisides[0], nb_spaces, of );
-        }
-        else { // no heavisides
-            // preparation
-            for(unsigned i=0;i<op_to_write.size();++i)
-                op_to_write[i].op->clear_additional_info_rec();
-            for(unsigned i=0;i<already_calculated.size();++i)
-                already_calculated[i].op->clear_additional_info_rec();
-                
-            // symbols
-            SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
-            for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
-                get_parents( op_to_write[i].op, parents );
-            for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
-                if ( already_calculated[i].op->additional_info )
-                    reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
-            for(unsigned i=0;i<op_to_write.size();++i) { // results in...
-                ParentsOpAndNumReg *ponr = reinterpret_cast<ParentsOpAndNumReg *>( op_to_write[i].op->additional_info );
-                ponr->res.push_back( &op_to_write[i] );
-                unsigned cpt_op = 0;
-                if ( ponr->num_reg >= 0 ) {
-                    for(int k=1;k<nb_spaces;++k) ss << ' '; 
-                    bool put_a_cr;
-                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
-                }
+        //         if ( heavisides.size() ) {
+        //             write_code_with_cond_0_and_1( th, tok, ss, heavisides[0], nb_spaces, of );
+        //         }
+        //         else { // no heavisides
+        // preparation
+        //         for(unsigned i=0;i<op_to_write.size();++i)
+        //             op_to_write[i].op->clear_additional_info_rec();
+        //         for(unsigned i=0;i<already_calculated.size();++i)
+        //             already_calculated[i].op->clear_additional_info_rec();
+        ++Op::current_op;
+        
+        // symbols
+        SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
+        for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
+            get_parents( op_to_write[i].op, parents );
+        for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
+            if ( already_calculated[i].op->additional_info )
+                reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
+        for(unsigned i=0;i<op_to_write.size();++i) { // results in...
+            ParentsOpAndNumReg *ponr = reinterpret_cast<ParentsOpAndNumReg *>( op_to_write[i].op->additional_info );
+            ponr->res.push_back( &op_to_write[i] );
+            unsigned cpt_op = 0;
+            if ( ponr->num_reg >= 0 ) {
+                for(int k=1;k<nb_spaces;++k) ss << ' '; 
+                bool put_a_cr;
+                disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
             }
-            // front
-            SplittedVec<Op *,256,1024> front;
-            for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
-                get_front( op_to_write[i].op, front );
-    
-            // write_code
-            bool put_a_cr = false;
-            write_code( ss, front, nb_spaces, put_a_cr );
-            if ( put_a_cr == false ) ss << "\n";
         }
+        // front
+        SplittedVec<Op *,256,1024> front;
+        for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
+            get_front( op_to_write[i].op, front );
+
+        // write_code
+        bool put_a_cr = false;
+        write_code( ss, front, nb_spaces, put_a_cr );
+        if ( put_a_cr == false ) ss << "\n";
+        //         }
     
         // feee
-        for(unsigned i=0;i<of.size();++i) dec_ref( of[i] );
-        while ( op_to_write.size() ) { free( op_to_write.back().name ); dec_ref( op_to_write.pop_back().op ); }
+        //         for(unsigned i=0;i<of.size();++i) dec_ref( of[i] );
+        //         while ( op_to_write.size() ) { free( op_to_write.back().name ); dec_ref( op_to_write.pop_back().op ); }
     }
     
     // constant variables (no dependencies)

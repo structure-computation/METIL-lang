@@ -200,10 +200,11 @@ struct BigRat {
     bool is_odd      () const { return is_integer() and num.is_odd (); }
     bool is_even     () const { return is_integer() and num.is_even(); }
     bool is_neg      () const { return num.val < 0; }
-    bool positive_or_null() const { return num.val >= 0; }
+    bool is_pos      () const { return num.val > 0; }
     bool is_zero     () const { return num.val ==  0; }
     bool is_one      () const { return num.n == 0 and num.val ==  1 and den.n == 0 and den.val == 1; }
     bool is_minus_one() const { return num.n == 0 and num.val == -1 and den.n == 0 and den.val == 1; }
+    bool is_pos_or_null() const { return num.val >= 0; }
     
     BigInt<base,T,offset,owning> num, den;
 };

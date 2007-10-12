@@ -15,7 +15,7 @@ const unsigned MayNeedrarg = 8;
 const unsigned Needrrargs = 16;
 
 struct OpInfo {
-    char *sar_name;
+    char *met_name;
     char *cpp_name;
     unsigned behavior;
 };
@@ -279,7 +279,7 @@ int main(int argc,char **argv) {
     std::vector<PrimitiveFunction> primitive_functions;
     get_primitives( primitive_classes, primitive_functions );
     for(unsigned i=0;i<primitive_classes.size();++i)
-        usual_strings.append( primitive_classes[i].sar_name.c_str() );
+        usual_strings.append( primitive_classes[i].met_name.c_str() );
     for(unsigned i=0;i<primitive_functions.size();++i)
         usual_strings.append( primitive_functions[i].name.c_str() );
     //
@@ -309,16 +309,16 @@ int main(int argc,char **argv) {
     fh << "inline const char *name_of_operator(int num_op) {\n";
     fh << "    static const char *tab[] = {";
     for(unsigned i=0;i<nb_operators;++i)
-        if ( operators[i].sar_name[0]=='\\' )
+        if ( operators[i].met_name[0]=='\\' )
             fh << '"' << "\\\\" << "\",";
         else
-            fh << '"' << operators[i].sar_name << "\",";
+            fh << '"' << operators[i].met_name << "\",";
     fh << "};\n";
     fh << "    return tab[num_op];\n";
     fh << "}\n";
     fh << "inline unsigned name_size_of_operator(int num_op) {\n";
     fh << "    static const unsigned tab[] = {";
-    for(unsigned i=0;i<nb_operators;++i) fh << strlen(operators[i].sar_name) << ",";
+    for(unsigned i=0;i<nb_operators;++i) fh << strlen(operators[i].met_name) << ",";
     fh << "};\n";
     fh << "    return tab[num_op];\n";
     fh << "}\n";
@@ -361,8 +361,8 @@ int main(int argc,char **argv) {
         unsigned hash_size_trial = nb_operators;
         std::vector<int> nb; nb.resize( hash_size_trial, -1 );
         for(int i=0;i<(int)nb_operators;++i) {
-            if ( want_le xor type_char(operators[i].sar_name[0])!=TYPE_CHAR_letter ) {
-                unsigned hash_val = hashstring( operators[i].sar_name, strlen(operators[i].sar_name) ) % hash_size_trial;
+            if ( want_le xor type_char(operators[i].met_name[0])!=TYPE_CHAR_letter ) {
+                unsigned hash_val = hashstring( operators[i].met_name, strlen(operators[i].met_name) ) % hash_size_trial;
                 if ( nb[hash_val] >= 0 ) { // there's already an operator in this bucket
                     nb.clear();
                     nb.resize( ++hash_size_trial, -1 );

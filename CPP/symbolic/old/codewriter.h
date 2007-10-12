@@ -24,7 +24,7 @@ struct CodeWriter {
     operator bool() const { return true; }
     
     struct OpToWrite {
-        Op *op;
+        Op *op; 
         Nstring method;
         char *name;
     };

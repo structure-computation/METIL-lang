@@ -99,7 +99,6 @@ def subs( self, from, to ) when is_of_type_Op( from )
     return self.subs( make_varargs(from), make_varargs(Op(to)) )
 
 def subs( self, from, to ) when self.tensor_order == 1 and self.sub_types==[Op] pertinence 20
-    info "1"
     res := Vec[ Op, self.static_size ]( size = self.size )
     for r in 0 .. self.size
         res[r].init( self[r].subs( from, to ) )
@@ -252,8 +251,9 @@ def integration_with_disc_func_rec_( ds, var, beg, end, deg_poly_max, T )
 def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order <= 0
     if var.type != Op
         return expr * ( end - beg )
-    dsc := discontinuities_separation( expr, make_varargs( var ) )
-    return integration_with_disc_func_rec_( dsc, var, beg, end, deg_poly_max, expr.type )
+    return _integration_( expr, var, beg, end, deg_poly_max )
+    # dsc := discontinuities_separation( expr, make_varargs( var ) )
+    # return integration_with_disc_func_rec_( dsc, var, beg, end, deg_poly_max, expr.type )
 
 ## integration des expr par rapport a var de beg a end. deg_poly_max pour les approximations de taylor ##
 def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order > 0

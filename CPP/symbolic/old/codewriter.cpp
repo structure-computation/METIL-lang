@@ -9,7 +9,10 @@
 #include <iostream>
 
 void CodeWriter::init( const char *s, Int32 si ) {
-    basic_type = strdupp0( s, si );
+    if ( si )
+        basic_type = strdupp0( s, si );
+    else
+        basic_type = NULL;
     
     //
     op_to_write.init();
@@ -68,7 +71,7 @@ void CodeWriter::add_expr( Op *expr, Nstring method, char *name ) {
 }
 
 
-void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces ) {
+void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     switch ( nb_to_write.method.v ) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
         case STRING_add_NUM:       os << nb_to_write.name << " += " << nb_to_write.n << ".0;";  break;
@@ -76,14 +79,14 @@ void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_wr
         case STRING_mul_NUM:       os << nb_to_write.name << " *= " << nb_to_write.n << ".0;";  break;
         case STRING_div_NUM:       os << nb_to_write.name << " /= " << nb_to_write.n << ".0;";  break;
         case STRING_reassign_NUM:  os << nb_to_write.name << " = "  << nb_to_write.n << ".0;";  break;
-        case STRING_init_NUM:      os << nb_to_write.name << " = "  << nb_to_write.n << ".0;";  break;
+        case STRING_init_NUM:      if ( basic_type ) os << nb_to_write.name << " = "  << nb_to_write.n << ".0;"; else os << nb_to_write.name << " := "  << nb_to_write.n << ".0;"; break;
         case STRING___print___NUM: os << "printf( \"" << nb_to_write.name << " -> %f\\n\", " << nb_to_write.n << ".0 );";  break;
         default:
             std::cerr << "UNKNOWN RES METHOD '" << nb_to_write.method << "'" << std::endl;
     }
 }
 
-void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces ) {
+void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     for(unsigned i=0;i<ponr->res.size();++i) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
         switch ( ponr->res[i]->method.v ) {
@@ -92,27 +95,38 @@ void disp_res( std::ostream &os, Op *op, CodeWriter::ParentsOpAndNumReg *ponr, u
             case STRING_mul_NUM:       os << ponr->res[i]->name << " *= " << "R_" << ponr->num_reg << ";";  break;
             case STRING_div_NUM:       os << ponr->res[i]->name << " /= " << "R_" << ponr->num_reg << ";";  break;
             case STRING_reassign_NUM:  os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";  break;
-            case STRING_init_NUM:      os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";  break;
+            case STRING_init_NUM:  
+                if ( basic_type ) os << ponr->res[i]->name << " = "  << "R_" << ponr->num_reg << ";";
+                else              os << ponr->res[i]->name << " := "  << "R_" << ponr->num_reg << ";";
+                break;
             case STRING___print___NUM: os << "printf( \"" << ponr->res[i]->name << " -> %f\\n\", R_"  << ponr->num_reg << " );";  break;
             default:
                 std::cerr << "UNKNOWN RES METHOD '" << ponr->res[i]->method << "'" << std::endl;
         }
     }
 }
-std::string cw_repr( const Rationnal &r, bool np = false ) {
-    std::ostringstream ss;
-//     ss.precision( 20 );
-//     ss << (long double)( r );
+
+
+void disp_codewriter_number( std::ostream &os, const Rationnal &r ) {
     if ( r.is_integer() and r.positive_or_null() )
-        ss << r;
+        os << r;
     else if ( r.den.n==0 and ( r.den.val==2 or r.den.val==4 or r.den.val==8 ) )
-        ss << double( r );
+        os << double( r );
     else if ( r.den != Rationnal::BI(1) )
-        ss << "(" << r.num << ".0/" << r.den << ".0)";
+        os << "(" << r.num << ".0/" << r.den << ".0)";
     else
-        ss << "(" << r << ".0)";
-    return ss.str();
+        os << "(" << r << ".0)";
 }
+
+void disp_codewriter( std::ostream &os, Op *c ) {
+    if ( c->type == Op::NUMBER ) {
+        disp_codewriter_number( os, c->number_data()->val );
+    } else {
+        CodeWriter::ParentsOpAndNumReg *poc = reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( c->additional_info );
+        os << "R_" << poc->num_reg;
+    }
+}
+
 void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front, Int32 nb_spaces, bool &put_a_cr ) {
     // 
     unsigned cpt_op = 0;
@@ -131,18 +145,6 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
                         free_registers.free_ones.push_back( poc->num_reg );
                 }
             }
-        } else if ( op->type == Op::SUMSEQ ) {
-            Op::SumSeqData *sd = op->sumseq_data();
-            for(unsigned i=0;i<sd->data.size();++i) {
-                for(unsigned j=0;j<sd->data[i].items.size();++j) {
-                    Op *c = sd->data[i].items[j].val;
-                    if ( c->type != Op::NUMBER ) {
-                        ParentsOpAndNumReg *poc = reinterpret_cast<ParentsOpAndNumReg *>( c->additional_info );
-                        if ( ++poc->used == poc->to_be_used )
-                            free_registers.free_ones.push_back( poc->num_reg );
-                    }
-                }
-            }
         }
         
         // get num_reg
@@ -154,51 +156,70 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
         }
         else {
             ponr->num_reg = fr.nb_declared_registers++;
-            os << basic_type << " " << "R_" << ponr->num_reg << " = ";
+            if ( basic_type ) 
+                os << basic_type << " R_" << ponr->num_reg << " = ";
+            else
+                os << "R_" << ponr->num_reg << " := ";
         }
         
         // no variables in front
         if ( op->type == Op::SYMBOL ) {
             os << op->symbol_data()->cpp_name_str;
-        } else if ( op->type == Op::SUMSEQ ) {
-            Op::SumSeqData *sd = op->sumseq_data();
-            if ( sd->sum ) os << cw_repr( sd->sum );
-            for(unsigned i=0;i<sd->data.size();++i) {
-                Rationnal c = sd->data[i].coeff;
-                if ( i or sd->sum ) {
-                    os << ( c >= 0 ? "+" : "-" );
-                    c = abs(c);
-                }
-                if ( c != Rationnal(1) or sd->data[i].items.size() == 0 )
-                    os << cw_repr( c, c.num.val < 0 );
-                for(unsigned j=0;j<sd->data[i].items.size();++j) {
-                    Rationnal e = sd->data[i].items[j].expo;
-                    if ( j or c != Rationnal(1) ) {
-                        os << ( e.num.val >= 0 ? "*" : "/" );
-                        e = abs(e);
-                    }
-                    if ( e != Rationnal(1) )
-                        os << "pow(";
-                    
-                    if ( sd->data[i].items[j].need_abs() ) os << "abs(";
-                    os << "R_" << reinterpret_cast<ParentsOpAndNumReg *>( sd->data[i].items[j].val->additional_info )->num_reg;
-                    if ( sd->data[i].items[j].need_abs() ) os << ")";
-                    
-                    if ( e != Rationnal(1) )
-                        os <<  "," << cw_repr( e ) << ")";
-                }
+        } else if ( op->type == STRING_add_NUM ) { // a + b
+            //             if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
+            //                 disp_codewriter( os, op->func_data()->children[0] );
+            //                 os << "-";
+            //                 disp_codewriter( os, op->func_data()->children[1]->func_data()->children[1] );
+            //             } else if ( is_a_sub( *op->func_data()->children[0] ) ) { // (-a) + b
+            //                 disp_codewriter( os, op->func_data()->children[1] );
+            //                 os << "-";
+            //                 disp_codewriter( os, op->func_data()->children[0]->func_data()->children[1] );
+            //             } else if ( op->func_data()->children[0]->type == Op::NUMBER and op->func_data()->children[0]->number_data()->val.num.is_negative() ) { // (-2) + b
+            //                 disp_codewriter( os, op->func_data()->children[1] );
+            //                 os << "-";
+            //                 disp_codewriter_number( os, - op->func_data()->children[0]->number_data()->val );
+            //             } else { // a + b
+            //             }
+            disp_codewriter( os, op->func_data()->children[0] );
+            os << "+";
+            disp_codewriter( os, op->func_data()->children[1] );
+        } else if ( op->type == STRING_mul_NUM ) { // a * b
+            //             if ( is_a_inv( *op->func_data()->children[1] ) ) { // a * ( 1/b )
+            //                 disp_codewriter( os, op->func_data()->children[0] );
+            //                 os << "/";
+            //                 disp_codewriter( os, op->func_data()->children[1]->func_data()->children[1] );
+            //             } else if ( is_a_inv( *op->func_data()->children[0] ) ) { // (1/a) * b
+            //                 disp_codewriter( os, op->func_data()->children[1] );
+            //                 os << "/";
+            //                 disp_codewriter( os, op->func_data()->children[0]->func_data()->children[1] );
+            //             } else { // a + b
+            //             }
+            disp_codewriter( os, op->func_data()->children[0] );
+            os << "*";
+            disp_codewriter( os, op->func_data()->children[1] );
+        } else if ( op->type == STRING_pow_NUM and op->func_data()->children[1]->type == Op::NUMBER ) { // a ^ b
+            Rationnal b = op->func_data()->children[1]->number_data()->val;
+            if ( b.is_minus_one() ) {
+                os << "1/";
+                disp_codewriter( os, op->func_data()->children[0] );
+            } else if ( b.num.is_one() and b.den.is_two() ) {
+                os << "sqrt(";
+                disp_codewriter( os, op->func_data()->children[0] );
+                os << ")";
+            } else if ( b.den.is_one() ) {
+                os << "pow(";
+                disp_codewriter( os, op->func_data()->children[0] );
+                os << "," << b << ")";
+            } else {
+                os << "pow(";
+                disp_codewriter( os, op->func_data()->children[0] );
+                os << "," << b << ".0)";
             }
+            
         } else { // function
             os << Nstring( op->type ) << "(";
             for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
-                Op *c = op->func_data()->children[i];
-                if ( c->type == Op::NUMBER )
-                    os << cw_repr( c->number_data()->val );
-                else {
-                    ParentsOpAndNumReg *poc = reinterpret_cast<ParentsOpAndNumReg *>( c->additional_info );
-                    os << "R_" << poc->num_reg;
-                }
-                
+                disp_codewriter( os, op->func_data()->children[i] );
                 if ( i+1<Op::FuncData::max_nb_children and op->func_data()->children[i+1] ) os << ",";
             }
             os << ")";
@@ -206,7 +227,7 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
         os << ";";
         
         //
-        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces );
+        disp_res( os, op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
         
         if ( (cpt_op++ % 4) == 3 ) { os << '\n'; put_a_cr=true; } else { os << ' '; put_a_cr=false; }
 
@@ -228,23 +249,6 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
                         }
                         Op *c = p->func_data()->children[j];
                         if ( c->type != Op::NUMBER and reinterpret_cast<ParentsOpAndNumReg *>( c->additional_info )->num_reg < 0 )
-                            break;
-                    }
-                } else { // SUMSEQ
-                    Op::SumSeqData *sd = p->sumseq_data();
-                    for(unsigned j=0;;++j) {
-                        if ( j==sd->data.size() ) {
-                            front.push_back( p );
-                            break;
-                        }
-                        for(unsigned k=0;k<sd->data[j].items.size();++k) {
-                            Op *c = sd->data[j].items[k].val;
-                            if ( c->type != Op::NUMBER and reinterpret_cast<ParentsOpAndNumReg *>( c->additional_info )->num_reg < 0 ) {
-                                j = sd->data.size();
-                                break;
-                            }
-                        }
-                        if ( j==sd->data.size() )
                             break;
                     }
                 }
@@ -275,20 +279,6 @@ void get_parents( Op *expr, SplittedVec<CodeWriter::ParentsOpAndNumReg,256,1024,
             ponr->parents.push_back_unique( expr );
             ++ponr->to_be_used;
         }
-    } else if ( expr->type == Op::SUMSEQ ) {
-        Op::SumSeqData *sd = expr->sumseq_data();
-        // recursivity
-        for(unsigned i=0;i<sd->data.size();++i)
-            for(unsigned j=0;j<sd->data[i].items.size();++j)
-                get_parents( sd->data[i].items[j].val, parents );
-        // register expr as parent of its children
-        for(unsigned i=0;i<sd->data.size();++i) {
-            for(unsigned j=0;j<sd->data[i].items.size();++j) {
-                CodeWriter::ParentsOpAndNumReg *ponr = reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( sd->data[i].items[j].val->additional_info );
-                ponr->parents.push_back_unique( expr );
-                ++ponr->to_be_used;
-            }
-        }
     }
 }
 
@@ -314,21 +304,6 @@ void get_front( Op *expr, SplittedVec<Op *,256,1024> &front ) {
                 return;
         }
         front.push_back( expr );
-    } else if ( expr->type == Op::SUMSEQ ) {
-        Op::SumSeqData *sd = expr->sumseq_data();
-        // recursivity
-        for(unsigned i=0;i<sd->data.size();++i)
-            for(unsigned j=0;j<sd->data[i].items.size();++j)
-                get_front( sd->data[i].items[j].val, front );
-        // if all children have a register (or are variables)
-        for(unsigned i=0;i<sd->data.size();++i) {
-            for(unsigned j=0;j<sd->data[i].items.size();++j) {
-                Op *c = sd->data[i].items[j].val;
-                if ( c->type != Op::NUMBER and reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( c->additional_info )->num_reg < 0 )
-                    return;
-            }
-        }
-        front.push_back( expr );
     }
 }
 
@@ -339,14 +314,9 @@ void get_heavisides_rec( Op *expr, SplittedVec<Op *,32,256> &heavisides ) {
     
     if ( expr->type > 0 ) {
         if ( expr->type == STRING_heaviside_NUM or expr->type == STRING_eqz_NUM )
-            heavisides.push_back( expr );
+            heavisides.push_back_unique( expr );
         for(unsigned i=0;i<Op::FuncData::max_nb_children and expr->func_data()->children[i];++i) // recursivity
             get_heavisides_rec( expr->func_data()->children[i], heavisides );
-    } else if ( expr->type == Op::SUMSEQ ) {
-        Op::SumSeqData *sd = expr->sumseq_data();
-        for(unsigned i=0;i<sd->data.size();++i)
-            for(unsigned j=0;j<sd->data[i].items.size();++j)
-                get_heavisides_rec( sd->data[i].items[j].val, heavisides );
     }
 }
 
@@ -359,17 +329,11 @@ void add_to_used_rec( Op *expr, int val, SimpleVector<CodeWriter::AlreadyCalcula
     else if ( expr->type > 0 )
         for(unsigned i=0;i<Op::FuncData::max_nb_children and expr->func_data()->children[i];++i) // recursivity
             add_to_used_rec( expr->func_data()->children[i], val, already_calculated );
-    else if ( expr->type == Op::SUMSEQ ) {
-        Op::SumSeqData *sd = expr->sumseq_data();
-        for(unsigned i=0;i<sd->data.size();++i)
-            for(unsigned j=0;j<sd->data[i].items.size();++j)
-                add_to_used_rec( sd->data[i].items[j].val, val, already_calculated );
-    }
 }
     
 void CodeWriter::write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated ) {
     CodeWriter *cw = (CodeWriter *)malloc( sizeof(CodeWriter) );
-    cw->init( basic_type, strlen(basic_type) );
+    cw->init( basic_type, basic_type ? strlen(basic_type) : 0 );
     cw->free_registers = free_registers;
     cw->already_calculated = already_calculated;
     for(unsigned i=0;i<op_to_write.size();++i)
@@ -438,10 +402,13 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
     std::ostringstream ss;
     // results with method init -> declaration
     if ( has_init_methods ) {
-        for(int k=0;k<nb_spaces;++k) ss << ' '; 
-        for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
-        for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? "\n" : " " );
-        ss << "\n";
+        if ( basic_type ) {
+            for(int k=0;k<nb_spaces;++k) ss << ' ';
+            std::string cr( "\n" ); cr += std::string( nb_spaces, ' ' );
+            for(unsigned i=0;i<op_to_write.size();++i) if ( op_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << op_to_write[i].name << ";" << ( i%4==3 ? cr.c_str() : " " );
+            for(unsigned i=0;i<nb_to_write.size();++i) if ( nb_to_write[i].method == STRING_init_NUM ) ss << basic_type << " " << nb_to_write[i].name << ";" << ( i%4==3 ? cr.c_str() : " " );
+            ss << "\n";
+        }
     }
     
     if ( op_to_write.size() ) {
@@ -480,7 +447,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
                 if ( ponr->num_reg >= 0 ) {
                     for(int k=1;k<nb_spaces;++k) ss << ' '; 
                     bool put_a_cr;
-                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces );
+                    disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
                 }
             }
             // front
@@ -504,7 +471,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         for(int k=0;k<nb_spaces;++k) ss << ' ';
         unsigned cpt_op = 0; bool put_a_cr = false;
         for(unsigned i=0;i<nb_to_write.size();++i) {
-            disp_number_to_write( ss, nb_to_write[i], cpt_op, put_a_cr, nb_spaces );
+            disp_number_to_write( ss, nb_to_write[i], cpt_op, put_a_cr, nb_spaces, basic_type );
             if ( i%4==3 ) { ss << "\n"; for(int k=0;k<nb_spaces;++k) ss << ' '; }
             else          ss << " ";
         }
@@ -528,7 +495,8 @@ void destroy( Thread *th, const void *tok, CodeWriter &c ) {
     c.op_to_write.destroy();
     c.nb_to_write.destroy();
     c.already_calculated.destroy();
-    free( c.basic_type );
+    if ( c.basic_type )
+        free( c.basic_type );
     c.free_registers.free_ones.destroy();
 }
     

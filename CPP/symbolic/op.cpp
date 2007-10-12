@@ -1,79 +1,77 @@
 #include "op.h"
 #include "basic_string_manip.h"
 #include "nstring.h"
-#include "thread.h"
-#include "varargs.h"
-#include "globaldata.h"
-
-Op &Op::new_number( const Rationnal &val ) {
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->cpt_use = 0; res->type = NUMBER; res->parents.init(); res->cleared_id = 0;
     
-    init_arithmetic( res->number_data()->val, val );
-    return *res;
+unsigned Op::current_op = 0;
+
+void Op::init( int type_ ) {
+    parents.init();
+    type = type_;
+    cpt_use = 0;
+    op_id = 0;
 }
 
-Op &Op::new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si ) {
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(SymbolData) ); res->cpt_use = 0; res->type = SYMBOL; res->parents.init(); res->cleared_id = 0;
+Op *Op::new_number( const Rationnal &val ) {
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->init( NUMBER );
+    
+    init_arithmetic( res->number_data()->val, val );
+    return res;
+}
+
+Op *Op::new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si ) {
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(SymbolData) ); res->init( SYMBOL );
     
     SymbolData *ds = res->symbol_data();
     ds->cpp_name_str = strdupp0( cpp_name_str, cpp_name_si );
     ds->tex_name_str = strdupp0( tex_name_str, tex_name_si );
-    return *res;
+    return res;
 }
 
-inline bool are_numbers( const Op &a, const Op &b ) { return a.type == Op::NUMBER and b.type == Op::NUMBER; }
-inline bool same_op( Op *a, Op *b ) {
-    if ( are_numbers(*a,*b) )
-        return a->number_data()->val == b->number_data()->val;
-    return a == b;
-}
-
-Op &Op::new_function( int type, Op &a ) {
-    assert( a.type != Op::NUMBER );
+Op *Op::new_function( int type, Op *a ) {
+    assert( a->type != Op::NUMBER );
     
-    // look in parents of a or b if function already created somewhere
-    for(unsigned i=0;i<a.parents.size();++i) {
-        Op *p = a.parents[ i ];
-        if ( p->type == type and same_op(&a,p->func_data()->children[0]) ) {
-            p->inc_ref();
-            return *p;
-        }
+    // look in parents of a if function already created somewhere
+    for(unsigned i=0;i<a->parents.size();++i) {
+        Op *p = a->parents[ i ];
+        if ( p->type == type and same_op( a, p->func_data()->children[0] ) and not p->func_data()->children[1] )
+            return p->inc_ref();
     }
     //
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->init( type );
     
     FuncData *ds = res->func_data();
-    ds->children[0] = &a.inc_ref();
+    ds->children[0] = a->inc_ref();
     ds->children[1] = NULL;
     
-    if ( a.type != Op::NUMBER ) a.parents.push_back( res );
-    return *res;
+    if ( a->type != Op::NUMBER )
+        a->parents.push_back( res );
+    
+    return res;
 }
 
-Op &Op::new_function( int type, Op &a, Op &b ) {
-    assert( a.type != Op::NUMBER or b.type != Op::NUMBER );
-    if ( type == STRING_pow_NUM )
-        assert( not b.is_one() );
+Op *Op::new_function( int type, Op *a, Op *b ) {
+    assert( a->type != Op::NUMBER or b->type != Op::NUMBER );
     
     // look in parents of a or b if function already created somewhere
-    Op *c = ( a.type != Op::NUMBER ? &a : &b );
+    Op *c = ( a->type != Op::NUMBER ? a : b );
     for(unsigned i=0;i<c->parents.size();++i) {
         Op *p = c->parents[ i ];
-        if ( p->type == type and same_op(&a,p->func_data()->children[0]) and same_op(&b,p->func_data()->children[1]) ) {
-            p->inc_ref();
-            return *p;
-        }
+        if ( p->type == type and same_op( a, p->func_data()->children[0] ) and same_op( b, p->func_data()->children[1] ) )
+            return p->inc_ref();
     }
     //
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->init( type );
     
     FuncData *ds = res->func_data();
-    ds->children[0] = &a.inc_ref();
-    ds->children[1] = &b.inc_ref();
+    ds->children[0] = a->inc_ref();
+    ds->children[1] = b->inc_ref();
     
-    if ( a.type != Op::NUMBER ) a.parents.push_back( res );
-    if ( b.type != Op::NUMBER ) b.parents.push_back( res );
-    return *res;
+    if ( a->type != Op::NUMBER )
+        a->parents.push_back( res );
+    if ( b->type != Op::NUMBER )
+        b->parents.push_back( res );
+    
+    return res;
 }
 
 void Op::destroy() {
@@ -93,10 +91,334 @@ void Op::destroy() {
     }
 }
     
-bool Op::is_zero     () { return type==NUMBER and number_data()->val.is_zero(); }
-bool Op::is_one      () { return type==NUMBER and number_data()->val.is_one(); }
-bool Op::is_minus_one() { return type==NUMBER and number_data()->val.is_minus_one(); }
+bool Op::is_zero     () const { return type==NUMBER and number_data()->val.is_zero(); }
+bool Op::is_one      () const { return type==NUMBER and number_data()->val.is_one(); }
+bool Op::is_minus_one() const { return type==NUMBER and number_data()->val.is_minus_one(); }
 
+
+bool Op::necessary_positive() const {
+    return ( type == NUMBER and number_data()->val.is_pos() ) or
+           type == STRING_exp_NUM or
+           type == STRING_cosh_NUM;
+}
+
+bool Op::necessary_positive_or_null() const {
+    return ( type == NUMBER and number_data()->val.is_pos_or_null() ) or
+           type == STRING_abs_NUM or
+           type == STRING_eqz_NUM or
+           type == STRING_heaviside_NUM;
+}
+
+bool Op::necessary_negative() const {
+    return ( type == NUMBER and number_data()->val.is_neg() ) or
+           ( is_a_sub( this ) and necessary_positive() );
+}
+
+/// @see operator*
+void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &items ) {
+    if ( a->type == STRING_mul_NUM ) { // anything_but_a_number * anything_but_a_number
+        find_mul_items_and_coeff_rec( a->func_data()->children[0], items );
+        find_mul_items_and_coeff_rec( a->func_data()->children[1], items );
+    } else if ( a->type == STRING_pow_NUM and a->func_data()->children[1]->type == Op::NUMBER ) { // a ^ 10
+        MulSeq *s = items.new_elem();
+        s->e.init( a->func_data()->children[1]->number_data()->val );
+        s->op = a->func_data()->children[0];
+    } else { // a
+        MulSeq *s = items.new_elem();
+        s->e.init( 1 );
+        s->op = a;
+    }
+}
+
+// ----------------------------------------------------------------------------------------------------------
+std::string cpp_repr( const Rationnal &val, int type_parent ) {
+    std::ostringstream os;
+    int local_type = 10000;
+    if ( val.num.is_negative() )
+        local_type = STRING_sub_NUM;
+    else if ( val.den != Rationnal::BI(1) )
+        local_type = STRING_div_NUM;
+    bool want_par = type_parent > local_type;
+    
+    if ( want_par ) os << "(";
+    if ( val.den == Rationnal::BI(1) ) os << val.num;
+    else os << val.num << ".0/" << val.den << ".0";
+    if ( want_par ) os << ")";
+    return os.str();
+}
+
+// 
+void find_p_and_s_parts_rec( const Op *op, std::vector<const Op *> &p_part, std::vector<const Op *> &s_part ) {
+    if ( op->type == Op::NUMBER and op->number_data()->val.is_neg() )
+        s_part.push_back( op );
+    else if ( op->type != STRING_add_NUM )
+        p_part.push_back( op );
+    else {
+        if ( is_a_mul_by_neg_number( op->func_data()->children[0] ) ) // ( -2 ) * a
+            s_part.push_back( op->func_data()->children[0] );
+        else
+            find_p_and_s_parts_rec( op->func_data()->children[0], p_part, s_part );
+        //
+        if ( is_a_mul_by_neg_number( op->func_data()->children[1] ) ) // ( -2 ) * a
+            s_part.push_back( op->func_data()->children[1] );
+        else
+            find_p_and_s_parts_rec( op->func_data()->children[1], p_part, s_part );
+    }
+}
+
+void cpp_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
+    if ( op->type == Op::NUMBER ) {
+        os << cpp_repr( op->number_data()->val, type_parent );
+    } else if ( op->type == Op::SYMBOL ) {
+        os << op->symbol_data()->cpp_name_str;
+    } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
+        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+        
+        std::vector<const Op *> p_part;
+        std::vector<const Op *> s_part;
+        find_p_and_s_parts_rec( op, p_part, s_part );
+    
+        for(unsigned i=0;i<p_part.size();++i) {
+            if ( i ) os << "+";
+            cpp_repr_rec( os, p_part[i], STRING_add_NUM );
+        }
+        for(unsigned i=0;i<s_part.size();++i) {
+            os << "-";
+            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
+                os << cpp_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+            else { // ( -2 ) * a
+                Op *ch_0 = s_part[i]->func_data()->children[0];
+                Op *ch_1 = s_part[i]->func_data()->children[1];
+                if ( ch_0->number_data()->val.is_minus_one() )
+                    cpp_repr_rec( os, ch_1, STRING_sub_NUM );
+                else {
+                    os << cpp_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    os << "*";
+                    cpp_repr_rec( os, ch_1, STRING_mul_NUM );
+                }
+            }
+        }
+        
+        if ( np ) os << ")";
+    } else if ( is_a_sub( op ) ) { // - a ( encoded as (-1)*a )
+        bool np = type_parent > op->type;
+        if ( np ) os << "(";
+        os << "-";
+        cpp_repr_rec( os, op->func_data()->children[1], op->type );
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
+        if ( is_a_inv( op->func_data()->children[1] ) ) { // a * ( 1/b )
+            bool np = type_parent > STRING_div_NUM; if ( np ) os << "(";
+            cpp_repr_rec( os, op->func_data()->children[0], STRING_mul_NUM );
+            os << "/";
+            cpp_repr_rec( os, op->func_data()->children[1]->func_data()->children[0], STRING_div_NUM );
+            if ( np ) os << ")";
+        } else if ( is_a_inv( op->func_data()->children[0] ) ) { // (1/a) * b
+            bool np = type_parent > STRING_div_NUM; if ( np ) os << "(";
+            cpp_repr_rec( os, op->func_data()->children[1], STRING_mul_NUM );
+            os << "/";
+            cpp_repr_rec( os, op->func_data()->children[0]->func_data()->children[0], STRING_div_NUM );
+            if ( np ) os << ")";
+        } else { // a * b
+            bool np = type_parent > STRING_mul_NUM; if ( np ) os << "(";
+            cpp_repr_rec( os, op->func_data()->children[0], STRING_mul_NUM );
+            os << "*";
+            cpp_repr_rec( os, op->func_data()->children[1], STRING_mul_NUM );
+            if ( np ) os << ")";
+        }
+    } else {
+        os << Nstring(op->type) << "(";
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
+            if ( i ) os << ",";
+            cpp_repr_rec( os, op->func_data()->children[i], 0 );
+        }
+        os << ")";
+    }
+}
+
+void Op::cpp_repr( std::ostream &os ) const {
+    cpp_repr_rec( os, this, 0 );
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+std::string tex_repr( const Rationnal &val, int type_parent ) {
+    std::ostringstream os;
+    int local_type = 10000;
+    if ( val.num.is_negative() and val.den == Rationnal::BI(1) )
+        local_type = STRING_sub_NUM;
+    else if ( val.den != Rationnal::BI(1) )
+        local_type = STRING_div_NUM;
+    bool want_par = type_parent > local_type;
+    
+    if ( want_par ) os << "(";
+    if ( val.den == Rationnal::BI(1) ) os << val.num;
+    else os << "\\frac{" << val.num << "}{" << val.den << "}";;
+    if ( want_par ) os << ")";
+    return os.str();
+}
+
+void tex_repr( const MulSeq &ms, std::ostream &os ) {
+    bool np = ( STRING_mul_NUM > ms.op->type ) and ms.op->type >= 0;
+    if ( np ) os << "(";
+    if ( ms.e.is_one() )
+        ms.op->tex_repr( os );
+    else if ( ms.e.num.is_one() ) {
+        if ( ms.e.den.is_two() )
+            os << "\\sqrt{";
+        else    
+            os << "\\sqrt[" << ms.e.den << "]{";
+        ms.op->tex_repr( os ); 
+        os << "}";
+    } else {
+        os << "{";
+        ms.op->tex_repr( os );
+        os << "}";
+        if ( ms.e.is_integer() )
+            os << "^{" << ms.e.num << "} ";
+        else
+            os << "^{ \\frac{" << ms.e.num << "}{" << ms.e.den << "} } ";
+    }
+    if ( np ) os << ")";
+    os << " ";
+}
+
+void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
+    if ( op->type == Op::NUMBER ) {
+        os << tex_repr( op->number_data()->val, type_parent );
+    } else if ( op->type == Op::SYMBOL ) {
+        os << op->symbol_data()->tex_name_str;
+    } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
+        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+        
+        std::vector<const Op *> p_part;
+        std::vector<const Op *> s_part;
+        find_p_and_s_parts_rec( op, p_part, s_part );
+    
+        for(unsigned i=0;i<p_part.size();++i) {
+            if ( i ) os << "+";
+            tex_repr_rec( os, p_part[i], STRING_add_NUM );
+        }
+        for(unsigned i=0;i<s_part.size();++i) {
+            os << "-";
+            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
+                os << tex_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+            else { // ( -2 ) * a
+                Op *ch_0 = s_part[i]->func_data()->children[0];
+                Op *ch_1 = s_part[i]->func_data()->children[1];
+                if ( ch_0->number_data()->val.is_minus_one() )
+                    tex_repr_rec( os, ch_1, STRING_sub_NUM );
+                else {
+                    os << tex_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    //os << "*";
+                    tex_repr_rec( os, ch_1, STRING_mul_NUM );
+                }
+            }
+        }
+        
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
+        SplittedVec<MulSeq,4,16,true> items;
+        find_mul_items_and_coeff_rec( op, items );
+        SplittedVec<MulSeq,4,16,true> items_[2];
+        for(unsigned i=0;i<items.size();++i)
+            items_[ items[i].e.num.is_negative() ].push_back( items[i] );
+        //
+        if ( items_[1].size() ) {
+            for(unsigned i=0;i<items_[1].size();++i)
+                items_[1][i].e.num.val *= -1;
+            //
+            os << "\\frac{\\displaystyle ";
+            for(unsigned i=0;i<items_[0].size();++i)
+                tex_repr( items_[0][i], os << ( i ? "\\," : " " ) );
+            os << "}{\\displaystyle ";
+            for(unsigned i=0;i<items_[1].size();++i)
+                tex_repr( items_[1][i], os << ( i ? "\\," : " " ) );
+            os << "}";
+        } else { // only *
+            for(unsigned i=0;i<items.size();++i)
+                tex_repr( items[i], os << ( i ? "\\," : " " ) );
+        }
+    } else if ( is_a_sub( op ) ) { // -a
+        bool np = type_parent > op->type;
+        if ( np ) os << "(";
+        os << "-";
+        tex_repr_rec( os, op->func_data()->children[1], op->type );
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_pow_NUM ) { // (...) ^ (...)
+        bool np = type_parent > STRING_pow_NUM; if ( np ) os << "(";
+        if ( op->func_data()->children[1]->type == Op::NUMBER and op->func_data()->children[1]->number_data()->val.num.is_one() and op->func_data()->children[1]->number_data()->val.den.is_one()==false ) {
+            if ( op->func_data()->children[1]->number_data()->val.den.is_two() )
+                os << "\\sqrt{";
+            else
+                os << "\\sqrt[" << op->func_data()->children[1]->number_data()->val.den << "]{";
+            tex_repr_rec( os, op->func_data()->children[0], 0 );
+            os << "}";
+        } else {
+            os << "{";
+            tex_repr_rec( os, op->func_data()->children[0], STRING_pow_NUM );
+            os << "}^{";
+            tex_repr_rec( os, op->func_data()->children[1], STRING_pow_NUM );
+            os << "}";
+        }
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_mod_NUM ) { // (...) % (...)
+        bool np = type_parent > op->type; if ( np ) os << "(";
+        os << "{";
+        tex_repr_rec( os, op->func_data()->children[0], op->type );
+        os << "}\\bmod{";
+        tex_repr_rec( os, op->func_data()->children[1], op->type );
+        os << "}";
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_abs_NUM ) { // abs( a )
+        os << "\\left|";
+        tex_repr_rec( os, op->func_data()->children[0], op->type );
+        os << "\\right|";
+    } else {
+        if ( op->type==STRING_heaviside_NUM )
+            os << "\\mathop{\\mathrm{H}}(";
+        else
+            os << "\\mathop{\\mathrm{" << Nstring(op->type) << "}}(";
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
+            if ( i ) os << ",";
+            tex_repr_rec( os, op->func_data()->children[i], 0 );
+        }
+        os << ")";
+    }
+}
+
+void Op::tex_repr( std::ostream &os ) const {
+    tex_repr_rec( os, this, 0 );
+}
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void graphviz_repr_rec( std::ostream &os, const Op *op ) {
+    if ( op->op_id == Op::current_op ) return; // already outputted ?
+        op->op_id = Op::current_op;
+    
+    if ( op->type == Op::NUMBER )
+        os << "    node" << op << " [label=\"" << op->number_data()->val << "\"];\n";
+    else if ( op->type == Op::SYMBOL ) {
+        os << "    node" << op << " [label=\"" << op->symbol_data()->cpp_name_str << "\"];\n";
+    } else {
+        os << "    node" << op << " [label=\"" << Nstring( op->type ) << "\"];\n";
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
+            os << "    node" << op << " -> node" << op->func_data()->children[i] << " [color=black];\n";
+            graphviz_repr_rec( os, op->func_data()->children[i] );
+        }
+    }
+}
+
+void Op::graphviz_repr( std::ostream &os ) const {
+    ++Op::current_op;
+    graphviz_repr_rec( os, this );
+}
+
+
+
+
+
+/*
 static unsigned clear_id_clear_additional_info_rec = 0;
 void Op::clear_additional_info_rec() {
     clear_additional_info_rec( ++clear_id_clear_additional_info_rec );
@@ -158,151 +480,6 @@ void graphviz_repr( std::ostream &os, Op *op ) {
 //         os << ")";
 //     }
 // }
-
-
-std::string cpp_repr( const Rationnal &val, int type_parent ) {
-    std::ostringstream os;
-    int local_type = 10000;
-    if ( val.num.is_negative() )
-        local_type = STRING_sub_NUM;
-    else if ( val.den != Rationnal::BI(1) )
-        local_type = STRING_div_NUM;
-    bool want_par = type_parent > local_type;
-    
-    if ( want_par ) os << "(";
-    if ( val.den == Rationnal::BI(1) ) os << val.num;
-    else os << val.num << ".0/" << val.den << ".0";
-    if ( want_par ) os << ")";
-    return os.str();
-}
-
-// 
-void find_p_and_s_parts_rec( Op *op, std::vector<Op *> &p_part, std::vector<Op *> &s_part ) {
-    if ( op->type == Op::NUMBER and op->number_data()->val.is_neg() )
-        s_part.push_back( op );
-    else if ( op->type != STRING_add_NUM )
-        p_part.push_back( op );
-    else {
-        if ( is_a_mul_by_neg_number( *op->func_data()->children[0] ) ) // ( -2 ) * a
-            s_part.push_back( op->func_data()->children[0] );
-        else
-            find_p_and_s_parts_rec( op->func_data()->children[0], p_part, s_part );
-        //
-        if ( is_a_mul_by_neg_number( *op->func_data()->children[1] ) ) // ( -2 ) * a
-            s_part.push_back( op->func_data()->children[1] );
-        else
-            find_p_and_s_parts_rec( op->func_data()->children[1], p_part, s_part );
-    }
-}
-
-void cpp_repr_rec( std::ostream &os, Op *op, int type_parent ) {
-    if ( op->type == Op::NUMBER ) {
-        os << cpp_repr( op->number_data()->val, type_parent );
-    } else if ( op->type == Op::SYMBOL ) {
-        os << op->symbol_data()->cpp_name_str;
-    } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
-        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
-        
-        std::vector<Op *> p_part;
-        std::vector<Op *> s_part;
-        find_p_and_s_parts_rec( op, p_part, s_part );
-    
-        for(unsigned i=0;i<p_part.size();++i) {
-            if ( i ) os << "+";
-            cpp_repr_rec( os, p_part[i], STRING_add_NUM );
-        }
-        for(unsigned i=0;i<s_part.size();++i) {
-            os << "-";
-            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
-                os << cpp_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
-            else { // ( -2 ) * a
-                Op *ch_0 = s_part[i]->func_data()->children[0];
-                Op *ch_1 = s_part[i]->func_data()->children[1];
-                if ( ch_0->number_data()->val.is_minus_one() )
-                    cpp_repr_rec( os, ch_1, STRING_sub_NUM );
-                else {
-                    os << cpp_repr( - ch_0->number_data()->val, STRING_mul_NUM );
-                    os << "*";
-                    cpp_repr_rec( os, ch_1, STRING_mul_NUM );
-                }
-            }
-        }
-        
-        if ( np ) os << ")";
-        /*if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
-            os << "-";
-            cpp_repr_rec( os, op->func_data()->children[1]->func_data()->children[1], STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else if ( is_a_sub( *op->func_data()->children[0] ) ) { // (-a) + b
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
-            os << "-";
-            cpp_repr_rec( os, op->func_data()->children[0]->func_data()->children[1], STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else if ( op->func_data()->children[0]->type == Op::NUMBER and op->func_data()->children[0]->number_data()->val.num.is_negative() ) { // (-2) + b
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[1], STRING_add_NUM ); 
-            os << "-" << cpp_repr( - op->func_data()->children[0]->number_data()->val, STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else { // a + b
-            bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
-            os << "+";
-            cpp_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
-            if ( np ) os << ")";
-        }
-        */
-    } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
-        if ( is_a_inv( *op->func_data()->children[1] ) ) { // a * ( 1/b )
-            bool np = type_parent > STRING_div_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[0], STRING_mul_NUM );
-            os << "/";
-            cpp_repr_rec( os, op->func_data()->children[1]->func_data()->children[0], STRING_div_NUM );
-            if ( np ) os << ")";
-        } else if ( is_a_inv( *op->func_data()->children[0] ) ) { // (1/a) * b
-            bool np = type_parent > STRING_div_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[1], STRING_mul_NUM );
-            os << "/";
-            cpp_repr_rec( os, op->func_data()->children[0]->func_data()->children[0], STRING_div_NUM );
-            if ( np ) os << ")";
-        } else { // a * b
-            bool np = type_parent > STRING_mul_NUM; if ( np ) os << "(";
-            cpp_repr_rec( os, op->func_data()->children[0], STRING_mul_NUM );
-            os << "*";
-            cpp_repr_rec( os, op->func_data()->children[1], STRING_mul_NUM );
-            if ( np ) os << ")";
-        }
-    } else if ( is_a_sub( *op ) ) { // -a
-        assert( op->func_data()->children[1] == NULL );
-        bool np = type_parent > op->type;
-        if ( np ) os << "(";
-        os << "-";
-        cpp_repr_rec( os, op->func_data()->children[1], op->type );
-        if ( np ) os << ")";
-    } else {
-        os << Nstring(op->type) << "(";
-        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
-            if ( i ) os << ",";
-            cpp_repr_rec( os, op->func_data()->children[i], 0 );
-        }
-        os << ")";
-    }
-}
-
-void cpp_repr( std::ostream &os, Op *op ) {
-    cpp_repr_rec( os, op, 0 );
-}
-
-bool Op::necessary_positive_or_null() {
-    return ( type == NUMBER and number_data()->val.positive_or_null() ) or
-           type == STRING_abs_NUM or
-           type == STRING_eqz_NUM or
-           type == STRING_exp_NUM or
-           type == STRING_cosh_NUM or
-           type == STRING_heaviside_NUM;
-}
 
 Op &add_number_and_expr( Op &a, Op &b ) { // a is a number
     if ( a.number_data()->val.is_zero() )
@@ -815,6 +992,16 @@ Op *subs( Thread *th, const void *tok, Op *self, VarArgs &a, VarArgs &b ) {
     return &res;
 }
 
+Op *subs( Thread *th, const void *tok, Op *self, Op *a, Op *b ) {
+    SplittedVec<Op *,1024,4096> of;
+    self->clear_additional_info_rec();
+    a->additional_info = b;
+    //
+    Op &res = subs_rec( th, tok, *self, of ).inc_ref();
+    for(unsigned i=0;i<of.size();++i) dec_ref( of[i] );
+    return &res;
+}
+
 Rationnal subs_numerical( Thread *th, const void *tok, Op *op, const Rationnal &a ) {
     SplittedVec<Op *,32> symbols;
     get_sub_symbols( op, symbols );
@@ -1053,32 +1240,30 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
         }
         
         if ( np ) os << ")";
-        /*
-        if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            tex_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
-            os << "-";
-            tex_repr_rec( os, op->func_data()->children[1]->func_data()->children[1], STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else if ( is_a_sub( *op->func_data()->children[0] ) ) { // (-a) + b
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
-            os << "-";
-            tex_repr_rec( os, op->func_data()->children[0]->func_data()->children[1], STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else if ( op->func_data()->children[0]->type == Op::NUMBER and op->func_data()->children[0]->number_data()->val.num.is_negative() ) { // (-2) + b
-            bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
-            tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM ); 
-            os << "-" << tex_repr( - op->func_data()->children[0]->number_data()->val, STRING_sub_NUM );
-            if ( np ) os << ")";
-        } else { // a + b
-            bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
-            tex_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
-            os << "+";
-            tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
-            if ( np ) os << ")";
-        }
-        */
+//         if ( is_a_sub( *op->func_data()->children[1] ) ) { // a + ( -b )
+//             bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
+//             tex_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
+//             os << "-";
+//             tex_repr_rec( os, op->func_data()->children[1]->func_data()->children[1], STRING_sub_NUM );
+//             if ( np ) os << ")";
+//         } else if ( is_a_sub( *op->func_data()->children[0] ) ) { // (-a) + b
+//             bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
+//             tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
+//             os << "-";
+//             tex_repr_rec( os, op->func_data()->children[0]->func_data()->children[1], STRING_sub_NUM );
+//             if ( np ) os << ")";
+//         } else if ( op->func_data()->children[0]->type == Op::NUMBER and op->func_data()->children[0]->number_data()->val.num.is_negative() ) { // (-2) + b
+//             bool np = type_parent > STRING_sub_NUM; if ( np ) os << "(";
+//             tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM ); 
+//             os << "-" << tex_repr( - op->func_data()->children[0]->number_data()->val, STRING_sub_NUM );
+//             if ( np ) os << ")";
+//         } else { // a + b
+//             bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+//             tex_repr_rec( os, op->func_data()->children[0], STRING_add_NUM );
+//             os << "+";
+//             tex_repr_rec( os, op->func_data()->children[1], STRING_add_NUM );
+//             if ( np ) os << ")";
+//         }
     } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
         SplittedVec<MulSeq,4,16,true> items;
         find_mul_items_and_coeff_rec( op, items );
@@ -1190,4 +1375,23 @@ Op &sinh     ( Op &a ) { if ( a.type == Op::NUMBER ) return Op::new_number( sinh
 Op &cosh     ( Op &a ) { if ( a.type == Op::NUMBER ) return Op::new_number( cosh_96  ( a.number_data()->val ) ); return Op::new_function( STRING_cosh_NUM     , a ); }
 Op &tanh     ( Op &a ) { if ( a.type == Op::NUMBER ) return Op::new_number( tanh_96  ( a.number_data()->val ) ); return Op::new_function( STRING_tanh_NUM     , a ); }
 
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Op *__integration__( Thread *th, const void *tok, Op *expr, Op *var, Op *beg, Op *end, Int32 deg_poly_max ) {
+    // look for discontinuities
+    expr->inc_ref();
+    
+    // taylor expansion
+    std::vector<Op *> taylor_expansion;
+    Op *r = expr->inc_ref(); // -> hum... mem leak
+    for(unsigned i=0;i<=deg_poly_max;++i) {
+        taylor_expansion.push_back( subs( r, var, beg ) );
+        if ( i < deg_poly_max )
+            r = diff( th, tok, r, var );
+    }
+    return integration_taylor_expansion( taylor_expansion );
+}
+
+*/
 

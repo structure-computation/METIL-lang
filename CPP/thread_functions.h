@@ -1061,8 +1061,8 @@ template<int compile_mode,int want_while> const void *exec_tok_if_or_while(const
         if ( cond < 0 ) {
             // case unknown
             if ( cond_var->type == global_data.Op ) {
-                if ( reinterpret_cast<Op *>( cond_var->data )->type == Op::NUMBER ) {
-                    cond = not reinterpret_cast<Op *>( cond_var->data )->number_data()->val.is_zero();
+                if ( reinterpret_cast<Ex *>( cond_var->data )->known_at_compile_time() ) {
+                    cond = not reinterpret_cast<Ex *>( cond_var->data )->value().is_zero();
                 } else {
                     th->add_error( "TODO: if or while with symbolic conditions unknown at compile time", tok );
                     make_copy( th->variables_to_del_at_next_end_block.new_elem(), cond_var ); --sp;
