@@ -52,7 +52,9 @@ struct Ex {
     Op *op;
 };
 
-Ex integration( Thread *th, const void *tok, Ex &expr, Ex &var, Ex &beg, Ex &end, Int32 deg_poly_max );
+std::ostream &operator<<( std::ostream &os, const Ex &ex );
+
+Ex integration( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max );
 
 // ------------------------------------------------------------------------------------------------------------------
 
@@ -65,6 +67,8 @@ Ex operator/( const Ex &a, const Ex &b );
 Ex mod  ( const Ex &a, const Ex &b );
 Ex pow  ( const Ex &a, const Ex &b );
 Ex atan2( const Ex &a, const Ex &b );
+Ex min  ( const Ex &a, const Ex &b );
+Ex max  ( const Ex &a, const Ex &b );
 
 Ex abs      ( const Ex &a );
 Ex log      ( const Ex &a );
@@ -80,5 +84,4 @@ Ex atan     ( const Ex &a );
 Ex sinh     ( const Ex &a );
 Ex cosh     ( const Ex &a );
 Ex tanh     ( const Ex &a );
-
 #endif // EX_H

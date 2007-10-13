@@ -62,8 +62,6 @@ struct CodeWriter {
     char *basic_type;
 private:
     void write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front, Int32 nb_spaces, bool &put_a_cr );
-//     void write_code_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, Op *cond, Int32 nb_spaces, SplittedVec<Op *,1024,4096> &of );
-//     void write_particular_cases_with_cond_0_and_1( Thread *th, const void *tok, std::ostream &os, SplittedVec<Op *,32> &subs_values, Int32 nb_spaces, SimpleVector<AlreadyCalculated> &already_calculated );
 };
     
     

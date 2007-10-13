@@ -361,6 +361,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
 
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     
+    primitive_functions.push_back( PrimitiveFunction( "subs_numerical", "ret.init( self.subs_numerical( th, tok, a ) );", /*ret*/"Rationnal" ).M("Op").A("Rationnal") );
+    
     primitive_functions.push_back( PrimitiveFunction( "subs", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
     

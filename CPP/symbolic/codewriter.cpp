@@ -24,12 +24,12 @@ void CodeWriter::init( const char *s, Int32 si ) {
 }
 
 void CodeWriter::init( CodeWriter &c ) {
-//     basic_type = strdup( c.basic_type );
-//     op_to_write.init( c.op_to_write );
-//     already_calculated.init( c.already_calculated );
-//     has_init_methods = c.has_init_methods;
-//             
-//     free_registers = new std::map<Type *,RegList>;
+    //     basic_type = strdup( c.basic_type );
+    //     op_to_write.init( c.op_to_write );
+    //     already_calculated.init( c.already_calculated );
+    //     has_init_methods = c.has_init_methods;
+    //             
+    //     free_registers = new std::map<Type *,RegList>;
     std::cout << "TODO " << __FILE__ << " " << __LINE__ << std::endl;
 }
 
@@ -288,7 +288,7 @@ void get_front( Op *expr, SplittedVec<Op *,256,1024> &front ) {
     if ( ponr->test_front ) // already done ?
         return;
     ponr->test_front = true;
-    if ( ponr->num_reg >= 0 ) // has a register
+    if ( ponr->num_reg >= 0 ) // has a register ?
         return;
     
     // creation of a new parent list
@@ -304,6 +304,7 @@ void get_front( Op *expr, SplittedVec<Op *,256,1024> &front ) {
             if ( c->type != Op::NUMBER and reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( c->additional_info )->num_reg < 0 )
                 return;
         }
+        // 
         front.push_back( expr );
     }
 }
@@ -435,14 +436,16 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         //             already_calculated[i].op->clear_additional_info_rec();
         ++Op::current_op;
         
-        // symbols
+        // parents
         SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
-        for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
+        for(unsigned i=0;i<op_to_write.size();++i) 
             get_parents( op_to_write[i].op, parents );
-        for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
+        // already_calculated
+        for(unsigned i=0;i<already_calculated.size();++i)
             if ( already_calculated[i].op->additional_info )
                 reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
-        for(unsigned i=0;i<op_to_write.size();++i) { // results in...
+        // results in...
+        for(unsigned i=0;i<op_to_write.size();++i) { 
             ParentsOpAndNumReg *ponr = reinterpret_cast<ParentsOpAndNumReg *>( op_to_write[i].op->additional_info );
             ponr->res.push_back( &op_to_write[i] );
             unsigned cpt_op = 0;
@@ -452,7 +455,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
                 disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
             }
         }
-        // front
+        // front (must be done after parents)
         SplittedVec<Op *,256,1024> front;
         for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
             get_front( op_to_write[i].op, front );
@@ -463,7 +466,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         if ( put_a_cr == false ) ss << "\n";
         //         }
     
-        // feee
+        // free
         //         for(unsigned i=0;i<of.size();++i) dec_ref( of[i] );
         //         while ( op_to_write.size() ) { free( op_to_write.back().name ); dec_ref( op_to_write.pop_back().op ); }
     }

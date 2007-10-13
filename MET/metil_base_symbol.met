@@ -15,7 +15,7 @@ def display_graphviz( self )
     f << "}\n"
     f.close()
     
-    system( "dot -Tps res.dot > res.eps && gv res.eps" )
+    system( "dot -Tgtk res.dot" )
 
 #~
 ~#

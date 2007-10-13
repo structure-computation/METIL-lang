@@ -361,6 +361,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
 
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     
+    primitive_functions.push_back( PrimitiveFunction( "subs_numerical", "ret.init( self.sub_numerical( th, tok, a ) );", /*ret*/"Rationnal" ).M("Op").A("Rationnal") );
+    
     primitive_functions.push_back( PrimitiveFunction( "subs", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
     
@@ -393,22 +395,22 @@ std::string nb_bits_in_mantissa(std::string class_name) {
 }
     
 void get_primitives_CodeWriter( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
-//     primitive_classes.push_back( PrimitiveClass( "CodeWriter_", "CodeWriter" ).avoid_reassign_using_mem_copy() );
-//     
-//     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriter_") );
-//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriter_") );
-//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ));" ).A("any").M("CodeWriter_").set_pertinence(1e5).
-//              set_supplementary_cond( "args[0]->type == global_data.String" ) );
-//     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
-//     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
-//     
-//     primitive_functions.push_back( PrimitiveFunction( "add_expr", "self.add_expr( th, tok, a, b, c );" ).M("CodeWriter_",/*modify*/"true").
-//         A("any").
-//         A("Op").
-//         A("Def").set_supplementary_cond("args[0]->type == global_data.String")
-//     );
-//     
-//     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
+    primitive_classes.push_back( PrimitiveClass( "CodeWriter_", "CodeWriter" ).avoid_reassign_using_mem_copy() );
+    
+    primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriter_") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriter_") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ));" ).A("any").M("CodeWriter_").set_pertinence(1e5).
+             set_supplementary_cond( "args[0]->type == global_data.String" ) );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
+    primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriter_").M("CodeWriter_",/*modify*/"true") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "add_expr", "self.add_expr( th, tok, a, b, c );" ).M("CodeWriter_",/*modify*/"true").
+        A("any").
+        A("Op").
+        A("Def").set_supplementary_cond("args[0]->type == global_data.String")
+    );
+    
+    primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
 }
 
 void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

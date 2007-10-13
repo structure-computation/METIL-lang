@@ -24,12 +24,12 @@ void CodeWriter::init( const char *s, Int32 si ) {
 }
 
 void CodeWriter::init( CodeWriter &c ) {
-//     basic_type = strdup( c.basic_type );
-//     op_to_write.init( c.op_to_write );
-//     already_calculated.init( c.already_calculated );
-//     has_init_methods = c.has_init_methods;
-//             
-//     free_registers = new std::map<Type *,RegList>;
+    //     basic_type = strdup( c.basic_type );
+    //     op_to_write.init( c.op_to_write );
+    //     already_calculated.init( c.already_calculated );
+    //     has_init_methods = c.has_init_methods;
+    //             
+    //     free_registers = new std::map<Type *,RegList>;
     std::cout << "TODO " << __FILE__ << " " << __LINE__ << std::endl;
 }
 
@@ -260,8 +260,9 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
 }
 
 void get_parents( Op *expr, SplittedVec<CodeWriter::ParentsOpAndNumReg,256,1024,true> &parents ) {
-    if ( expr->additional_info ) // already done ?
+    if ( expr->op_id == Op::current_op ) // already done ?
         return;
+    expr->op_id = Op::current_op;
         
     // creation of a new parent list
     CodeWriter::ParentsOpAndNumReg *po = parents.new_elem();
@@ -287,7 +288,7 @@ void get_front( Op *expr, SplittedVec<Op *,256,1024> &front ) {
     if ( ponr->test_front ) // already done ?
         return;
     ponr->test_front = true;
-    if ( ponr->num_reg >= 0 ) // has a register
+    if ( ponr->num_reg >= 0 ) // has a register ?
         return;
     
     // creation of a new parent list
@@ -303,6 +304,7 @@ void get_front( Op *expr, SplittedVec<Op *,256,1024> &front ) {
             if ( c->type != Op::NUMBER and reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( c->additional_info )->num_reg < 0 )
                 return;
         }
+        // 
         front.push_back( expr );
     }
 }
@@ -434,14 +436,16 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         //             already_calculated[i].op->clear_additional_info_rec();
         ++Op::current_op;
         
-        // symbols
+        // leaves and parents
         SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
-        for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
+        for(unsigned i=0;i<op_to_write.size();++i) 
             get_parents( op_to_write[i].op, parents );
-        for(unsigned i=0;i<already_calculated.size();++i) // already_calculated
+        // already_calculated
+        for(unsigned i=0;i<already_calculated.size();++i)
             if ( already_calculated[i].op->additional_info )
                 reinterpret_cast<ParentsOpAndNumReg *>( already_calculated[i].op->additional_info )->num_reg = already_calculated[i].num_reg;
-        for(unsigned i=0;i<op_to_write.size();++i) { // results in...
+        // results in...
+        for(unsigned i=0;i<op_to_write.size();++i) { 
             ParentsOpAndNumReg *ponr = reinterpret_cast<ParentsOpAndNumReg *>( op_to_write[i].op->additional_info );
             ponr->res.push_back( &op_to_write[i] );
             unsigned cpt_op = 0;

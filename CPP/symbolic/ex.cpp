@@ -72,15 +72,16 @@ Ex::T Ex::value() const {
 }
 
 bool Ex::depends_on( const Ex &a ) const {
-    return false;
-}
-
-Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const {
-    return 0;
+    return op->depends_on( a.op );
 }
 
 Op *to_inc_op( const Ex &ex ) {
     return ex.op->inc_ref();
+}
+
+std::ostream &operator<<( std::ostream &os, const Ex &ex ) {
+    ex.op->cpp_repr( os );
+    return os;
 }
 
 // --------------------------------------------------------------------------------------------
@@ -459,6 +460,14 @@ Ex tanh( const Ex &a ) {
     if ( is_a_number( a.op ) ) return tanh_96( a.op->number_data()->val );
     return Op::new_function( STRING_tanh_NUM, a.op );
 }
+Ex min( const Ex &a, const Ex &b ) {
+    Ex s = heaviside( b - a );
+    return s * a + ( 1 - s ) * b;
+}
+Ex max( const Ex &a, const Ex &b ) {
+    Ex s = heaviside( a - b );
+    return s * a + ( 1 - s ) * b;
+}
 
 // ------------------------------------------------------------------------------------------------------------
 void destroy_rec( Op *a ) {
@@ -517,7 +526,7 @@ struct DiffRec {
             case STRING_mul_NUM:       MAKE_D0D1( Ex( d0 ) * Ex( c1 ) + Ex( c0 ) * Ex( d1 ) ); break;
             case STRING_log_NUM:       MAKE_D0( Ex( d0 ) / c0 ); break; // { GET_D0; Op &n = o / c0; Op &r = da * n; of.push_back(&n); of.push_back(&r); a.additional_info = &r; return r; }
             case STRING_abs_NUM:       MAKE_D0( ( 2 * heaviside( Ex( c0 ) ) - 1 ) * Ex( d0 ) ); break;
-            case STRING_exp_NUM:       MAKE_D0( Ex( d0 ) * Ex( c0 ) ); break;
+            case STRING_exp_NUM:       MAKE_D0( Ex( d0 ) * Ex( a ) ); break;
             
             case STRING_sin_NUM:       MAKE_D0( Ex( d0 ) * cos( Ex( c0 ) ) ); break;
             case STRING_cos_NUM:       MAKE_D0( - Ex( d0 ) * sin( Ex( c0 ) ) ); break;
@@ -560,12 +569,12 @@ struct SubsRec {
         subs_rec( expr.op );
     }
     
-//     ~SubsRec() {
-//         ++Op::current_op;
-//         destroy_rec( expr.op );
-//         if ( d.op->op_id != Op::current_op )
-//             dec_ref( d.op->additional_info );
-//     }
+    //     ~SubsRec() {
+    //         ++Op::current_op;
+    //         destroy_rec( expr.op );
+    //         if ( d.op->op_id != Op::current_op )
+    //             dec_ref( d.op->additional_info );
+    //     }
     
     
     void subs_rec( Op *a ) {
@@ -630,17 +639,105 @@ Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) c
 }
 
 Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
-//     SplittedVec<const Op *> from;
-//     SplittedVec<const Op *> to;
-//     from.push_back( a.op );
-//     to  .push_back( b.op );
-//     return subs( th, tok, from, to );
-    return 666;
+    ++Op::current_op;
+    a.op->op_id = Op::current_op;
+    a.op->additional_info = b.op->inc_ref();
+    SubsRec sr( th, tok, *this );
+    return op->additional_info;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const {
+    SplittedVec<Op *,32> symbols;
+    get_sub_symbols( op, symbols );
+    if ( symbols.size() > 1 ) {
+        th->add_error("subs_numerical works only with expressions which contains at most 1 variable.",tok);
+        return 0;
+    }
+    //
+    if ( symbols.size() == 0 )
+        return value();
+        
+    // TODO : Optimize
+    Ex res = subs( th, tok, Ex( symbols[0] ), Ex( a ) );
+    if ( symbols.size() > 1 ) {
+        th->add_error("Weird : substitution should have given a Number.",tok);
+        return 0;
+    }
+    return res.value();
 }
 
 
 // ------------------------------------------------------------------------------------------------------------
-Ex integration( Thread *th, const void *tok, Ex &expr, Ex &var, Ex &beg, Ex &end, Int32 deg_poly_max ) {
-    return expr;
+void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SplittedVec<Ex,8> &res ) {
+    Rationnal r( 1 );
+    for(Int32 i=0;i<=deg_poly_max;++i) {
+        res.push_back( r * expr.subs( th, tok, var, beg ) );
+        if ( i < deg_poly_max ) {
+            expr = expr.diff( th, tok, var );
+            r /= i + 1;
+        }
+    }
 }
+
+Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    //
+    SplittedVec<Ex,8> taylor_expansion;
+    get_taylor_expansion( th, tok, expr, beg, var, deg_poly_max, taylor_expansion );
+    //
+    Ex res( 0 );
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
+        res = res + taylor_expansion[i] * pow( end - beg, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
+    return res;
+}
+Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    const Op *disc = expr.op->find_discontinuity( var.op );
+    if ( disc ) {
+        // substitutions
+        const Op *ch = disc->func_data()->children[0];
+        Ex subs_p, subs_n;
+        if ( disc->type == STRING_heaviside_NUM ) {
+            subs_p = expr.subs( th, tok, disc, Ex( 1 ) );
+            subs_n = expr.subs( th, tok, disc, Ex( 0 ) );
+        }
+        else if ( disc->type == STRING_abs_NUM ) {
+            subs_p = expr.subs( th, tok, disc,   Ex( disc->func_data()->children[0] ) );
+            subs_n = expr.subs( th, tok, disc, - Ex( disc->func_data()->children[0] ) );
+        }
+        else
+            assert( 0 ); //
+            
+        // intervals
+        SplittedVec<Ex,8> taylor_expansion;
+        get_taylor_expansion( th, tok, Ex( ch ), beg, var, 3, taylor_expansion );
+        Ex res( 0 );
+        // order 0 ( should not happen with proper simplifications )
+        Ex o0 = eqz( taylor_expansion[1] ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
+        if ( o0.known_at_compile_time()==false or o0.value().is_zero()==false ) {
+            Ex p0 = heaviside( taylor_expansion[0] );
+            res = res + o0 * (
+                      p0   * integration_with_discontinuities_rec( th, tok, subs_p, var, beg, end, deg_poly_max ) +
+                ( 1 - p0 ) * integration_with_discontinuities_rec( th, tok, subs_n, var, beg, end, deg_poly_max )
+            );
+        }
+        // order 1
+        Ex o1 = ( 1 - eqz( taylor_expansion[1] ) ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
+        if ( o1.known_at_compile_time()==false or o1.value().is_zero()==false ) {
+            Ex p1 = heaviside( taylor_expansion[1] );
+            Ex x0 = - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
+            res = res + o1 * (
+                      p1   * integration_with_discontinuities_rec( th, tok, subs_p, var, max(beg,x0), end, deg_poly_max ) * heaviside( end - x0 ) +
+                ( 1 - p1 ) * integration_with_discontinuities_rec( th, tok, subs_n, var, beg, min(end,x0), deg_poly_max ) * heaviside( x0 - beg )
+            );
+        }
+        //
+        return res;
+    }
+    return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
+}
+
+Ex integration( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+}
+
 

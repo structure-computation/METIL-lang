@@ -46,6 +46,11 @@ struct Op {
     void cpp_repr( std::ostream &os ) const;
     void tex_repr( std::ostream &os ) const;
     void graphviz_repr( std::ostream &os ) const;
+    bool depends_on( const Op *a ) const;
+    bool depends_on_rec( const Op *a ) const; // without update of current_op
+
+    const Op *find_discontinuity( const Op *var ) const;
+    const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
 
     // ..._data 
     NumberData *number_data() { return reinterpret_cast<NumberData *>( this + 1 ); }
@@ -105,6 +110,7 @@ struct MulSeq {
 };
 void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &items );
 
+void get_sub_symbols( Op *op, SplittedVec<Op *,32> &symbols );
 
 #endif
 
