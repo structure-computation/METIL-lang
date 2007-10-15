@@ -14,6 +14,11 @@ class InstanceParametricElement[ NE, dim, ST ]
 
     ind := Vec[ NodeIndex[ ST ], nb_nodes ]()
     
+    def init( num_lst, varargs ) when num_lst.is_a_number
+        for cpt in 0 .. nb_nodes
+            ind[ cpt ].num_lst = num_lst
+            ind[ cpt ].index = varargs[ cpt ]
+    
 #~
 
 ~#

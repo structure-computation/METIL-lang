@@ -156,7 +156,7 @@ class CodeWriter
     
     def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
         for i in 0 .. expr.nb_rows
-            for j in 0 .. expr.nb_cols
+            for j in 0 .. expr.nb_cols 
                 self.add( "$str($i,$j)", expr[i,j], method )
         return self
     

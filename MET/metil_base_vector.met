@@ -877,6 +877,12 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
         assert( vector.size == static_size, "size of vector to initialise is fixed and does not correspond ($(vector.size) != $(static_size))." )
         cpt := 0; for i in vector  __get_data_in_static_vec__( data, cpt++ ).init( i )
     
+    def init( vector, default_value ) when vector.tensor_order == 1 pertinence 2 #
+        for i in 0 .. min( vector.size, size )
+            self[ i ] = vector[i]
+        for i in vector.size .. size
+            self[ i ] = default_value
+    
     # def init( dummy_variable ) pertinence 1.5 # illegal. occurs only if dummy_variable.tensor_order != 1
         # assert( 0, "Vec[].init( something ) is illegal. Use init( size=0, reservation=size ) constructor." )
     

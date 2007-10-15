@@ -3,10 +3,12 @@
 #include "globaldata.h"
 #include "thread.h"
 #include <sstream>
+#include <complex>
 
 
 void Ex::init() {
     op = Op::new_number( 0 );
+    op->inc_ref();
 }
 
 void Ex::init( Op *ex ) {
@@ -83,6 +85,10 @@ std::ostream &operator<<( std::ostream &os, const Ex &ex ) {
     ex.op->cpp_repr( os );
     return os;
 }
+
+Ex &Ex::operator+=(const Ex &c) { *this = *this + c; return *this; }
+
+Ex &Ex::operator*=(const Ex &c) { *this = *this * c; return *this; }
 
 // --------------------------------------------------------------------------------------------
 struct SumSeq {
@@ -468,6 +474,34 @@ Ex max( const Ex &a, const Ex &b ) {
     Ex s = heaviside( a - b );
     return s * a + ( 1 - s ) * b;
 }
+Ex min( const Ex &a, const Ex &b, const Ex &c ) {
+    return min( min( a, b ), c );
+}
+Ex max( const Ex &a, const Ex &b, const Ex &c ) {
+    return max( max( a, b ), c );
+}
+
+void sort( Ex &a, Ex &b, Ex &c ) {
+    int perm[] = {
+        0, 1, 2,
+        0, 2, 1,
+        1, 0, 2,
+        1, 2, 0,
+        2, 0, 1,
+        2, 1, 0,
+    };
+    Ex val[] = { a, b, c };
+    Ex cond( 0 );
+    Ex ra, rb, rc;
+    for(unsigned num_perm=0;num_perm<6;++num_perm) {
+        cond = ( 1 - cond ) * heaviside( val[ perm[num_perm*3+2] ] - val[ perm[num_perm*3+1] ] ) * heaviside( val[ perm[num_perm*3+1] ] - val[ perm[num_perm*3+0] ] );
+        ra += cond * val[ perm[num_perm*3+0] ];
+        rb += cond * val[ perm[num_perm*3+1] ];
+        rc += cond * val[ perm[num_perm*3+2] ];
+    }
+    //
+    a = ra; b = rb; c = rc;
+}
 
 // ------------------------------------------------------------------------------------------------------------
 void destroy_rec( Op *a ) {
@@ -493,10 +527,10 @@ struct DiffRec {
     }
     
     ~DiffRec() {
-        ++Op::current_op;
-        destroy_rec( expr.op );
-        if ( d.op->op_id != Op::current_op )
-            dec_ref( d.op->additional_info );
+        //         ++Op::current_op;
+        //         destroy_rec( expr.op );
+        //         if ( d.op->op_id != Op::current_op )
+        //             dec_ref( d.op->additional_info );
     }
     
     
@@ -715,21 +749,84 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         Ex o0 = eqz( taylor_expansion[1] ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
         if ( o0.known_at_compile_time()==false or o0.value().is_zero()==false ) {
             Ex p0 = heaviside( taylor_expansion[0] );
-            res = res + o0 * (
-                      p0   * integration_with_discontinuities_rec( th, tok, subs_p, var, beg, end, deg_poly_max ) +
-                ( 1 - p0 ) * integration_with_discontinuities_rec( th, tok, subs_n, var, beg, end, deg_poly_max )
+            res += o0 * (
+                      p0   * integration( th, tok, subs_p, var, beg, end, deg_poly_max ) +
+                ( 1 - p0 ) * integration( th, tok, subs_n, var, beg, end, deg_poly_max )
             );
         }
         // order 1
         Ex o1 = ( 1 - eqz( taylor_expansion[1] ) ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
         if ( o1.known_at_compile_time()==false or o1.value().is_zero()==false ) {
             Ex p1 = heaviside( taylor_expansion[1] );
-            Ex x0 = - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
-            res = res + o1 * (
-                      p1   * integration_with_discontinuities_rec( th, tok, subs_p, var, max(beg,x0), end, deg_poly_max ) * heaviside( end - x0 ) +
-                ( 1 - p1 ) * integration_with_discontinuities_rec( th, tok, subs_n, var, beg, min(end,x0), deg_poly_max ) * heaviside( x0 - beg )
+            Ex x0 = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
+            res += o1 * (
+                integration( th, tok, p1 * subs_n + ( 1 - p1 ) * subs_p, var, beg, min(end,x0), deg_poly_max ) * heaviside( x0 - beg ) +
+                integration( th, tok, p1 * subs_p + ( 1 - p1 ) * subs_n, var, max(beg,x0), end, deg_poly_max ) * heaviside( end - x0 )
             );
         }
+        // order 2
+        Ex o2 = ( 1 - eqz( taylor_expansion[2] ) ) * eqz( taylor_expansion[3] );
+        if ( o2.known_at_compile_time()==false or o2.value().is_zero()==false ) {
+            Ex p2 = heaviside( taylor_expansion[2] );
+            Ex sg = p2 * 2 - 1;
+            //
+            Ex a = taylor_expansion[2], b = taylor_expansion[1], c = taylor_expansion[0];
+            Ex delta = pow( b, 2 ) - 4 * a * c;
+            Ex sq_delta = pow( delta * heaviside( delta ), Rationnal( 1, 2 ) );
+            Ex x0 = beg - ( b + sg * sq_delta ) / ( 2 * a + eqz( a ) ); // first root
+            Ex x1 = beg - ( b - sg * sq_delta ) / ( 2 * a + eqz( a ) ); // x1 >= x0
+            res += o2 * (
+                integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
+                integration( th, tok, p2 * subs_n + ( 1 - p2 ) * subs_p, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
+                integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, max(beg,x1), end        , deg_poly_max ) * heaviside( end - x1 )
+            );
+        }
+        // order 3
+        Ex o3 = ( 1 - eqz( taylor_expansion[3] ) );
+        if ( o3.known_at_compile_time()==false or o3.value().is_zero()==false ) {
+            Ex z = taylor_expansion[3] + eqz( taylor_expansion[3] );
+            Ex a = taylor_expansion[2] / z, b = taylor_expansion[1] / z, c = taylor_expansion[0] / z;
+            Ex p3 = heaviside( taylor_expansion[3] );
+            Ex p = b - pow( a, 2 ) * Rationnal( 1, 3 );
+            Ex q = pow( a, 3 ) * Rationnal( 2, 27 ) - a * b * Rationnal( 1, 3 ) + c;
+            Ex delta = 4 * pow( p, 3 ) + 27 * pow(q,2);
+            Ex delta_pos = heaviside( delta );
+            Ex sq_27_delta = pow( 27 * abs( delta ), Rationnal( 1, 2 ) );
+            // delta >= 0
+            if ( delta_pos.known_at_compile_time()==false or delta_pos.value().is_zero()==false ) {
+                Ex u = Rationnal( 1, 2 ) * ( -27 * q + sq_27_delta );
+                Ex v = Rationnal( 1, 2 ) * ( -27 * q - sq_27_delta );
+                Ex sgn_u = 2 * heaviside( u ) - 1;
+                Ex sgn_v = 2 * heaviside( v ) - 1;
+                Ex r = Rationnal( 1, 3 ) * ( sgn_u * pow( abs(u), Rationnal( 1, 3 ) ) + sgn_v * pow( abs(v), Rationnal( 1, 3 ) ) - a );
+                res += o3 * delta_pos * (
+                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, beg, min(end,r), deg_poly_max ) * heaviside( r - beg ) +
+                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,r), end, deg_poly_max ) * heaviside( end - r )
+                );
+            }
+            // delta < 0
+            Ex delta_neg = 1 - delta_pos;
+            if ( delta_neg.known_at_compile_time()==false or delta_neg.value().is_zero()==false ) {
+                std::complex<Ex> j( Rationnal( -1, 2 ), Rationnal( sqrt( (long double)3 ) / 2 ) );
+                std::complex<Ex> v( Rationnal( -27, 2 ) * q, Rationnal( 1, 2 ) * sq_27_delta );
+                Ex a_mod = v.real() * v.real() + v.imag() * v.imag();
+                Ex a_arg = atan2( v.imag(), v.real() );
+                std::complex<Ex> u = exp( Ex( Rationnal( 1, 3 ) ) * std::complex<Ex>( Rationnal( 1, 2 ) * log( a_mod + eqz(a_mod) ), a_arg ) ) * ( 1 - eqz( a_mod ) );
+                Ex x0 = Rationnal( 1, 3 ) * ( 2 * std::real(    u) - a );
+                Ex x1 = Rationnal( 1, 3 ) * ( 2 * std::real(  j*u) - a );
+                Ex x2 = Rationnal( 1, 3 ) * ( 2 * std::real(j*j*u) - a );
+                sort( x0, x1, x2 );
+                //
+                res += o3 * delta_neg * (
+                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
+                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
+                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, max(beg,x1), min(end,x2), deg_poly_max ) * heaviside( x2 - beg ) * heaviside( end - x1 ) +
+                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,x2), end        , deg_poly_max ) * heaviside( end - x2 )
+                );
+                // std::cout << double(r0.value()) << " " << double(r1.value()) << " " << double(r2.value()) << std::endl;
+            }
+        }
+        
         //
         return res;
     }
@@ -737,7 +834,8 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
 }
 
 Ex integration( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+    Ex res = integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+    return res;
 }
 
 

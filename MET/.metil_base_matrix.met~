@@ -397,7 +397,14 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
             for c in nc + 1 .. nb_cols
                 res[ r, c-1 ] = self[ r, c ]
         return res
-        
+    
+    def get_additional_cpp_methods
+        res := ""
+        if Structure == Gen
+            res <<< "    const T &operator()( ST i, ST j ) const { return data[ structure.nb_cols_ * i + j ]; }"
+            res <<< "    T &operator()( ST i, ST j ) { return data[ structure.nb_cols_ * i + j ]; }"
+        #
+        return res
 # ## make an array from a LittleHeterogeneousArray ##
 # def dyn_mat( data ) when have_same_name( type_of(data), LittleHeterogeneousArray )
     # if data.values.nb_unnamed_arguments() == 0  return VoidArray()
@@ -594,8 +601,6 @@ def mat_cst( sizes, val )  return MatCst( sizes, val )
 def mul( mat, vec ) when mat.is_a_matrix and vec.tensor_order==1 pertinence 4
     assert( mat.sub_types.size == 1 and vec.sub_types.size == 1, "TODO" )
     # TR := type_promote( type_promote_list( mat.sub_types, vec.sub_types, mul ).map( partial_inst ), reassign )
-    info vec.T
-    info mat.T
     TR := type_promote( partial_instanciation vec.T, partial_instanciation mat.T, div )
     res := Vec[ TR, mat.static_nb_rows ]( size = mat.nb_rows )
     for r in mat.ST(0) .. res.size

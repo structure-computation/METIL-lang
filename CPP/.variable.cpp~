@@ -25,6 +25,10 @@
 #include "cfile.h"
 #include <sstream>
 #include <fstream>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 // #define INFO_ON_ALLOCATION
 
@@ -164,7 +168,7 @@ void copy_bits( char *dest, unsigned dest_offset_in_bits, const char *src, unsig
 
 const void *init_using_default_values( Thread *th, const void *tok, Variable *v, Variable * &sp ) {
     // nb_init_call and reassign_using_mem_copy
-//     std::cout << v->type->name << std::endl;
+    //     std::cout << v->type->name << std::endl;
     
     unsigned nb_init_call = 0;
     for(int num_variable=v->type->nb_variables-1;num_variable>=0;--num_variable) {
@@ -752,5 +756,24 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { ((CcodeFunction7 *)( f_ ))( a, b, c, d, e, f, g ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h ) { ((CcodeFunction8 *)( f_ ))( a, b, c, d, e, f, g, h ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i ) { ((CcodeFunction9 *)( f_ ))( a, b, c, d, e, f, g, h, i ); }
+
+void *mmap_file( const char *s, unsigned si, Int32 &length ) {
+    std::string str( s, s+si );
+    int fd = open( str.c_str(), O_RDONLY );
+    if ( fd < 0 )
+        return NULL;
+    
+    struct stat stat_file;
+    if ( fstat( fd, &stat_file ) )
+        return NULL;
+    length = stat_file.st_size;
+    
+    return mmap( /*start*/ 0, length, PROT_READ, MAP_PRIVATE, fd, /*offset*/ 0 );
+}
+
+void munmap_( void *a, Int32 length ) {
+    std::cout << a << std::endl;
+    munmap( a, length );
+}
 
 

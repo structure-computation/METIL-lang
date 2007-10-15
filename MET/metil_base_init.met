@@ -307,6 +307,12 @@ def equal( a, b ) when a.is_a_Ptr and b.is_Null
 
 const SizeType := ( Int32, Int64 )[ size_of(UntypedPtr) == 64 ]
 
+def type_promote( a, b, op ) when a.is_Null and is_of_type_UntypedPtr( b )
+    return NULL
+
+def type_promote( a, b, op ) when b.is_Null and is_of_type_UntypedPtr( a )
+    return NULL
+
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
 

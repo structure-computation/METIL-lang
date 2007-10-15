@@ -11,12 +11,13 @@ class CppCompiledFunctionSet[ FS ]
     @see CppCompiledFunctionSet
 ~#
 class CppCompiledFunctionSet_
+    property is_a_CppCompiledFunctionSet_
     static env := BuildEnv()
     
     dl := DlLoader()
     name_to_func := Map[ String, UntypedPtr ]()
     
-    def init( fs )
+    def init( fs ) when not fs.is_a_CppCompiledFunctionSet_
         name_to_func.init()
         
         # base file name

@@ -307,6 +307,12 @@ def equal( a, b ) when a.is_a_Ptr and b.is_Null
 
 const SizeType := ( Int32, Int64 )[ size_of(UntypedPtr) == 64 ]
 
+def type_promote( a, b, op ) when a.is_Null and b.is_of_type_UntypedPtr
+    return NULL
+
+def type_promote( a, b, op ) when b.is_Null and a.is_of_type_UntypedPtr
+    return NULL
+
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -458,7 +464,7 @@ def shift_left( s, a ) when s.is_a_String
 def to_upper(a) return a.upper()
     
 ## return true if s contains v ( like "toto" in "pouetotoxouet" )##
-def __in__( v, s ) when v.type == String and s.type == String pertinence 10
+def __in__( v, s ) when v.is_a_String and s.is_a_String pertinence 10
     for cpt in 0 .. s.size + 1 - v.size
         if v == String( size = v.size, data = s.data_ + cpt )
             return true

@@ -168,5 +168,8 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 
 void exec_asm( void *th, void *code );
 
+void *mmap_file( const char *s, unsigned si, Int32 &length );
+void munmap_( void *a, Int32 length );
+
 #endif
 

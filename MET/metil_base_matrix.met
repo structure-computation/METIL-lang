@@ -397,7 +397,14 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
             for c in nc + 1 .. nb_cols
                 res[ r, c-1 ] = self[ r, c ]
         return res
-        
+    
+    def get_additional_cpp_methods
+        res := ""
+        if Structure == Gen
+            res <<< "    const T &operator()( ST i, ST j ) const { return data[ structure.nb_cols_.val * i + j ]; }"
+            res <<< "    T &operator()( ST i, ST j ) { return data[ structure.nb_cols_.val * i + j ]; }"
+        #
+        return res
 # ## make an array from a LittleHeterogeneousArray ##
 # def dyn_mat( data ) when have_same_name( type_of(data), LittleHeterogeneousArray )
     # if data.values.nb_unnamed_arguments() == 0  return VoidArray()

@@ -21,6 +21,9 @@ struct Ex {
     
     void operator=(const Ex &c) { reassign( c ); }
     
+    Ex &operator+=(const Ex &c);
+    Ex &operator*=(const Ex &c);
+    
     ~Ex() { destroy(); }
     
     // --------------------------

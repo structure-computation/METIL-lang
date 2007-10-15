@@ -901,7 +901,7 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
         cpt := 0; while cpt < static_size  block( __get_data_in_static_vec__( data, cpt++ ) )
         
     def select( i ) when i.tensor_order <= 0
-        assert( i < static_size, "indice > size ( $i > $s ) in vec of type $T" )
+        assert( i < static_size, "indice > size ( $i > $static_size ) in vec of type $T" )
         return __get_data_in_static_vec__( data, Int32(i) )
     
     def nb_attributes
