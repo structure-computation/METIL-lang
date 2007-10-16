@@ -90,6 +90,38 @@ Ex &Ex::operator+=(const Ex &c) { *this = *this + c; return *this; }
 
 Ex &Ex::operator*=(const Ex &c) { *this = *this * c; return *this; }
 
+void Ex::set_beg_value( T b, bool inclusive ) {
+    op->set_beg_value( b, inclusive );
+}
+
+void Ex::set_end_value( T e, bool inclusive ) {
+    op->set_end_value( e, inclusive );
+}
+
+bool Ex::beg_value_valid() const {
+    return op->beg_value_valid;
+}
+
+bool Ex::end_value_valid() const {
+    return op->end_value_valid;
+}
+
+bool Ex::beg_value_inclusive() const {
+    return op->beg_value_inclusive;
+}
+
+bool Ex::end_value_inclusive() const {
+    return op->end_value_inclusive;
+}
+
+Rationnal Ex::beg_value() const {
+    return op->beg_value;
+}
+
+Rationnal Ex::end_value() const {
+    return op->end_value;
+}
+
 // --------------------------------------------------------------------------------------------
 struct SumSeq {
     Rationnal c;
@@ -144,6 +176,15 @@ void add_items_and_coeffs( const SplittedVec<SumSeq,4,16,true> &items_a, Splitte
     }
 }
 
+void update_inter_add( Op *res, Op *a, Op *b ) {
+    if ( not res->cpt_use ) {
+        if ( a->beg_value_valid and b->beg_value_valid )
+            res->set_beg_value( a->beg_value + b->beg_value, a->beg_value_inclusive and b->beg_value_inclusive );
+        if ( a->end_value_valid and b->end_value_valid )
+            res->set_end_value( a->end_value + b->end_value, a->end_value_inclusive and b->end_value_inclusive );
+    }
+}
+
 Ex add_number_and_expr( const Ex &a, const Ex &b ) { // a is a number
     if ( a.op->number_data()->val.is_zero() )
         return b;
@@ -152,7 +193,9 @@ Ex add_number_and_expr( const Ex &a, const Ex &b ) { // a is a number
         return Ex( a.op->number_data()->val + b.op->func_data()->children[0]->number_data()->val ) + 
                Ex( b.op->func_data()->children[1] );
     }
-    return Op::new_function( STRING_add_NUM, a.op, b.op );
+    Op *res = Op::new_function( STRING_add_NUM, a.op, b.op );
+    update_inter_add( res, a.op, b.op );
+    return res;
 }
 
 Ex operator+( const Ex &a, const Ex &b ) {
@@ -196,9 +239,16 @@ Ex operator+( const Ex &a, const Ex &b ) {
         return make_add_seq( items_a );
     
     //
+    Op *res;
     if ( a.op < b.op )
-        return Op::new_function( STRING_add_NUM, a.op, b.op );
-    return Op::new_function( STRING_add_NUM, b.op, a.op );
+        res = Op::new_function( STRING_add_NUM, a.op, b.op );
+    else
+        res = Op::new_function( STRING_add_NUM, b.op, a.op );
+    
+    // interval
+    update_inter_add( res, a.op, b.op );
+    
+    return res;
 }
 
 Ex operator-( const Ex &a, const Ex &b ) {
@@ -217,6 +267,29 @@ Ex operator-( const Ex &a ) {
         return new_num * Ex( a.op->func_data()->children[1] );
     }
     return Ex( -1 ) * a; // (-1) * a
+}
+
+void update_inter_mul( Op *res, Op *a, Op *b ) {
+    if ( not res->cpt_use ) {
+        if ( a->beg_value_valid and a->end_value_valid and b->beg_value_valid and b->end_value_valid ) {
+            Ex::T v0 = a->beg_value * b->beg_value; bool i0 = a->beg_value_inclusive and b->beg_value_inclusive;
+            Ex::T v1 = a->beg_value * b->end_value; bool i1 = a->beg_value_inclusive and b->end_value_inclusive;
+            Ex::T v2 = a->end_value * b->beg_value; bool i2 = a->end_value_inclusive and b->beg_value_inclusive;
+            Ex::T v3 = a->end_value * b->end_value; bool i3 = a->end_value_inclusive and b->end_value_inclusive;
+            // min
+            Ex::T miv = v0; bool mii = i0;
+            if ( v1 < miv or ( v1==miv and i1 ) ) { miv = v1; mii = i1; }
+            if ( v2 < miv or ( v2==miv and i2 ) ) { miv = v2; mii = i2; }
+            if ( v3 < miv or ( v3==miv and i3 ) ) { miv = v3; mii = i3; }
+            res->set_beg_value( miv, mii );
+            // max
+            Ex::T mav = v0; bool mai = i0;
+            if ( v1 > mav or ( v1==mav and i1 ) ) { mav = v1; mai = i1; }
+            if ( v2 > mav or ( v2==mav and i2 ) ) { mav = v2; mai = i2; }
+            if ( v3 > mav or ( v3==mav and i3 ) ) { mav = v3; mai = i3; }
+            res->set_end_value( mav, mai );
+        }
+    }
 }
 
 Ex mul_number_and_expr( Ex a, Ex b ) { // a is a number
@@ -240,7 +313,9 @@ Ex mul_number_and_expr( Ex a, Ex b ) { // a is a number
     }
     
     //
-    return Op::new_function( STRING_mul_NUM, a.op, b.op );
+    Op *res = Op::new_function( STRING_mul_NUM, a.op, b.op );
+    update_inter_mul( res, a.op, b.op );
+    return res;
 }
 
 Ex to_op( const MulSeq &ms ) {
@@ -325,9 +400,15 @@ Ex operator*( const Ex &a, const Ex &b ) {
       return make_mul_seq( items_a );
     
     //
+    Op *res;
     if ( a.op < b.op )
-        return Op::new_function( STRING_mul_NUM, a.op, b.op );
-    return Op::new_function( STRING_mul_NUM, b.op, a.op );
+        res = Op::new_function( STRING_mul_NUM, a.op, b.op );
+    else
+        res = Op::new_function( STRING_mul_NUM, b.op, a.op );
+    
+    // interval
+    update_inter_mul( res, a.op, b.op );
+    return res;
 }
 Ex inv( const Ex &a ) {
     return pow( a, Ex(-1) );
@@ -406,7 +487,8 @@ Ex atan2( const Ex &a, const Ex &b ) {
 Ex abs( const Ex &a ) {
     if ( is_a_number( a.op ) ) return abs( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return a;
-    return Op::new_function( STRING_abs_NUM, a.op );
+    Op *res = Op::new_function( STRING_abs_NUM, a.op );
+    return res;
 }
 Ex log( const Ex &a ) {
     if ( is_a_number( a.op ) ) return log_96( a.op->number_data()->val );
@@ -417,18 +499,31 @@ Ex heaviside( const Ex &a ) {
     if ( is_a_number( a.op ) ) return heaviside( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return 1;
     if ( a.op->necessary_negative()         ) return 0;
-    return Op::new_function( STRING_heaviside_NUM, a.op );
+    Op *res = Op::new_function( STRING_heaviside_NUM, a.op );
+    if ( not res->cpt_use ) {
+        res->set_beg_value( 0, true );
+        res->set_end_value( 1, true );
+    }
+    return res;
 }
 Ex eqz( const Ex &a ) {
     if ( is_a_number( a.op ) ) return eqz( a.op->number_data()->val );
     if ( a.op->necessary_positive() ) return 0;
     if ( a.op->necessary_negative() ) return 0;
-    return Op::new_function( STRING_eqz_NUM, a.op );
+    Op *res = Op::new_function( STRING_eqz_NUM, a.op );
+    if ( not res->cpt_use ) {
+        res->set_beg_value( 0, true );
+        res->set_end_value( 1, true );
+    }
+    return res;
 }
 Ex exp( const Ex &a ) {
     if ( is_a_number( a.op ) ) return exp_96( a.op->number_data()->val );
     if ( a.op->type == STRING_log_NUM ) return a.op->func_data()->children[0];
-    return Op::new_function( STRING_exp_NUM, a.op );
+    Op *res = Op::new_function( STRING_exp_NUM, a.op );
+    if ( not res->cpt_use )
+        res->set_beg_value( 0, true );
+    return res;
 }
 Ex sin( const Ex &a ) {
     if ( is_a_number( a.op ) ) return sin_96( a.op->number_data()->val );
@@ -502,6 +597,7 @@ void sort( Ex &a, Ex &b, Ex &c ) {
     //
     a = ra; b = rb; c = rc;
 }
+
 
 // ------------------------------------------------------------------------------------------------------------
 void destroy_rec( Op *a ) {
@@ -619,38 +715,38 @@ struct SubsRec {
         #define MAKE_S0( res ) \
             { \
                 Op *c0 = a->func_data()->children[0]; subs_rec( c0 ); \
-                Op *s0 = c0->additional_info; \
+                Ex e0 = c0->additional_info; \
                 a->additional_info = to_inc_op( res ); \
             }
         #define MAKE_S0S1( res ) \
             { \
                 Op *c0 = a->func_data()->children[0]; subs_rec( c0 ); \
                 Op *c1 = a->func_data()->children[1]; subs_rec( c1 ); \
-                Op *s0 = c0->additional_info; \
-                Op *s1 = c1->additional_info; \
+                Ex e0 = c0->additional_info; \
+                Ex e1 = c1->additional_info; \
                 a->additional_info = to_inc_op( res ); \
             }
 
         switch ( a->type ) {
             case Op::NUMBER:           a->additional_info = a->inc_ref(); break;
             case Op::SYMBOL:           a->additional_info = a->inc_ref(); break;
-            case STRING_add_NUM:       MAKE_S0S1( Ex( s0 ) + Ex( s1 ) ); break;
-            case STRING_mul_NUM:       MAKE_S0S1( Ex( s0 ) * Ex( s1 ) ); break;
-            case STRING_pow_NUM:       MAKE_S0S1( pow( Ex( s0 ), Ex( s1 ) ) ); break;
-            case STRING_atan2_NUM:     MAKE_S0S1( atan2( Ex( s0 ), Ex( s1 ) ) ); break;
+            case STRING_add_NUM:       MAKE_S0S1( e0 + e1 ); break;
+            case STRING_mul_NUM:       MAKE_S0S1( e0 * e1 ); break;
+            case STRING_pow_NUM:       MAKE_S0S1( pow( e0, e1 ) ); break;
+            case STRING_atan2_NUM:     MAKE_S0S1( atan2( e0, e1 ) ); break;
             
-            case STRING_heaviside_NUM: MAKE_S0( heaviside( Ex( s0 ) ) ); break;
-            case STRING_eqz_NUM:       MAKE_S0( eqz      ( Ex( s0 ) ) ); break;
-            case STRING_log_NUM:       MAKE_S0( log      ( Ex( s0 ) ) ); break;
-            case STRING_abs_NUM:       MAKE_S0( abs      ( Ex( s0 ) ) ); break;
-            case STRING_exp_NUM:       MAKE_S0( exp      ( Ex( s0 ) ) ); break;
+            case STRING_heaviside_NUM: MAKE_S0( heaviside( e0 ) ); break;
+            case STRING_eqz_NUM:       MAKE_S0( eqz      ( e0 ) ); break;
+            case STRING_log_NUM:       MAKE_S0( log      ( e0 ) ); break;
+            case STRING_abs_NUM:       MAKE_S0( abs      ( e0 ) ); break;
+            case STRING_exp_NUM:       MAKE_S0( exp      ( e0 ) ); break;
             
-            case STRING_sin_NUM:       MAKE_S0( sin      ( Ex( s0 ) ) ); break;
-            case STRING_cos_NUM:       MAKE_S0( cos      ( Ex( s0 ) ) ); break;
-            case STRING_tan_NUM:       MAKE_S0( tan      ( Ex( s0 ) ) ); break;
-            case STRING_asin_NUM:      MAKE_S0( asin     ( Ex( s0 ) ) ); break;
-            case STRING_acos_NUM:      MAKE_S0( acos     ( Ex( s0 ) ) ); break;
-            case STRING_atan_NUM:      MAKE_S0( atan     ( Ex( s0 ) ) ); break;
+            case STRING_sin_NUM:       MAKE_S0( sin      ( e0 ) ); break;
+            case STRING_cos_NUM:       MAKE_S0( cos      ( e0 ) ); break;
+            case STRING_tan_NUM:       MAKE_S0( tan      ( e0 ) ); break;
+            case STRING_asin_NUM:      MAKE_S0( asin     ( e0 ) ); break;
+            case STRING_acos_NUM:      MAKE_S0( acos     ( e0 ) ); break;
+            case STRING_atan_NUM:      MAKE_S0( atan     ( e0 ) ); break;
             
             default:
                 th->add_error( "for now, no rules to subs function of type '"+std::string(Nstring(a->type))+"'.", tok );
@@ -659,7 +755,7 @@ struct SubsRec {
     
     Thread *th;
     const void *tok;
-    Ex zero, one, expr;
+    Ex expr;
 };
 
 Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
@@ -724,44 +820,79 @@ Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &exp
         res = res + taylor_expansion[i] * pow( end - beg, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
     return res;
 }
+
 Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     const Op *disc = expr.op->find_discontinuity( var.op );
     if ( disc ) {
+        Ex ex_disc( disc );
+        assert( disc->depends_on( var.op ) );
+        // std::cout << ex_disc << std::endl;
         // substitutions
         const Op *ch = disc->func_data()->children[0];
+        Ex ex_ch( ch );
         Ex subs_p, subs_n;
         if ( disc->type == STRING_heaviside_NUM ) {
-            subs_p = expr.subs( th, tok, disc, Ex( 1 ) );
-            subs_n = expr.subs( th, tok, disc, Ex( 0 ) );
+            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
+            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+            // std::cout << expr.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << expr.op << " -> (p) " << subs_p.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << subs_p.op << std::endl;
+            // std::cout << expr.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << expr.op << " -> (n) " << subs_n.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << subs_n.op << std::endl;
+            
+            //             std::ofstream g("graph_p.dot"); g << "digraph \"p"\" {\n" << subs_p.graphviz_repr() << "}\n";
+            //             assert(0);
+            //             assert( subs_p.op != expr.op );
+            //             assert( subs_n.op != expr.op );
         }
         else if ( disc->type == STRING_abs_NUM ) {
-            subs_p = expr.subs( th, tok, disc,   Ex( disc->func_data()->children[0] ) );
-            subs_n = expr.subs( th, tok, disc, - Ex( disc->func_data()->children[0] ) );
+            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
+            subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
         }
         else
             assert( 0 ); //
             
         // intervals
         SplittedVec<Ex,8> taylor_expansion;
-        get_taylor_expansion( th, tok, Ex( ch ), beg, var, 3, taylor_expansion );
+        get_taylor_expansion( th, tok, ex_ch, beg, var, 3, taylor_expansion );
         Ex res( 0 );
-        // order 0 ( should not happen with proper simplifications )
-        Ex o0 = eqz( taylor_expansion[1] ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
-        if ( o0.known_at_compile_time()==false or o0.value().is_zero()==false ) {
-            Ex p0 = heaviside( taylor_expansion[0] );
-            res += o0 * (
-                      p0   * integration( th, tok, subs_p, var, beg, end, deg_poly_max ) +
-                ( 1 - p0 ) * integration( th, tok, subs_n, var, beg, end, deg_poly_max )
-            );
-        }
-        // order 1
-        Ex o1 = ( 1 - eqz( taylor_expansion[1] ) ) * eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
+        // order 0
+        //         
+        //         if ( o0.known_at_compile_time()==false or o0.value().is_zero()==false ) {
+        //             Ex p0 = heaviside( taylor_expansion[0] );
+        //             res += o0 * (
+        //                       p0   * integration( th, tok, subs_p, var, beg, end, deg_poly_max ) +
+        //                 ( 1 - p0 ) * integration( th, tok, subs_n, var, beg, end, deg_poly_max )
+        //             );
+        //         }
+        // order 1 -
+        Ex o1 = eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
         if ( o1.known_at_compile_time()==false or o1.value().is_zero()==false ) {
-            Ex p1 = heaviside( taylor_expansion[1] );
-            Ex x0 = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
-            res += o1 * (
-                integration( th, tok, p1 * subs_n + ( 1 - p1 ) * subs_p, var, beg, min(end,x0), deg_poly_max ) * heaviside( x0 - beg ) +
-                integration( th, tok, p1 * subs_p + ( 1 - p1 ) * subs_n, var, max(beg,x0), end, deg_poly_max ) * heaviside( end - x0 )
+            // sort beg, end
+            Ex end_sup_beg = heaviside( end - beg );
+            Ex true_beg = end_sup_beg * beg + ( 1 - end_sup_beg ) * end;
+            Ex true_end = end_sup_beg * end + ( 1 - end_sup_beg ) * beg;
+            //
+            Ex x0_ = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
+            Ex x0 = ( 1 - eqz( taylor_expansion[1] ) ) * x0_ + 
+                          eqz( taylor_expansion[1] )   * ( heaviside( taylor_expansion[0] ) * true_beg + ( 1 - heaviside( taylor_expansion[0] ) * true_end ) );
+            //
+            Ex p1 = heaviside( taylor_expansion[1] ), n1 = 1 - p1;
+            Ex nb = true_beg         * p1 + max(true_beg,x0) * n1;
+            Ex ne = min(true_end,x0) * p1 + true_end         * n1;
+            Ex pb = max(true_beg,x0) * p1 + true_beg         * n1;
+            Ex pe = true_end         * p1 + min(true_end,x0) * n1;
+            //
+            //             std::cout << "int " << ch << std::endl;
+            //             assert( true_beg.op->depends_on( var.op ) == false );
+            //             assert( true_end.op->depends_on( var.op ) == false );
+            //             assert( nb.op->depends_on( var.op ) == false );
+            //             assert( ne.op->depends_on( var.op ) == false );
+            //             assert( pb.op->depends_on( var.op ) == false );
+            //             assert( pe.op->depends_on( var.op ) == false );
+            
+            Ex int_p = integration( th, tok, subs_n, var, nb, ne, deg_poly_max ) * heaviside( ne - nb );
+            Ex int_n = integration( th, tok, subs_p, var, pb, pe, deg_poly_max ) * heaviside( pe - pb );
+            res += ( 2 * end_sup_beg - 1 ) * o1 * (
+                int_p +
+                int_n
             );
         }
         // order 2
@@ -833,9 +964,21 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
-Ex integration( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    Ex res = integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
-    return res;
+Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    if ( same_op( beg.op, end.op ) )
+        return Ex( 0 );
+    //
+    if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
+        Ex old_var = var;
+        var = Ex( "tmp", 3, "tmp", 3 );
+        if ( beg.known_at_compile_time() )
+            var.set_beg_value( beg.value(), true );
+        if ( end.known_at_compile_time() )
+            var.set_end_value( end.value(), true );
+        expr = expr.subs( th, tok, old_var, var );
+    }
+    
+    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
 

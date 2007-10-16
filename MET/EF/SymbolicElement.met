@@ -12,16 +12,19 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     name_elem := ""
     
     #
-    def init( name_elem = "elem" )
+    def std_pos_symbol_function( num_node, d )
+        letters := "xyztuvw"
+        if lmtpp
+            return "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}"
+        return "pos[IND($num_node)][$d]","P_{$num_node}^{$(letters[d])}"
+        
+    #
+    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function )
         init_using_default_values( self )
         self.name_elem = name_elem
-        letters := "xyztuvw"
         for num_node in 0 .. nb_nodes
             for d in 0 .. dim
-                if lmtpp
-                    pos_nodes[num_node][d] = symbol( "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}" )
-                else
-                    pos_nodes[num_node][d] = symbol("pos[IND($num_node)][$d]","P_{$num_node}^{$(letters[d])}")
+                pos_nodes[num_node][d] = symbol( pos_symbol_function( num_node, d ) )
         #
         var_inter.init( x => symbol("var_inter[$x]",greek_letter(6+x)) )
         

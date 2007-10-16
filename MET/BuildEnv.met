@@ -5,7 +5,7 @@ class BuildEnv
     CXX := "g++"
     LD := "g++"
     CPPPATH := Vec[String]( [ ".", "/usr/include", "/usr/local/include", "include" ] )
-    CPPFLAGS := "-g3 -O3 -ffast-math" #
+    CPPFLAGS := "-O3 -ffast-math -g3" #
     LDFLAGS := ""
     LDPATH := Vec[String]()
     LIBS := Vec[String]([])

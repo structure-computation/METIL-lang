@@ -717,8 +717,12 @@ class VecOp
     def get_size_evaluation_costs_a_lot
         return max( va.map(_0.size_evaluation_costs_a_lot) )
     def get_size
-        if va.size
+        if va.size == 1
             return va[0].size
+        # if va.size == 2
+            # return min( va[0].size, va[1].size )
+        # if va.size == 3
+            # return min( va[0].size, va[1].size, va[2].size )
         return 0
     def get_sizes
         return [ get_size() ]
@@ -804,6 +808,11 @@ class VecDirac
 def __uninitialised_vec__( T, size )
     return __uninitialised_vec_using_partial_instanciation__( partial_instanciation T, size )
 
+def type_promote( a, b, op ) when a.is_a_vec_of_static_size and b.tensor_order <= 0 pertinence 1
+    return Vec[ type_promote( partial_instanciation a.T, b, op ), a.static_size ]
+def type_promote( b, a, op ) when a.is_a_vec_of_static_size and b.tensor_order <= 0 pertinence 1
+    return Vec[ type_promote( b, partial_instanciation a.T, op ), a.static_size ]
+
 ##  Simple static size vector ##
 class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     static const tensor_order := 1
@@ -817,7 +826,7 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     
     data := __uninitialised_vec_using_partial_instanciation__( partial_instanciation T, static_size )
     
-    def get_size             return static_size
+    def get_size         return static_size
     
     def get_static_sizes return [ static_size ]
     
@@ -876,6 +885,12 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
     def init( vector ) when vector.tensor_order == 1 pertinence 2 #
         assert( vector.size == static_size, "size of vector to initialise is fixed and does not correspond ($(vector.size) != $(static_size))." )
         cpt := 0; for i in vector  __get_data_in_static_vec__( data, cpt++ ).init( i )
+    
+    # def init( vector, default_value ) when vector.tensor_order == 1 pertinence 2 #
+        # for i in 0 .. min( vector.size, size )
+            # self[ i ] = vector[i]
+        # for i in vector.size .. size
+            # self[ i ] = default_value
     
     # def init( dummy_variable ) pertinence 1.5 # illegal. occurs only if dummy_variable.tensor_order != 1
         # assert( 0, "Vec[].init( something ) is illegal. Use init( size=0, reservation=size ) constructor." )

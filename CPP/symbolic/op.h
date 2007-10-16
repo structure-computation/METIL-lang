@@ -42,6 +42,7 @@ struct Op {
     bool necessary_positive() const;
     bool necessary_negative() const;
     bool necessary_positive_or_null() const;
+    bool necessary_negative_or_null() const;
     
     void cpp_repr( std::ostream &os ) const;
     void tex_repr( std::ostream &os ) const;
@@ -51,6 +52,15 @@ struct Op {
 
     const Op *find_discontinuity( const Op *var ) const;
     const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
+    
+    int nb_nodes() const; //
+    int nb_nodes_rec() const; // without update of current_op
+    
+    int nb_nodes_of_type( int t ) const; //
+    int nb_nodes_of_type_rec( int t ) const; // without update of current_op
+    
+    void set_beg_value( Rationnal b, bool inclusive );
+    void set_end_value( Rationnal e, bool inclusive );
 
     // ..._data 
     NumberData *number_data() { return reinterpret_cast<NumberData *>( this + 1 ); }
@@ -67,6 +77,9 @@ struct Op {
     mutable Op *additional_info;
     mutable unsigned op_id;
     mutable unsigned cpt_use;
+    
+    bool beg_value_valid, end_value_valid, beg_value_inclusive, end_value_inclusive;
+    Rationnal beg_value, end_value;
     
     static unsigned current_op;
 };

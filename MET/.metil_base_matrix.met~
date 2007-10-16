@@ -118,7 +118,7 @@ class Diag[ static_size = -1, ST = None, default_value = 0 ] inherits Sym[ stati
 
 ## ##
 class Dense[ simd_compatible = true, simd_size = 0 ]
-    pass
+    toto := 0
     
 # -----------------------------------------------------------------------------------------------------------------------------------
 class ColOrRowExtraction[ ST, want_row ]
@@ -321,8 +321,8 @@ class SubMatExtraction[ ST ] inherits MatAncestor
 class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == Dense inherits MatAncestor
     property has_for_with_index_and_values
     structure := Structure[ ST = ST ]()
-    storage := Storage()
     data := Vec[ T, structure.static_nb_values, ST ]()
+    storage := Storage()
     static const simd_compatible := storage.simd_compatible
     static const simd_size := storage.simd_size or default_simd_size( T )
     static const known_nb_values := structure.known_nb_values
@@ -368,7 +368,7 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
             self[ r, c ].init( m[ r, c ] )
     
     def reassign( m ) when m.is_a_matrix pertinence 3
-        infon m
+
         structure.resize( m.nb_rows, m.nb_cols, data, T(0) ) # TODO -> meaning of 0
         for r, c in structure
             self[ r, c ] = m[ r, c]
@@ -401,8 +401,11 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     def get_additional_cpp_methods
         res := ""
         if Structure == Gen
-            res <<< "    const T &operator()( ST i, ST j ) const { return data[ structure.nb_cols_ * i + j ]; }"
-            res <<< "    T &operator()( ST i, ST j ) { return data[ structure.nb_cols_ * i + j ]; }"
+            res <<< "    const T &operator()( ST r, ST c ) const { return data[ structure.nb_cols_.val * r + c ]; }"
+            res <<< "    T &operator()( ST r, ST c ) { return data[ structure.nb_cols_.val * r + c ]; }"
+        else if Structure == Sym
+            res <<< "    const T &operator()( ST r, ST c ) const { if (c>r) return operator()( c, r ); return data[ ( r * ( r + 1 ) ) / 2 + c ]; }"
+            res <<< "    T &operator()( ST r, ST c ) { if (c>r) return operator()( c, r ); return data[ ( r * ( r + 1 ) ) / 2 + c ]; }"
         #
         return res
 # ## make an array from a LittleHeterogeneousArray ##
@@ -800,6 +803,7 @@ class MatTrans[ST] inherits MatAncestor
     def get_static_nb_rows   return mat->static_nb_cols
     def get_static_nb_cols   return mat->static_nb_rows
     def get_known_nb_values  return mat->known_nb_values
+    def get_T                return mat->T
     def select( i, j )       return conj( mat->select( j, i ) )
     def conversion_to( b ) when is_of_type_Bool(b) and @op == equal
         mat->conversion_to( b )

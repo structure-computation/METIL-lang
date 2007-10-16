@@ -373,8 +373,18 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "apply", "init_arithmetic( ret, self.subs_numerical( th, tok, Rationnal(a) ) );", /*ret*/after_op(primitive_classes[i]) ).M("Op").A(primitive_classes[i].met_name) );
         
     //     primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
-    
     primitive_functions.push_back( PrimitiveFunction( "__integration__", "ret.init( integration( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
+    
+    
+    primitive_functions.push_back( PrimitiveFunction( "beg_value_valid", "ret = self.beg_value_valid();", /*ret*/"Bool" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "end_value_valid", "ret = self.end_value_valid();", /*ret*/"Bool" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "beg_value_inclusive", "ret = self.beg_value_inclusive();", /*ret*/"Bool" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "end_value_inclusive", "ret = self.end_value_inclusive();", /*ret*/"Bool" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "beg_value", "ret.init( self.beg_value() );", /*ret*/"Rationnal" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "end_value", "ret.init( self.end_value() );", /*ret*/"Rationnal" ).M("Op") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "set_beg_value", "self.set_beg_value(a,b);" ).M("Op").A("Rationnal").A("Bool") ); 
+    primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(a,b);" ).M("Op").A("Rationnal").A("Bool") );
 }
 
 std::string nb_bits_in_mantissa(std::string class_name) {

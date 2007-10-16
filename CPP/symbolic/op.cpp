@@ -9,12 +9,38 @@ void Op::init( int type_ ) {
     type = type_;
     cpt_use = 0;
     op_id = 0;
+    beg_value_valid = false;
+    end_value_valid = false;
 }
 
+void Op::destroy() {
+    assert( parents.size() == 0 );
+    parents.destroy();
+    if ( type == SYMBOL ) {
+        free( symbol_data()->cpp_name_str );
+        free( symbol_data()->tex_name_str );
+    } else if ( type == NUMBER ) {
+        number_data()->val.destroy();
+    } else { // function
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and func_data()->children[i];++i) {
+            if ( func_data()->children[i]->type != Op::NUMBER )
+                func_data()->children[i]->parents.erase_elem_in_unordered_list( this );
+            dec_ref( func_data()->children[i] );
+        }
+    }
+    if ( beg_value_valid )
+        beg_value.destroy();
+    if ( end_value_valid )
+        end_value.destroy();
+}
+    
 Op *Op::new_number( const Rationnal &val ) {
     Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->init( NUMBER );
     
     init_arithmetic( res->number_data()->val, val );
+    
+    res->set_beg_value( val, true );
+    res->set_end_value( val, true );
     return res;
 }
 
@@ -43,7 +69,7 @@ Op *Op::new_function( int type, Op *a ) {
     ds->children[0] = a->inc_ref();
     ds->children[1] = NULL;
     
-    if ( a->type != Op::NUMBER )
+    if ( a->type != Op::NUMBER ) // should be ...
         a->parents.push_back( res );
     
     return res;
@@ -53,7 +79,7 @@ Op *Op::new_function( int type, Op *a, Op *b ) {
     assert( a->type != Op::NUMBER or b->type != Op::NUMBER );
     
     // look in parents of a or b if function already created somewhere
-    Op *c = ( a->type != Op::NUMBER ? a : b );
+    Op *c = ( a->type == Op::NUMBER ? b : a );
     for(unsigned i=0;i<c->parents.size();++i) {
         Op *p = c->parents[ i ];
         if ( p->type == type and same_op( a, p->func_data()->children[0] ) and same_op( b, p->func_data()->children[1] ) )
@@ -74,44 +100,47 @@ Op *Op::new_function( int type, Op *a, Op *b ) {
     return res;
 }
 
-void Op::destroy() {
-    assert( parents.size() == 0 );
-    parents.destroy();
-    if ( type == SYMBOL ) {
-        free( symbol_data()->cpp_name_str );
-        free( symbol_data()->tex_name_str );
-    } else if ( type == NUMBER ) {
-        number_data()->val.destroy();
-    } else { // function
-        for(unsigned i=0;i<Op::FuncData::max_nb_children and func_data()->children[i];++i) {
-            if ( func_data()->children[i]->type != Op::NUMBER )
-                func_data()->children[i]->parents.erase_elem_in_unordered_list( this );
-            dec_ref( func_data()->children[i] );
-        }
-    }
-}
-    
 bool Op::is_zero     () const { return type==NUMBER and number_data()->val.is_zero(); }
 bool Op::is_one      () const { return type==NUMBER and number_data()->val.is_one(); }
 bool Op::is_minus_one() const { return type==NUMBER and number_data()->val.is_minus_one(); }
 
 
 bool Op::necessary_positive() const {
-    return ( type == NUMBER and number_data()->val.is_pos() ) or
-           type == STRING_exp_NUM or
-           type == STRING_cosh_NUM;
+    if ( beg_value_valid ) {
+        if ( beg_value_inclusive ) {
+            if ( beg_value.is_pos() )
+                return true;
+        }
+        else {
+            if ( beg_value.is_pos_or_null() )
+                return true;
+        }
+    }
+    return false;
 }
 
+
 bool Op::necessary_positive_or_null() const {
-    return ( type == NUMBER and number_data()->val.is_pos_or_null() ) or
-           type == STRING_abs_NUM or
-           type == STRING_eqz_NUM or
-           type == STRING_heaviside_NUM;
+    return beg_value_valid and beg_value.is_pos_or_null();
 }
 
 bool Op::necessary_negative() const {
-    return ( type == NUMBER and number_data()->val.is_neg() ) or
-           ( is_a_sub( this ) and necessary_positive() );
+    if ( end_value_valid ) {
+        if ( end_value_inclusive ) {
+            if ( end_value.is_neg() )
+                return true;
+        }
+        else {
+            if ( end_value.is_neg_or_null() )
+                return true;
+        }
+    }
+    return false;
+}
+
+
+bool Op::necessary_negative_or_null() const {
+    return end_value_valid and end_value.is_neg_or_null();
 }
 
 /// @see operator*
@@ -128,6 +157,30 @@ void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &i
         s->e.init( 1 );
         s->op = a;
     }
+}
+
+void Op::set_beg_value( Rationnal b, bool inclusive ) {
+    beg_value_inclusive = inclusive;
+    if ( beg_value_valid )
+        beg_value = b;
+    else {
+        beg_value.init( b );
+        beg_value_valid = true;
+    }
+    //     if ( parents.size() )
+    //         cpp_repr( std::cout << std::endl );
+    assert( parents.size() == 0 ); // TODO
+}
+
+void Op::set_end_value( Rationnal e, bool inclusive ) {
+    end_value_inclusive = inclusive;
+    if ( end_value_valid )
+        end_value = e;
+    else {
+        end_value.init( e );
+        end_value_valid = true;
+    }
+    assert( parents.size() == 0 ); // TODO
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -482,12 +535,50 @@ const Op *Op::find_discontinuity( const Op *var ) const {
 }
 
 
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int Op::nb_nodes_rec() const {
+    if ( op_id == current_op )
+        return 0;
+    op_id = current_op;
+    //
+    if ( type > 0 ) {
+        int res = 1;
+        for(unsigned i=0;i<FuncData::max_nb_children and func_data()->children[i];++i)
+            res += func_data()->children[i]->nb_nodes_rec();
+        return res;
+    }
+    return 1;
+}
+
+int Op::nb_nodes() const {
+    ++current_op;
+    return nb_nodes_rec();
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int Op::nb_nodes_of_type_rec( int t ) const {
+    if ( op_id == current_op )
+        return 0;
+    op_id = current_op;
+    //
+    if ( type > 0 ) {
+        int res = ( type == t );
+        for(unsigned i=0;i<FuncData::max_nb_children and func_data()->children[i];++i)
+            res += func_data()->children[i]->nb_nodes_of_type_rec( t );
+        return res;
+    }
+    return type == t;
+}
+
+int Op::nb_nodes_of_type( int t ) const {
+    ++current_op;
+    return nb_nodes_of_type_rec( t );
+}
+
 
 /*
-
-
-
-
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 bool depends_on_rec( Op *op, Op *var ) {
     if ( op == var )
