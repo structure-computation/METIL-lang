@@ -21,7 +21,7 @@ class Gen[ static_nb_rows = -1, static_nb_cols = static_nb_rows, ST = Int32 ]
             al := simd_size - 1
             c_limit := and_bitwise( nb_cols_.val, ~al )
             if c >= c_limit
-                return data[ c_limit * nb_rows_.val + ( simd_size > 2 ) * ( c - c_limit ) * nb_rows_.val + r ]
+                return data[ c_limit * nb_rows_.val + ( c - c_limit ) * nb_rows_.val + r ]
             return data[ r * c_limit + c ]
         return data[ r * nb_cols_.val + c ]
     def get_nb_rows        return nb_rows_.val
@@ -400,8 +400,16 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     def get_additional_cpp_methods
         res := ""
         if Structure == Gen
-            res <<< "    const T &operator()( ST r, ST c ) const { return data[ structure.nb_cols_.val * r + c ]; }"
-            res <<< "    T &operator()( ST r, ST c ) { return data[ structure.nb_cols_.val * r + c ]; }"
+            al := simd_size - 1
+            res <<< "    ST index( ST r, ST c ) const {"
+            res <<< "        ST c_limit = structure.nb_cols_.val & ~$al;"
+            if al
+                res <<< "        if ( c >= c_limit )"
+                res <<< "            return c_limit * structure.nb_rows_.val + ( c - c_limit ) * structure.nb_rows_.val + r;"
+            res <<< "        return r * c_limit + c;"
+            res <<< "    }"
+            res <<< "    const T &operator()( ST r, ST c ) const { return data[ index( r, c ) ]; }"
+            res <<< "    T &operator()( ST r, ST c ) { return data[ index( r, c ) ]; }"
         else if Structure == Sym
             res <<< "    const T &operator()( ST r, ST c ) const { if (c>r) return operator()( c, r ); return data[ ( r * ( r + 1 ) ) / 2 + c ]; }"
             res <<< "    T &operator()( ST r, ST c ) { if (c>r) return operator()( c, r ); return data[ ( r * ( r + 1 ) ) / 2 + c ]; }"
