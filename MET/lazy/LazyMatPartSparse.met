@@ -5,11 +5,13 @@
 #~
 ~#
 class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
-    static const simd_size := default_simd_size( T )
+    static simd_size := default_simd_size( T )
     static const RD := LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
     static const nb_row_per_block := br * nr
     static const nb_col_per_block := bc * nc
     static const several_blocks := ( nr * nc > 1 )
+    if nb_row_per_block * nb_col_per_block < simd_size
+        simd_size = 1
     
     data := Ptr[ RD ]( NULL ) # row_data
     density_ := Float64( 12 ) # ~ nb blocks per line
@@ -152,36 +154,70 @@ class LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
     static const nb_col_per_block  := bc * nc
     static const T_alignement_byte := simd_size * T.byte_size
     static const ID := [ ST, IndiceDataIfSeveralBlocks[ST] ][ nr * nc > 1 ] # indice data
+    static const default_lc := LazyMatPartSparseRowDataIndexCalculator[ 1, br, bc, nr, nc, simd_size ]()
+    static const default_block_size := default_lc.size
+    static const default_value := T( 0 )
     
     data    := Vec[ T, -1, ST, T_alignement_byte ]()
     indices := Vec[ ID, -1, ST ]()
 
-    def select( i, j )
-        cj := j // nb_col_per_block
-        oj := j %  nb_col_per_block
-        cj *= nb_col_per_block
-        if nr * nc == 1
-            for cpt in 0 .. indices.size
-                if indices[ cpt ] >= cj
-                    if indices[ cpt ] == cj
-                        lc := LazyMatPartSparseRowDataIndexCalculator[ 1, br, bc, nr, nc, simd_size ]()
-                        return data[ cpt * lc.size + lc.ind[ i, oj ] ]
-                    return T( 0 )
-        else
-            for ind in indices
-                if ind.col >= cj
-                    if ind.col == cj
-                        lc := LazyMatPartSparseRowDataIndexCalculator[ ind.nze, br, bc, nr, nc, simd_size ]()
-                        if lc.nz[ i, oj ]
-                            return data[ ind.off + lc.ind[ i, oj ] ]
-                    return T( 0 )
-        return T( 0 )
+    def select( r, c )
+        re := MatcSparseDelayedAccess[ ST ]( self, r, c )
+        return re.var
+        
+    # returned by select()
+    class MatcSparseDelayedAccess[ ST ]
+        vs := InternalVariable()
+        i := ST(0)
+        j := ST(0)
+        
+        def init( v, r, c )
+            vs.init_using_var( v )
+            i.init( r )
+            j.init( c )
+            
+        def get_var
+            cj := j // vs->nb_col_per_block
+            oj := j %  vs->nb_col_per_block
+            cj *= vs->nb_col_per_block
+            if vs->nr * vs->nc == 1
+                for cpt in 0 .. vs->indices.size
+                    if vs->indices[ cpt ] >= cj
+                        if vs->indices[ cpt ] == cj
+                            return vs->data[ cpt * vs->default_lc.size + vs->default_lc.ind[ i, oj ] ]
+                        return vs->default_value
+            else
+                for ind in vs->indices
+                    if ind.col >= cj
+                        if ind.col == cj
+                            lc := LazyMatPartSparseRowDataIndexCalculator[ ind.nze, br, bc, nr, nc, simd_size ]()
+                            if lc.nz[ i, oj ]
+                                return vs->data[ ind.off + lc.ind[ i, oj ] ]
+                        return vs->default_value
+            return vs->default_value
+            
+        def reassign_var( v )
+            b := vs->block( j )
+            b[ i, j % vs->nb_row_per_block ] = v
+        
+        def init_var( v )
+            reassign_var( v )
+    
     #
     class Block[ T, bit_field, br, bc, nr, nc, simd_size ]
         static lc := LazyMatPartSparseRowDataIndexCalculator[ bit_field, br, bc, nr, nc, simd_size ]()
         
         data ~= Ptr[T]
         
+        def reassign( v ) when v.tensor_order <= 0
+            for i in 0 .. lc.size
+                data[ i ] = v
+        
+        def select( r, c )
+            if lc.nz[ r, c ]
+                return data[ lc.ind[ r, c ] ]
+            return T( 0 )
+            
         def __for__( block )
             for r in 0 .. br * nr
                 for c in 0 .. bc * nc
@@ -189,6 +225,33 @@ class LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
                         block( ( [r,c], data[ lc.ind[ r, c ] ] ) )
                     else
                         block( ( [r,c], T(0) ) )
+                        
+    #
+    def block( j )
+        cj := j // nb_col_per_block
+        cj *= nb_col_per_block
+        if nr * nc == 1
+            for cpt in 0 .. indices.size
+                if indices[ cpt ] >= cj
+                    if indices[ cpt ] == cj
+                        lc := LazyMatPartSparseRowDataIndexCalculator[ 1, br, bc, nr, nc, simd_size ]()
+                        return Block[ T, 0, br, bc, nr, nc, simd_size ]( data = &data[ cpt * default_block_size ] )
+                    indices.new_elem_at_position( cpt ) = cj
+                    res := data.make_room_to_insert( cpt * default_block_size, default_block_size )
+                    for i in 0 .. default_block_size
+                        res[ i ] = 0
+                    return Block[ T, 0, br, bc, nr, nc, simd_size ]( data = res )
+            return push_block( j, 1 )
+        else
+            for ind in indices
+                if ind.col >= cj
+                    if ind.col == cj
+                        lc := LazyMatPartSparseRowDataIndexCalculator[ ind.nze, br, bc, nr, nc, simd_size ]()
+                        return Block[ T, bit_field, br, bc, nr, nc, simd_size ]( data = &data[ ind.off ] )
+                    assert( 0, "TODO" )
+            assert( 0, "TODO" )
+            return push_block( c, 1 )
+    
     #
     def push_block( col, bit_field )
         assert( col % (bc*nc) == 0, "..." )
@@ -202,6 +265,7 @@ class LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
         res.data = data.begin + os
         return res
     
+    #
     def get_additional_cpp_methods
         args := Vec[String]( [ "ST row, ST col" ] )
         for r in 0 .. br

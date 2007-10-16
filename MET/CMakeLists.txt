@@ -22,6 +22,7 @@ SET( MET_FILES
     metil_base_big_unsigned.met
     metil_base_serialization.met
     metil_base_mpi.met
+    MatSparse.met
     
     Field.met
     BuildEnv.met

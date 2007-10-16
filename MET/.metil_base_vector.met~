@@ -717,7 +717,7 @@ class VecOp
     def get_size_evaluation_costs_a_lot
         return max( va.map(_0.size_evaluation_costs_a_lot) )
     def get_size
-        if va.size == 1
+        if va.size
             return va[0].size
         # if va.size == 2
             # return min( va[0].size, va[1].size )
@@ -1123,6 +1123,13 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         n := &new_elem_at_position( pos )
         @n = value
         return @n
+    
+    def make_room_to_insert( from, n )
+        os := size_
+        resize( size_ + n )
+        for i in ( from, os ).reversed
+            data_[ i + n ] = data_[ i ]
+        return data_ + from
         
     def push_back( val ) pertinence 2
         n := ref new_elem()

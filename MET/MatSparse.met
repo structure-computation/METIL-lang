@@ -1,0 +1,36 @@
+import "lazy/LazyMat.met"
+
+#
+class MatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType ] inherits MatAncestor
+    property is_a_MatSparse
+
+    data := LazyMatPartSparse[ T, ST, br, bc, nr, nc ]()
+    
+    def init( nb_rows, nb_cols = nb_rows )
+        data.init()
+        data.nb_rows = nb_rows
+        data.nb_cols = nb_cols
+        data.allocate()
+        
+    def select( r, c )
+        return data.data[ r // data.nb_row_per_block ][ r % data.nb_row_per_block, c ]
+        
+    def get_nb_rows
+        return data.nb_rows
+        
+    def get_nb_cols
+        return data.nb_cols
+    
+    def block( r, c )
+        return data.data[ r // data.nb_row_per_block ].block( c )
+        
+class CholMatSparse[ T, br, bc, nr, nc, simd_size, ST, incomp ]
+    m := Ptr[ LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ] ]()
+    def init( m )
+        self.m.init( m )
+        m->allocate()
+        m->evaluate()
+
+def chol( m, incomp = true ) when m.is_a_MatSparse
+    return CholMatSparse[ m.T, m.br, m.bc, m.nr, m.nc, m.data.simd_size, m.ST, incomp ]( m.data.chol( incomp ) )
+
