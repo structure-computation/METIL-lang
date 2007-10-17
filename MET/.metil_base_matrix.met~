@@ -402,10 +402,12 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
         if Structure == Gen
             al := simd_size - 1
             res <<< "    ST index( ST r, ST c ) const {"
-            res <<< "        ST c_limit = structure.nb_cols_.val & ~$al;"
             if al
+                res <<< "        ST c_limit = structure.nb_cols_.val & ~$al;"
                 res <<< "        if ( c >= c_limit )"
                 res <<< "            return c_limit * structure.nb_rows_.val + ( c - c_limit ) * structure.nb_rows_.val + r;"
+            else
+                res <<< "        ST c_limit = structure.nb_cols_.val;"
             res <<< "        return r * c_limit + c;"
             res <<< "    }"
             res <<< "    const T &operator()( ST r, ST c ) const { return data[ index( r, c ) ]; }"

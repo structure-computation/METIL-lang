@@ -864,6 +864,8 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "mmap_file", "ret = mmap_file( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1), b );", /*ret*/"UntypedPtr" ).A("any").A("Int32").set_supplementary_cond("args[0]->type == global_data.String") );
     primitive_functions.push_back( PrimitiveFunction( "munmap", "munmap_( a, b );" ).A("UntypedPtr").A("Int32") );
     
+    primitive_functions.push_back( PrimitiveFunction( "is_a_partial_inst", "ret = a->type_of_only();", /**/"Bool" ).A("any") );
+    
     //     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = str_eq(a,b);", /*ret*/"Bool" ).A("Def").A("Def") );
 }
 

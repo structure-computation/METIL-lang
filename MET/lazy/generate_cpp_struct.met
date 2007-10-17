@@ -92,9 +92,9 @@ def generate_cpp_struct( stream, T, already_generated = Set[String]() )
     # static attributes
     wrote_stat_attr := Set[ String ]()
     for name, value in StaticAttributeExplorer( pi )
-        if not ( name in wrote_stat_attr )
+        if not ( name in wrote_stat_attr ) and not is_a_partial_inst( value )
             wrote_stat_attr.insert( name )
-            if value.type in [Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64]
+            if value.type in [Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 Bool]
                 stream <<< "    static const $(value.type) $name = $value;"
             else if is_of_type_Def( value )
                 if value::is_a_Ptr

@@ -830,17 +830,11 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         // substitutions
         const Op *ch = disc->func_data()->children[0];
         Ex ex_ch( ch );
+        //         std::cout << ex_ch << std::endl;
         Ex subs_p, subs_n;
         if ( disc->type == STRING_heaviside_NUM ) {
             subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-            // std::cout << expr.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << expr.op << " -> (p) " << subs_p.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << subs_p.op << std::endl;
-            // std::cout << expr.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << expr.op << " -> (n) " << subs_n.op->nb_nodes_of_type(STRING_heaviside_NUM) << " " << subs_n.op << std::endl;
-            
-            //             std::ofstream g("graph_p.dot"); g << "digraph \"p"\" {\n" << subs_p.graphviz_repr() << "}\n";
-            //             assert(0);
-            //             assert( subs_p.op != expr.op );
-            //             assert( subs_n.op != expr.op );
         }
         else if ( disc->type == STRING_abs_NUM ) {
             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );

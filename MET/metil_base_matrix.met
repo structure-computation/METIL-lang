@@ -1,3 +1,4 @@
+import "MatSparse.met"
 
 ## Structure for class Mat ##
 class Gen[ static_nb_rows = -1, static_nb_cols = static_nb_rows, ST = Int32 ]

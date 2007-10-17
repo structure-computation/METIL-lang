@@ -835,7 +835,7 @@ def chol_sub_and_div( b, block_r, incomp ) when b
 # ------------------------------------------------------------------------------------------------------------
 
 #
-class LazyVecPartSparseSolveTri[ TR, TM, TV,  ST, br, bc, nr, nc, simd_size, inf ] inherits LazyVecPart[ TR, ST ]
+class LazyVecPartSparseSolveTri[ TR, TM, TV, ST, br, bc, nr, nc, simd_size, inf ] inherits LazyVecPart[ TR, ST ]
     static const RD := LazyMatPartSparseRowData[ TM, ST, br, bc, nr, nc, simd_size ]
     static const nb_row_per_block := br * nr
     static const nb_col_per_block := bc * nc

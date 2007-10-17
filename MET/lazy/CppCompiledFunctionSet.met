@@ -93,10 +93,48 @@ class CppCompiledFunctionSet_
             template<class T_,int s> struct V {
                 typedef T_ T;
                 static const int static_size = s;
+                V() {}
                 V( const T_ &v ) { for(int i=0;i<s;++i) val[i]=v; }
+                const T &operator[](int i) const { return val[ i ]; }
                 T &operator[](int i) { return val[ i ]; }
+                void operator+=( const V &v ) {
+                    for( int i = 0; i < s; ++i )
+                        val[ i ] += v[ i ];
+                }
+                void operator-=( const V &v ) {
+                    for( int i = 0; i < s; ++i )
+                        val[ i ] -= v[ i ];
+                }
+                void operator/=( const T &v ) {
+                    for( int i = 0; i < s; ++i )
+                        val[ i ] /= v;
+                }
                 T val[s];
             };
+            template<class T,int s> V<T,s> operator*( const V<T,s> &v, const T &u ) {
+                V<T,s> res;
+                for( int i = 0; i < s; ++i )
+                    res[ i ] = v[ i ] * u;
+                return res;
+            }
+            template<class T,int s> V<T,s> operator*( const T &v, const V<T,s> &u ) {
+                V<T,s> res;
+                for( int i = 0; i < s; ++i )
+                    res[ i ] = v * u[ i ];
+                return res;
+            }
+            template<class T,int s> V<T,s> operator*( const V<T,s> &v, const V<T,s> &u ) {
+                V<T,s> res;
+                for( int i=0; i < s; ++i )
+                    res[ i ] = v[ i ] * u[ i ];
+                return res;
+            }
+            template<class T,int s> V<T,s> operator/( const V<T,s> &v, const T &u ) {
+                V<T,s> res;
+                for( int i = 0; i < s; ++i )
+                    res[ i ] = v[ i ] / u;
+                return res;
+            }
             
             typedef _Variable_ InternalVariable;
             typedef _Variable_ MultiPtr;
