@@ -165,11 +165,13 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j );
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k );
 
 void exec_asm( void *th, void *code );
 
 void *mmap_file( const char *s, unsigned si, Int32 &length );
-void munmap_( void *a );
+void munmap_( void *a, Int32 length );
 
 #endif
 

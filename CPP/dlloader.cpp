@@ -49,11 +49,12 @@ bool DlLoader::init( const char *lib_name ) {
 
 
 void DlLoader::destroy() {
-    #ifdef HAVE_LIBDL
-        if ( lib ) dlclose( lib );
-    #else
-        FreeLibrary( static_cast<HMODULE>( lib ) );
-    #endif
+    std::cout << lib << std::endl;
+//     #ifdef HAVE_LIBDL
+//         if ( lib ) dlclose( lib );
+//     #else
+//         FreeLibrary( static_cast<HMODULE>( lib ) );
+//     #endif
 }
 
 const char *DlLoader::last_error() const {

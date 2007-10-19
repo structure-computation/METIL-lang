@@ -5,6 +5,7 @@
 #~
 ~#
 class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
+    property is_a_LazyMatPartSparse
     static simd_size := default_simd_size( T )
     static const RD := LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
     static const nb_row_per_block := br * nr
@@ -68,6 +69,11 @@ class LazyMatPartSparse[ T, ST, br, bc, nr, nc ] inherits LazyMatPart[ ST ]
         return res
 
     virtual def chol( incomp )
+        #
+        for p in parents
+            if p->is_a_LazyMatPartSparse and UntypedPtr( p->children[0] ) == UntypedPtr( &self )
+                return child_cast( p )
+        #
         res := new LazyMatPartSparseChol[ T, ST, br, bc, nr, nc, simd_size, incomp ]
         res->nb_rows = nb_rows; res->nb_cols = nb_cols
         res->add_child( &self )

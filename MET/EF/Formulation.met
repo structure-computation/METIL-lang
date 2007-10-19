@@ -69,6 +69,7 @@ def type_promote( a, b, op ) when b.is_a_VariableInFormulation and is_of_type_Op
 
 #~ ~#
 class LazyMatPartFromFormulation[ Form, TE, T, br, bc, nr, nc ] inherits LazyMatPartSparse[ T, SizeType, br, bc, nr, nc ]
+    property is_a_LazyMatPartFromFormulation
     static cpp_func ~= CppCompiledFunctionSet_
     static make_mat := UntypedPtr( NULL )
     
@@ -303,20 +304,32 @@ class Formulation
         mp := Ptr[ LazyMatPart[ SizeType ] ]( NULL )
         for elem_list in mesh->elem_list.sub_vecs
             TE := elem_list->get_ScalarType()
+            # look for friend
+            LMP := LazyMatPartFromFormulation[ type_of( self ), TE, mesh->T, br = nb_nodal_unknowns_, bc = nb_nodal_unknowns_, nr = 1, nc = 1 ]
+            nmp := Ptr[ LMP ]( NULL )
+            for p in elem_list->parents
+                if child_cast( p )->is_a_LazyMatPartFromFormulation
+                    print "warning!!"
+                    nmp = child_cast( p )
+                    break
             #
-            nmp := new LazyMatPartFromFormulation[ type_of( self ), TE, mesh->T, br = nb_nodal_unknowns_, bc = nb_nodal_unknowns_, nr = 1, nc = 1 ]
-            nmp->nb_rows = nb_nodal_unknowns_ * mesh->node_list.size
-            nmp->nb_cols = nb_nodal_unknowns_ * mesh->node_list.size
-            nmp->form = &self
-            
-            nmp->add_child( elem_list )
-            for node_list in mesh->node_list.sub_vecs
-                nmp->add_child( node_list )
-            for name, val in AttributeExplorer( self )
-                if val.is_a_VariableInFormulation and val.interpolation == "nodal"
-                    for s in val.val.sub_vecs
-                        nmp->add_child( s )
-            
+            if not nmp
+                nmp = new LMP
+                nmp->nb_rows = nb_nodal_unknowns_ * mesh->node_list.size
+                nmp->nb_cols = nb_nodal_unknowns_ * mesh->node_list.size
+                nmp->form = &self
+                
+                # print "!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                nmp->add_child( elem_list )
+                for node_list in mesh->node_list.sub_vecs
+                    nmp->add_child( node_list )
+                for name, val in AttributeExplorer( self )
+                    if val.is_a_VariableInFormulation and val.interpolation == "nodal"
+                        for s in val.val.sub_vecs
+                            # print "warning!!"
+                            # if name in [ "dep_imposed_value" ]
+                            nmp->add_child( s )
+                
             if not mp mp = nmp
             else assert( 0, "TODO" )
         # 
@@ -339,10 +352,12 @@ class Formulation
             nmp->add_child( elem_list )
             for node_list in mesh->node_list.sub_vecs
                 nmp->add_child( node_list )
+                
             for name, val in AttributeExplorer( self )
                 if val.is_a_VariableInFormulation
                     if val.interpolation == "nodal"
                         for s in val.val.sub_vecs
+                            # if name in [ "dep_imposed_value", "dep_imposed" ]
                             nmp->add_child( s )
             
             if not mp mp = nmp

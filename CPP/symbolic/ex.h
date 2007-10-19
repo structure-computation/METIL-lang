@@ -59,7 +59,7 @@ struct Ex {
     bool beg_value_inclusive() const;
     bool end_value_inclusive() const;
     Rationnal beg_value() const;
-    Rationnal  end_value() const;
+    Rationnal end_value() const;
     
     // --------------------------
     Op *op;

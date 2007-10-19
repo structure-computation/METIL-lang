@@ -481,6 +481,12 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
         A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
+        A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
+        A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
+        A("any").A("any").A("any").A("any").A("any") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -594,7 +600,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; if (return_var) assign_string( th, tok, return_var, &ss.str()[0], ss.str().size() );", /*ret*/"manual" ).M("Rationnal") );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( integer_class( primitive_classes[i] ) or float_class( primitive_classes[i] ) or primitive_classes[i].met_name=="UntypedPtr" )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << Int64( self ); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
             primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).

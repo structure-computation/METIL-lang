@@ -210,7 +210,7 @@ class MatPartSparseMatVecCompiledFunction[ RD, T1, T, ST, br, bc, nr, nc ]
             CppFunctionDescription( "mat_mult_vec", [ Ptr[T], Ptr[RD], Ptr[T1], ST, ST, ST, ST ] )
         ]
     def get_control_sum
-        return 50
+        return last_modification_time_or_zero_of_file_named( __file_at_stack_level__(0) )
 
 
 #
@@ -307,7 +307,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
                             typename RD::T *dr = res_row.data.data_ + cr * $( lc.size );
                             $sub_reg
                             ++cc; ++cr;
-                            if ( cc == res_col.indices.size() or res_row.indices[cr] >= c ) break;
+                            if ( cc == res_col.indices.size() or cr == res_row.indices.size() or res_row.indices[cr] >= c ) break;
                         }
                         else if ( res_col.indices[cc] < res_row.indices[cr] ) {
                             ++cc;
@@ -315,7 +315,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
                         }
                         else {
                             ++cr;
-                            if ( res_row.indices[cr] >= c ) break;
+                            if ( cr == res_row.indices.size() or res_row.indices[cr] >= c ) break;
                         }
                     }
                 }
@@ -335,12 +335,12 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
             }
             template<class RD,class ST> void chol( RD *res, RD *mat, ST nb_rows ) {
                 typedef typename RD::T T;
-                std::vector<ST> diag; diag.reserve( nb_rows / $br );
+                std::vector<ST> diag; // diag.reserve( nb_rows / $br );
                 for(ST r=0;r<nb_rows;r+=$br) {
                     RD &mat_row = mat[ r / $br ];
                     RD &res_row = res[ r / $br ];
-                    res_row.indices.reserve( mat_row.indices.size() );
-                    res_row.data.reserve( mat_row.data.size() );
+                    // res_row.indices.reserve( mat_row.indices.size() );
+                    // res_row.data.reserve( mat_row.data.size() );
                     if ( $incomp ) {
                         for( ST ci=0; ci < mat_row.indices.size(); ++ci ) {
                             ST c = mat_row.indices[ci]$dot_ind;
@@ -377,7 +377,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
         ]
     
     def get_control_sum
-        return 100
+        return last_modification_time_or_zero_of_file_named( __file_at_stack_level__(0) )
 
 
 #
@@ -507,7 +507,7 @@ class VecPartSparseSolveTri[ TR, TM, TV,  ST, br, bc, nr, nc, simd_size, inf ]
         ]
     
     def get_control_sum
-        return 100
+        return last_modification_time_or_zero_of_file_named( __file_at_stack_level__(0) )
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------

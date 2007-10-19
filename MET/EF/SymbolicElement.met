@@ -15,8 +15,8 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
         if lmtpp
-            return "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}"
-        return "pos[IND($num_node)][$d]","P_{$num_node}^{$(letters[d])}"
+            return symbol( "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}" )
+        return symbol( "pos[IND($num_node)][$d]", "P_{$num_node}^{$(letters[d])}" )
         
     #
     def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function )
@@ -24,7 +24,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         self.name_elem = name_elem
         for num_node in 0 .. nb_nodes
             for d in 0 .. dim
-                pos_nodes[num_node][d] = symbol( pos_symbol_function( num_node, d ) )
+                pos_nodes[num_node][d] = pos_symbol_function( num_node, d )
         #
         var_inter.init( x => symbol("var_inter[$x]",greek_letter(6+x)) )
         
@@ -36,6 +36,45 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     def get_measure                   return pe.measure( var_inter, pos_nodes )
     def get_inv_jac_mat               return pe.inv_jac_mat( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
+    
+    #
+    def get_order_interpolation
+        res := Vec[ Int32, nvi ]( 0 )
+        i := interpolation( Vec[ Op, nb_nodes ]( x => symbol("toto") ) )
+        for num_vi in 0 .. nvi
+            tmp := -1
+            i_d := i
+            while not assumed( i_d == 0 )
+                i_d = i_d.diff( var_inter[ num_vi ] )
+                tmp++
+            res[ num_vi ] = tmp
+        return res
+    
+    # 
+    def dot_prod_( p0, p1 )
+        return integration( p0 * p1, mul_by_jac = false )
+    
+    #
+    def pol_inde_( lst_pol )
+        si := lst_pol.size
+        m := Mat[ Rationnal, Sym[ si ] ]()
+        for ind, val in m
+            val = dot_prod_( lst_pol[ ind[0] ], lst_pol[ ind[1] ] ).value()
+        return m.det
+    
+    #
+    def shape_functions_der( variable, sym )
+        res := Vec[ Op ]()
+        for s in sym
+            shape_function := variable.diff( s )
+            for vi in var_inter
+                d := shape_function.diff( vi )
+                if assumed( d == 0 ) == false and pol_inde_( res +++ [ d ] )
+                    ds := d.subs( var_inter, var_inter * 0 )
+                    if not assumed( d == 0 )
+                        d /= ds
+                    res.push_back( d )
+        return res
     
     # integration
     def integration( expr, mul_by_jac = true, order_diff = 5 )
@@ -57,10 +96,13 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
             vec := Vec[ Op, nb_nodes ]()
             for i in 0 .. vec.size
                 s := Op()
-                if lmtpp
-                    s = symbol("$name_elem.node($i)->$name") # $name_elem.ind[$i].index
+                if name.type != String
+                    s = name( i )
                 else
-                    s = symbol("form.$name.val.template get_val<T>( IND($i) )","$name^{N$i}") # hum !!!
+                    if lmtpp
+                        s = symbol("$name_elem.node($i)->$name") # $name_elem.ind[$i].index
+                    else
+                        s = symbol("form.$name.val.template get_val<T>( IND($i) )","$name^{N$i}") # hum !!!
                 sym.push_back( s )
                 vec[i] = s
             return pe.interpolation( var_inter, vec )
@@ -80,7 +122,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         assert( 0, "TODO" )
     
     # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "nodal" ) when interpolation_type == "global"
+    def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op]() ) when interpolation_type == "global"
         if nb_dim.size == 0
             s := symbol("form.$name.val","$name")
             sym.push_back( s )
@@ -94,6 +136,20 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
                 res[j] = s
             return res
         assert( 0, "TODO" )
+        
+    # helper function -> give a new "field" based on "canonical" interpolation
+    def new_variable( interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
+        wanted_interpolation := interpolation_type[ 0 .. interpolation_type.size - "_minus_1".size ]
+        sp := Vec[ Op ]()
+        tmp_interp := new_variable( "_tmp", interpolation_type = wanted_interpolation, sym = sp )
+        base := shape_functions_der( tmp_interp, sp )
+        #
+        res := Op( 0 )
+        for b, c in base, 0...
+            s := symbol_function( c )
+            sym.push_back( s )
+            res += b * s
+        return res
         
     #
     def make_interpolation( res, interpolation_type, met_name, tex_name ) when interpolation_type == "nodal"
@@ -152,7 +208,25 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
             res *= heaviside( tolerance + var_inter - interval[0] )
             res *= heaviside( tolerance + interval[1] - var_inter )
         return res
+        
     #
     def var_inter_is_inside( vi, tolerance )
         return TE::var_inter_is_inside( vi, tolerance )
         
+    #
+    def extrusion_with_normals( normals, alpha )
+        return pos + alpha * interpolation( normals )
+        
+    # 
+    def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 )
+        alpha := symbol( "alpha" )
+        proj := extrusion_with_normals( normals, alpha )
+        d := point - proj
+        return newton_raphson_minimize_iteration_rec( dot(d,d), var_inter +++ [ alpha ], nb_iterations, old_values = get_center_of_var_inter() +++ [ 0 ] )
+    
+    #
+    def projection_with_normals( normals, point, nb_iterations = 1 )
+        vi := var_inter_with_normals( normals, point, nb_iterations )
+        return extrusion_with_normals( normals, 0 ).subs( var_inter, vi[ 0 .. var_inter.size ] )
+    
+    

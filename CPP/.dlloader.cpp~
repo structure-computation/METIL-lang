@@ -27,7 +27,6 @@ void DlLoader::init() {
 
 bool DlLoader::init( const char *lib_name, int size_lib_name ) {
     //     return true;
-    std::cout << size_lib_name << std::endl;
     char *str = (char *)malloc( size_lib_name + 8 );
     for(int i=0;i<size_lib_name;++i) // -> libdl read char by sets of 4
         str[i] = lib_name[i];
@@ -50,11 +49,11 @@ bool DlLoader::init( const char *lib_name ) {
 
 
 void DlLoader::destroy() {
-    #ifdef HAVE_LIBDL
-        if ( lib ) dlclose( lib );
-    #else
-        FreeLibrary( static_cast<HMODULE>( lib ) );
-    #endif
+//     #ifdef HAVE_LIBDL
+//         if ( lib ) dlclose( lib );
+//     #else
+//         FreeLibrary( static_cast<HMODULE>( lib ) );
+//     #endif
 }
 
 const char *DlLoader::last_error() const {

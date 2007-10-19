@@ -340,7 +340,7 @@ void Thread::add_error( const std::string &msg, const void *tok, const std::vect
         if ( tok and current_sourcefile ) {
             int offset_in_sar_file = reinterpret_cast<const int *>(tok)[1];
             const char *t = current_sourcefile->sar_text();
-            if ( offset_in_sar_file < strlen( t + 1 ) )
+            if ( offset_in_sar_file < (int)strlen( t + 1 ) )
                 e.caller_stack.push_back( ErrorList::Provenance( t ? t + offset_in_sar_file : t, current_sourcefile->provenance ) );
         }
     }

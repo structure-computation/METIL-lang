@@ -735,16 +735,18 @@ void get_next_line_( Thread *th, const void *tok, CFile &a, Variable *return_var
         assign_string( th, tok, return_var, &res[0], res.size() );
 }
 
-typedef void CcodeFunction0(  );
-typedef void CcodeFunction1( Variable * );
-typedef void CcodeFunction2( Variable *, Variable * );
-typedef void CcodeFunction3( Variable *, Variable *, Variable * );
-typedef void CcodeFunction4( Variable *, Variable *, Variable *, Variable * );
-typedef void CcodeFunction5( Variable *, Variable *, Variable *, Variable *, Variable * );
-typedef void CcodeFunction6( Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
-typedef void CcodeFunction7( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
-typedef void CcodeFunction8( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
-typedef void CcodeFunction9( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction0 (  );
+typedef void CcodeFunction1 ( Variable * );
+typedef void CcodeFunction2 ( Variable *, Variable * );
+typedef void CcodeFunction3 ( Variable *, Variable *, Variable * );
+typedef void CcodeFunction4 ( Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction5 ( Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction6 ( Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction7 ( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction8 ( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction9 ( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction10( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
+typedef void CcodeFunction11( Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable *, Variable * );
 
 void exec_ccode_function( void *f_ ) { ((CcodeFunction0 *)( f_ ))(  ); }
 void exec_ccode_function( void *f_, Variable *a ) { ((CcodeFunction1 *)( f_ ))( a ); }
@@ -756,6 +758,12 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { ((CcodeFunction7 *)( f_ ))( a, b, c, d, e, f, g ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h ) { ((CcodeFunction8 *)( f_ ))( a, b, c, d, e, f, g, h ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i ) { ((CcodeFunction9 *)( f_ ))( a, b, c, d, e, f, g, h, i ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j ) {
+    ((CcodeFunction10 *)( f_ ))( a, b, c, d, e, f, g, h, i, j );
+}
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k ) {
+    ((CcodeFunction11 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k );
+}
 
 void *mmap_file( const char *s, unsigned si, Int32 &length ) {
     std::string str( s, s+si );
@@ -772,7 +780,6 @@ void *mmap_file( const char *s, unsigned si, Int32 &length ) {
 }
 
 void munmap_( void *a, Int32 length ) {
-    std::cout << a << std::endl;
     munmap( a, length );
 }
 
