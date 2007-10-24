@@ -485,6 +485,8 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
         A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
         A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
+        A("any").A("any").A("any").A("any").A("any") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
