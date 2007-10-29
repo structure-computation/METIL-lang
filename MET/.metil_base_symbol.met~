@@ -15,7 +15,7 @@ def display_graphviz( self )
     f << "}\n"
     f.close()
     
-    system( "dot -Tgtk res.dot" )
+    system( "dot -Tps res.dot > res.eps" )
 
 #~
 ~#
@@ -37,7 +37,7 @@ def launch_and_display_tex_with_str( str, filename="res" )
 
     display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
     if system( "latex $filename.tex > /dev/null 2> /dev/null && dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
-            "&& epstopdf $filename.eps && ( $display_command ) 2> /dev/null" )
+            "&& evince $filename.eps 2> /dev/null" ) #  && ( $display_command )
         stderr << "erroneous symbol in the formula.\n"
 
 ## 
