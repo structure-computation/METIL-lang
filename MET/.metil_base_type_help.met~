@@ -402,5 +402,22 @@ class MultiPtrWithCptUse
 #~
 ~#
 def child_cast( p )
-    return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
+    if p
+        return Ptr[ true_type( @p ) ]( UntypedPtr( p ) )
+    return p
+
+# ---------------------------------------------------------
+class AutoRetore[ T ]
+    p ~= Ptr[ T ]
+    old_val ~= T
+    def init( v, n )
+        old_val.init( @v )
+        p.init( v )
+        @v = n
+        info n
+    def destroy
+        @p = old_val
+        
+def auto_restore( val, new_val )
+    return AutoRetore[ type_of( val ) ]( &val, new_val )
 
