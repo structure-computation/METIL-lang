@@ -1632,6 +1632,10 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
         first.size--
         return first.data[ first.size ]
     
+    def pop_back_n( n )
+        for i in 0 .. n
+            pop_back()
+    
     def contains_data
         for a in [ first ] +++ chained_list( first.next )
             if a.size
