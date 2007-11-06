@@ -121,6 +121,6 @@ class LazySimpleScheduler
     
     def display( function, fn = ".res.dot", x = true )
         write_graph( function, File( fn, "w" ) )
-        system( "dot -Tgtk $fn" )
-        # if x system( "kpdf $fn.pdf" )
+        system( "dot -Tps $fn > res.ps" )
+        if x system( "gv res.ps" )
     

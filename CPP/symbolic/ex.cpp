@@ -4,7 +4,19 @@
 #include "thread.h"
 #include <sstream>
 #include <complex>
+#include <map>
 
+struct ExPtrCmp {
+    bool operator()( const Ex &a, const Ex &b ) const {
+        if ( a.op->type==Op::NUMBER and b.op->type==Op::NUMBER )
+            return a.op->number_data()->val < b.op->number_data()->val;
+        return a.op < b.op;
+    }
+};
+
+inline bool same_ex( const Ex &a, const Ex &b ) {
+    return same_op( a.op, b.op );
+}
 
 void Ex::init() {
     op = Op::new_number( 0 );
@@ -956,6 +968,74 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         return res;
     }
     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
+}
+
+// encoding of <, >, <, ...
+struct IneqSet {
+    IneqSet() : impossible( false ) {}
+    IneqSet( const IneqSet &is, const Ex &ex, bool bo ) {
+        impossible = is.impossible;
+        ineq = is.ineq;
+        for(unsigned i=0;i<ineq.size();++i) {
+            if ( same_ex( ineq[i].first, ex ) ) {
+                impossible |= ( bo != ineq[i].second );
+                return;
+            }
+            else if ( same_ex( ineq[i].first, - ex ) ) {
+                impossible |= ( bo == ineq[i].second );
+                return;
+            }
+        }
+        ineq.push_back( std::pair<Ex,bool>( ex, bo ) );
+    }
+    std::vector<std::pair<Ex,bool> > ineq;
+    bool impossible;
+};
+std::ostream &operator<<(std::ostream &os,const IneqSet &is) {
+    if ( is.impossible )
+        os << "impossible";
+    else
+        for(unsigned i=0;i<is.ineq.size();++i)
+            os << is.ineq[i].first << ( is.ineq[i].second ? ">=0 " : "<0 " );
+    return os;
+}
+void get_mutimap_of_ineq_set_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, std::map<Ex,std::vector<IneqSet>,ExPtrCmp> &mutimap_of_ineq_set, const IneqSet &is ) {
+    const Op *disc = expr.op->find_discontinuity( var.op );
+    if ( disc ) {
+        Ex ex_disc( disc );
+        Ex ch( disc->func_data()->children[0] );
+        //
+        Ex subs_p, subs_n;
+        if ( disc->type == STRING_heaviside_NUM ) {
+            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
+            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+        }
+        else if ( disc->type == STRING_abs_NUM ) {
+            subs_p = expr.subs( th, tok, ex_disc,   ch );
+            subs_n = expr.subs( th, tok, ex_disc, - ch );
+        }
+        else
+            assert( 0 ); //
+        //
+        get_mutimap_of_ineq_set_rec( th, tok, subs_n, var, mutimap_of_ineq_set, IneqSet( is, ch, false ) );
+        get_mutimap_of_ineq_set_rec( th, tok, subs_p, var, mutimap_of_ineq_set, IneqSet( is, ch, true  ) );
+    }
+    else if ( not expr.op->is_zero() )
+        mutimap_of_ineq_set[ expr ].push_back( is );
+}
+
+Ex integration_with_discontinuities( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    std::map<Ex,std::vector<IneqSet>,ExPtrCmp> mutimap_of_ineq_set;
+    get_mutimap_of_ineq_set_rec( th, tok, expr, var, mutimap_of_ineq_set, IneqSet() );
+
+    for( std::map<Ex,std::vector<IneqSet>,ExPtrCmp>::const_iterator iter = mutimap_of_ineq_set.begin(); iter != mutimap_of_ineq_set.end(); ++iter ) {
+        std::cout << iter->first;
+        for(unsigned i=0;i<iter->second.size();++i)
+            std::cout << " ; " << iter->second[i];
+        std::cout << std::endl;
+    }
+
+    return 0; // integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {

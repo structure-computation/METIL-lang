@@ -385,6 +385,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "set_beg_value", "self.set_beg_value(a,b);" ).M("Op").A("Rationnal").A("Bool") ); 
     primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(a,b);" ).M("Op").A("Rationnal").A("Bool") );
+    
+    
+    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = Float64( self.value() );" ).M("Op").A("Float64") );
 }
 
 std::string nb_bits_in_mantissa(std::string class_name) {
