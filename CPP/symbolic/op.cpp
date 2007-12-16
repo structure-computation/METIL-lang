@@ -313,8 +313,12 @@ std::string tex_repr( const Rationnal &val, int type_parent ) {
 void tex_repr( const MulSeq &ms, std::ostream &os ) {
     bool np = ( STRING_mul_NUM > ms.op->type ) and ms.op->type >= 0;
     if ( np ) os << "(";
-    if ( ms.e.is_one() )
-        ms.op->tex_repr( os );
+    if ( ms.e.is_one() ) {
+        if ( ms.op->type == Op::NUMBER and ms.op->number_data()->val.is_minus_one() )
+            os << "-";
+        else
+            ms.op->tex_repr( os );
+    }
     else if ( ms.e.num.is_one() ) {
         if ( ms.e.den.is_two() )
             os << "\\sqrt{";
@@ -429,6 +433,8 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
     } else {
         if ( op->type==STRING_heaviside_NUM )
             os << "\\mathop{\\mathrm{H}}(";
+        else if ( op->type==STRING_pos_part_NUM )
+            os << "\\mathop{\\mathrm{P}_{\\geq 0}}(";
         else
             os << "\\mathop{\\mathrm{" << Nstring(op->type) << "}}(";
         for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
@@ -511,7 +517,7 @@ const Op *Op::find_discontinuity_rec( const Op *var ) const {
     op_id = current_op;
     //
     if ( type > 0 ) {
-        if ( type == STRING_heaviside_NUM or type == STRING_abs_NUM ) {
+        if ( type == STRING_heaviside_NUM or type == STRING_abs_NUM or type == STRING_pos_part_NUM ) {
             if ( not func_data()->children[0]->depends_on( var ) )
                 return NULL;
             const Op *d = func_data()->children[0]->find_discontinuity( var ); // look deeper ( H( H(a) - 1 ) should hiv H(a) )

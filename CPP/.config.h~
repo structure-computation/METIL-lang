@@ -289,6 +289,8 @@ inline bool heaviside( Unsigned64 a ) { return true; }
 
 template<class T> bool eqz( T a ) { return not a; }
 
+template<class T> T pos_part( T a ) { return a >= 0 ? a : 0; }
+
 template<class T> Int32 sgn( const T &val ) { return ( val>T(0) ? 1 : (val==T(0) ? 0 : -1 ) ); }
 inline Int32 sgn( const Bool &val ) { return val; }
 
@@ -318,6 +320,8 @@ inline Rationnal pow_96( const Rationnal &a, const Rationnal &b ) {
     }
     return pow( Float96(a), Float96(b) );
 }
+
+inline Rationnal atan2_96 ( const Rationnal &a, const Rationnal &b ) { return Rationnal( atan2( Float96(a), Float96(b) ) ); }
 
 inline Rationnal log_96   ( const Rationnal &a ) { return Rationnal( log ( Float96(a) ) ); }
 inline Rationnal exp_96   ( const Rationnal &a ) { return Rationnal( exp ( Float96(a) ) ); }

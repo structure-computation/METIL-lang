@@ -388,8 +388,8 @@ class Formulation
 
 
 #~
-Example of formulation
- + dot( dep_imposed_strength.expr * ( dep.expr - dep_imposed.expr ), dep.test ) * dN
+  Example of formulation
+    + dot( dep_imposed_strength.expr * ( dep.expr - dep_imposed.expr ), dep.test ) * dN
 ~#
 class Elasticity[dim] inherits Formulation
     dep := Variable( "nodal", [ dim ], unknown = true, default_value = [ 0 0 ] )
@@ -402,6 +402,7 @@ class Elasticity[dim] inherits Formulation
         H := hooke_iso( E.expr, nu.expr )
         # de :=  + dep_imposed.expr * ( dep_imposed_value.expr - dep.expr )
         # dt :=  + dep_imposed.expr * ( dep_imposed_value.expr - dep.test )
-        return grad_sym( dep.expr ) : H : grad_sym( dep.test ) * dV + dot( dep_imposed.expr * ( dep.expr - dep_imposed_value.expr ), dep.test ) * dN
+        return grad_sym( dep.expr ) : H : grad_sym( dep.test ) * dV + 
+               dot( dep_imposed.expr * ( dep.expr - dep_imposed_value.expr ), dep.test ) * dN
 
 

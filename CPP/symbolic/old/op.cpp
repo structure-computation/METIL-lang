@@ -476,8 +476,12 @@ struct MulSeq {
     void tex_repr( std::ostream &os ) {
         bool np = ( STRING_mul_NUM > op->type ) and op->type >= 0;
         if (np) os << "(";
-        if ( e.is_one() )
-            ::tex_repr( os, op );
+        if ( e.is_one() ) {
+            if ( op->type == Op::NUMBER and op->number_data()->val.is_minus_one() )
+                os << "-";
+            else
+                ::tex_repr( os, op );
+        }
         else if ( e.num.is_one() ) {
             if ( e.den.is_two() )
                 os << "\\sqrt{";
@@ -1055,6 +1059,7 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
                 if ( ch_0->number_data()->val.is_minus_one() )
                     tex_repr_rec( os, ch_1, STRING_sub_NUM );
                 else {
+                    std::cout << ch_0->number_data()->val << std::endl;
                     os << tex_repr( - ch_0->number_data()->val, STRING_mul_NUM );
                     //os << "*";
                     tex_repr_rec( os, ch_1, STRING_mul_NUM );
@@ -1100,10 +1105,12 @@ void tex_repr_rec( std::ostream &os, Op *op, int type_parent ) {
             for(unsigned i=0;i<items_[1].size();++i)
                 items_[1][i].e.num.val *= -1;
             //
-            os << "\\frac{\\displaystyle ";
+            os << "\\frac{ "; // \\displaystyle
             for(unsigned i=0;i<items_[0].size();++i)
                 items_[0][i].tex_repr( os << ( i ? "\\," : " " ) );
-            os << "}{\\displaystyle ";
+            if ( not items_[0].size() )
+                os << "1";
+            os << "}{ "; // \\displaystyle
             for(unsigned i=0;i<items_[1].size();++i)
                 items_[1][i].tex_repr( os << ( i ? "\\," : " " ) );
             os << "}";

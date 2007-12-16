@@ -52,6 +52,7 @@ struct PrimitiveFunction {
     
     PrimitiveFunction &A( std::string type, std::string cond_of_modification="", std::string name="" ) {
         Arg arg;
+        
         arg.name = name;
         arg.type = type;
         arg.cond_of_modification = cond_of_modification;
@@ -343,7 +344,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "pow", "ret.init( pow( a, b ) );", /*ret*/"Op" ).A("Op").A("Op") );
     primitive_functions.push_back( PrimitiveFunction( "mod", "ret.init( mod( a, b ) );", /*ret*/"Op" ).A("Op").A("Op") );
     
-    static const char *f[] = { "log", "heaviside", "abs", "eqz", "exp", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", NULL };
+    static const char *f[] = { "log", "heaviside", "pos_part", "abs", "eqz", "exp", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", NULL };
     for(unsigned i=0;f[i];++i)
         primitive_functions.push_back( PrimitiveFunction( f[i], "ret.init( "+std::string( f[i] )+"( a ) );", /*ret*/"Op" ).A("Op") );
     
@@ -743,12 +744,18 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float96" ).A("Float96").A("Float96") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Op" ).A("Op").A("Op") );
     
-    // heaviside, eqz
+    // heaviside, pos_part, eqz
     for(unsigned i=0;i<primitive_classes.size();++i) {
-        if ( unsigned_arithmetic_class(primitive_classes[i]) )
+        // heaviside, pos_part
+        if ( unsigned_arithmetic_class(primitive_classes[i]) ) {
             primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = true; fake_func( a );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
-        else if ( arithmetic_class(primitive_classes[i]) )
-            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = ( a >= 0 );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "pos_part" , "init_arithmetic( ret, a ); fake_func( a );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
+        }
+        else if ( arithmetic_class(primitive_classes[i]) ) {
+            primitive_functions.push_back( PrimitiveFunction( "heaviside", "ret = ( a >= 0 );"   , /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "pos_part" , "init_arithmetic( ret, pos_part( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
+        }
+        // eqz
         if ( arithmetic_class(primitive_classes[i]) )
             primitive_functions.push_back( PrimitiveFunction( "eqz", "ret = ( not a );", /*ret*/"Bool" ).A(primitive_classes[i].met_name) );
     }

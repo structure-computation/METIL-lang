@@ -216,7 +216,7 @@ inline bool are_different(BigRat<> a,BigRat<> b) { return a != b; } /// done onl
 
 template<int base, class T, int offset, bool owning> std::ostream &operator<<(std::ostream &os, const BigRat<base,T,offset,owning> &v ) {
     os << v.num;
-    if ( v.den.n==0 and v.den.val == 1 )
+    if ( v.den.n == 0 and v.den.val == 1 )
         return os;
     os << "/" << v.den;
     return os;

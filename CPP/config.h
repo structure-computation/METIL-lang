@@ -289,6 +289,8 @@ inline bool heaviside( Unsigned64 a ) { return true; }
 
 template<class T> bool eqz( T a ) { return not a; }
 
+template<class T> T pos_part( T a ) { return a >= 0 ? a : T(0); }
+
 template<class T> Int32 sgn( const T &val ) { return ( val>T(0) ? 1 : (val==T(0) ? 0 : -1 ) ); }
 inline Int32 sgn( const Bool &val ) { return val; }
 

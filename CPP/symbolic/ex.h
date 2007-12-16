@@ -86,6 +86,7 @@ Ex max  ( const Ex &a, const Ex &b );
 Ex abs      ( const Ex &a );
 Ex log      ( const Ex &a );
 Ex heaviside( const Ex &a );
+Ex pos_part ( const Ex &a );
 Ex eqz      ( const Ex &a );
 Ex exp      ( const Ex &a );
 Ex sin      ( const Ex &a );
