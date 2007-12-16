@@ -977,7 +977,7 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
             //
             Ex x0_ = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
             Ex x0 = ( 1 - eqz( taylor_expansion[1] ) ) * x0_ + 
-                          eqz( taylor_expansion[1] )   * ( heaviside( taylor_expansion[0] ) * true_beg + ( 1 - heaviside( taylor_expansion[0] ) * true_end ) );
+                          eqz( taylor_expansion[1] )   * ( heaviside( taylor_expansion[0] ) * true_beg + ( 1 - heaviside( taylor_expansion[0] ) * true_end ) ).subs( th, tok, taylor_expansion[1], 0 );
             //
             Ex p1 = heaviside( taylor_expansion[1] ), n1 = 1 - p1;
             Ex nb = true_beg         * p1 + max(true_beg,x0) * n1;
@@ -1159,7 +1159,8 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         expr = expr.subs( th, tok, old_var, var );
     }
     
-    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+    return integration_with_discontinuities( th, tok, expr, var, beg, end, deg_poly_max );
+//     return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
 
