@@ -98,4 +98,8 @@ Ex atan     ( const Ex &a );
 Ex sinh     ( const Ex &a );
 Ex cosh     ( const Ex &a );
 Ex tanh     ( const Ex &a );
+
+#define PRINT( A ) \
+    std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl
+
 #endif // EX_H

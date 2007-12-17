@@ -786,10 +786,7 @@ struct DiffRec {
                     );
                     break;
                 }
-                MAKE_D0D1(
-                    Ex( d0 ) * Ex( c1 ) * pow( Ex( c0 ), Ex( c1 ) - Rationnal( 1 ) ) + // dx * x ^ ( y - 1 )
-                    Ex( d1 ) * log( Ex( c0 ) ) * Ex( a ) // dy * log( x ) * x ^ y
-                );
+                MAKE_D0D1( Ex( d0 ) * Ex( c1 ) * pow( Ex( c0 ), Ex( c1 ) - Rationnal( 1 ) ) + /* dx * x ^ ( y - 1 ) */ Ex( d1 ) * log( Ex( c0 ) ) * Ex( a ) /*dy * log( x ) * x ^ y*/ ); 
                 break;
             default:
                 th->add_error( "for now, no rules to differentiate function of type '"+std::string(Nstring(a->type))+"'.", tok );
@@ -895,7 +892,12 @@ Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) 
     SplittedVec<Op *,32> symbols;
     get_sub_symbols( op, symbols );
     if ( symbols.size() > 1 ) {
-        th->add_error("subs_numerical works only with expressions which contains at most 1 variable.",tok);
+        std::ostringstream ss;
+        ss << "subs_numerical works only with expressions which contains at most 1 variable ( remaining ones are ";
+        for(unsigned i=0;i<symbols.size();++i)
+            ss << Ex( symbols[i] ) << " ";
+        ss << ")";
+        th->add_error(ss.str(),tok);
         return 0;
     }
     //
@@ -939,9 +941,7 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
     const Op *disc = expr.op->find_discontinuity( var.op );
     if ( disc ) {
         Ex ex_disc( disc );
-        // assert( disc->depends_on( var.op ) );
-        // std::cout << ex_disc << std::endl;
-        // substitutions
+        // substitutions -> pos part and neg part
         const Op *ch = disc->func_data()->children[0];
         Ex ex_ch( ch );
         Ex subs_p, subs_n;
@@ -966,43 +966,25 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         get_taylor_expansion( th, tok, ex_ch, beg, var, 3, taylor_expansion );
         Ex res( 0 );
         
-        // order 1 -
+        // order 1 or 0
         Ex o1 = eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
         if ( o1.known_at_compile_time()==false or o1.value().is_zero()==false ) {
-            std::cout << "I'm in" << std::endl;
-            // sort beg, end
-            Ex end_sup_beg = heaviside( end - beg );
-            Ex true_beg = end_sup_beg * beg + ( 1 - end_sup_beg ) * end;
-            Ex true_end = end_sup_beg * end + ( 1 - end_sup_beg ) * beg;
             //
-            Ex x0_ = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
-            Ex x0 = ( 1 - eqz( taylor_expansion[1] ) ) * x0_ + 
-                          eqz( taylor_expansion[1] )   * ( heaviside( taylor_expansion[0] ) * true_beg + ( 1 - heaviside( taylor_expansion[0] ) * true_end ) ).subs( th, tok, taylor_expansion[1], 0 );
+            Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+            Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+            Ex n_beg = 1 - p_beg;
+            Ex n_end = 1 - p_end;
             //
-            Ex p1 = heaviside( taylor_expansion[1] ), n1 = 1 - p1;
-            Ex nb = true_beg         * p1 + max(true_beg,x0) * n1;
-            Ex ne = min(true_end,x0) * p1 + true_end         * n1;
-            Ex pb = max(true_beg,x0) * p1 + true_beg         * n1;
-            Ex pe = true_end         * p1 + min(true_end,x0) * n1;
+            Ex cut = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
             //
-            //             std::cout << "int " << ch << std::endl;
-            //             assert( true_beg.op->depends_on( var.op ) == false );
-            //             assert( true_end.op->depends_on( var.op ) == false );
-            //             assert( nb.op->depends_on( var.op ) == false );
-            //             assert( ne.op->depends_on( var.op ) == false );
-            //             assert( pb.op->depends_on( var.op ) == false );
-            //             assert( pe.op->depends_on( var.op ) == false );
-            #define PRINT( A ) \
-                std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl
-            PRINT( subs_n.op->type );
-            PRINT( subs_p.op->type );
+            Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+            Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+            Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+            Ex pe = end + ( cut - end ) * p_beg * n_end;
             
-            Ex int_p = integration( th, tok, subs_n, var, nb, nb + pos_part( ne - nb ), deg_poly_max );
-            Ex int_n = integration( th, tok, subs_p, var, pb, pb + pos_part( pe - pb ), deg_poly_max );
-            res += ( 2 * end_sup_beg - 1 ) * o1 * (
-                int_p +
-                int_n
-            );
+            Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
+            Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
+            res += o1 * ( int_p + int_n );
         }
         // order 2
         Ex o2 = ( 1 - eqz( taylor_expansion[2] ) ) * eqz( taylor_expansion[3] );
@@ -1146,8 +1128,6 @@ Ex integration_with_discontinuities( Thread *th, const void *tok, Ex expr, Ex va
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     if ( same_op( beg.op, end.op ) )
         return Ex( 0 );
-    if ( var.op->type == Op::NUMBER and var.op->number_data()->val.is_zero() )
-        return var;
     //
     if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
         Ex old_var = var;
@@ -1159,8 +1139,8 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         expr = expr.subs( th, tok, old_var, var );
     }
     
-    return integration_with_discontinuities( th, tok, expr, var, beg, end, deg_poly_max );
-//     return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+    //     return integration_with_discontinuities( th, tok, expr, var, beg, end, deg_poly_max );
+    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
 

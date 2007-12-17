@@ -15,7 +15,7 @@ def display_graphviz( self )
     f << "}\n"
     f.close()
     
-    system( "dot -Tps res.dot > res.eps" )
+    system( "dot -Tps res.dot > res.eps; evince res.eps" )
 
 #~
 ~#
@@ -419,18 +419,12 @@ def newton_raphson_minimize_iteration( expr, unknowns, old_values = Vec[Op,unkno
     for i in 0 .. nb_unknowns
         d := expr.diff( unknowns[i] )
         for j in 0 .. i+1
-            M[i,j] = d.diff( unknowns[j] )
-        V[i] = -d
+            M[i,j] = d.diff( unknowns[j] ).subs( unknowns[i], old_values[i] )
+        V[i] = - d.subs( unknowns[i], old_values[i] )
     #
     for i in 0 .. nb_unknowns
         for j in 0 .. nb_unknowns
-            V[i] += M[i,j] * unknowns[j]
-    #
-    for n, v in unknowns, old_values
-        for i in 0 .. nb_unknowns
-            V[i] = V[i].subs( n, v )
-            for j in 0 .. i+1
-                M[i,j] = M[i,j].subs( n, v )
+            V[i] += M[i,j] * old_values[j]
     return M \ V
 
 #~

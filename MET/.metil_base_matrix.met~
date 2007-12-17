@@ -1,3 +1,4 @@
+import "MatSparse.met"
 
 ## Structure for class Mat ##
 class Gen[ static_nb_rows = -1, static_nb_cols = static_nb_rows, ST = Int32 ]
@@ -674,12 +675,12 @@ class LU_matrix[ T, Storage, static_size, ST ]
         fact.init( mat.nb_rows, mat.nb_cols )
         for row in ST(0) .. mat.nb_rows
             # L
-            for col in ST(0) .. row
+            for col in ST(1) .. row
                 tmp := mat[ row, col ]
                 tmp -= dot( fact[ 0..col, col ], fact[ row, 0..col ] )
                 fact[ row, col ].init( tmp / fact[ col, col ] )
             # U
-            for col in ST(0) .. row+1
+            for col in ST(1) .. row+1
                 tmp := mat[ col, row ]
                 tmp -= dot( fact[ 0..col, row ], fact[ col, 0..col ] )
                 fact[ col, row ].init( tmp )

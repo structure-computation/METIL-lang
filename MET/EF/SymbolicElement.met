@@ -194,7 +194,8 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     #
     def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
-        return newton_raphson_minimize_iteration_rec( dot(d,d), var_inter, nb_iterations, old_values = get_center_of_var_inter() )
+        n := dot( d, d )
+        return newton_raphson_minimize_iteration_rec( n, var_inter, nb_iterations, old_values = get_center_of_var_inter() )
 
     #
     def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
