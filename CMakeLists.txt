@@ -22,3 +22,4 @@ ADD_SUBDIRECTORY( CPP )
 ADD_SUBDIRECTORY( MET )
 ADD_SUBDIRECTORY( TESTS )
 
+INSTALL( FILES met.xml DESTINATION ~/.kde/share/apps/katepart/syntax/met.xml )

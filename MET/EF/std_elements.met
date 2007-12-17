@@ -84,6 +84,8 @@ class Tetra
     static children := [(Triangle,[0,2,1]),(Triangle,[0,1,3]),(Triangle,[0,3,2]),(Triangle,[1,2,3])]
     static def interval_var_inter( vi )
         return [ [0,1], [0,1-vi[0]], [0,1-vi[0]-vi[1]] ]
+    static def var_inter_is_inside( vi, tol = 0 )
+        return heaviside( tol + vi[0] ) * heaviside( tol + vi[1] ) * heaviside( tol + vi[2] ) * heaviside( tol + 1 - vi[0] - vi[1] - vi[2] )
 
 
 

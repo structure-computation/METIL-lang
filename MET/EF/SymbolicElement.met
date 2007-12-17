@@ -85,7 +85,16 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         for i in ( 0 .. nvi ).reversed
             res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
         return res
-    
+
+    #
+    def bestial_num_integration( expr, mul_by_jac = true, div_ = 20 )
+        res := Op( 0 )
+        for p in rectilinear( 0..div_, nvi )
+            v := p / div_
+            if var_inter_is_inside( v )
+                res += expr.subs( var_inter, v )
+        return res / div_ ^ nvi
+        
     # mean
     def mean( expr )
         return integration( expr, false ) / integration( Op( 1 ), false )
@@ -211,7 +220,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return res
         
     #
-    def var_inter_is_inside( vi, tolerance )
+    def var_inter_is_inside( vi, tolerance = 0 )
         return TE::var_inter_is_inside( vi, tolerance )
         
     #
