@@ -51,6 +51,10 @@ struct Ex {
     bool depends_on( const Ex &a ) const;
     Rationnal subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const;
     
+    Ex linearize_discontinuity_children( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const;
+    
+    Ex expand( Thread *th, const void *tok ) const;
+    
     void set_beg_value( T b, bool inclusive );
     void set_end_value( T e, bool inclusive );
     

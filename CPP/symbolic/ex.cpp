@@ -2,6 +2,7 @@
 #include "op.h"
 #include "globaldata.h"
 #include "thread.h"
+#include "../rectilinear_iterator.h"
 #include <sstream>
 #include <complex>
 #include <map>
@@ -804,11 +805,13 @@ Ex Ex::diff( Thread *th, const void *tok, const Ex &a ) const {
 }
 
 // ------------------------------------------------------------------------------------------------------------
+struct IdEx { Ex operator()( const Ex &ex ) const { return ex; } };
+
+template<class Func = IdEx>
 struct SubsRec {
-    SubsRec( Thread *th, const void *tok, const Ex &expr ) : th(th), tok(tok), expr( expr ) {
-        subs_rec( expr.op );
+    SubsRec( Thread *th, const void *tok, const Ex &expr, const Func &func = Func() ) : th(th), tok(tok), expr( expr ) {
+        subs_rec( expr.op, func );
     }
-    
     //     ~SubsRec() {
     //         ++Op::current_op;
     //         destroy_rec( expr.op );
@@ -817,29 +820,29 @@ struct SubsRec {
     //     }
     
     
-    void subs_rec( Op *a ) {
+    void subs_rec( Op *a, const Func &func ) {
         if ( a->op_id == Op::current_op ) // already done ?
             return;
         a->op_id = Op::current_op;
         //
         #define MAKE_S0( res ) \
             { \
-                Op *c0 = a->func_data()->children[0]; subs_rec( c0 ); \
+                Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
                 Ex e0 = c0->additional_info; \
-                a->additional_info = to_inc_op( res ); \
+                a->additional_info = to_inc_op( func( res ) ); \
             }
         #define MAKE_S0S1( res ) \
             { \
-                Op *c0 = a->func_data()->children[0]; subs_rec( c0 ); \
-                Op *c1 = a->func_data()->children[1]; subs_rec( c1 ); \
+                Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
+                Op *c1 = a->func_data()->children[1]; subs_rec( c1, func ); \
                 Ex e0 = c0->additional_info; \
                 Ex e1 = c1->additional_info; \
-                a->additional_info = to_inc_op( res ); \
+                a->additional_info = to_inc_op( func( res ) ); \
             }
 
         switch ( a->type ) {
-            case Op::NUMBER:           a->additional_info = a->inc_ref(); break;
-            case Op::SYMBOL:           a->additional_info = a->inc_ref(); break;
+            case Op::NUMBER:           a->additional_info = to_inc_op( func( a ) ); break;
+            case Op::SYMBOL:           a->additional_info = to_inc_op( func( a ) ); break;
             case STRING_add_NUM:       MAKE_S0S1( e0 + e1 ); break;
             case STRING_mul_NUM:       MAKE_S0S1( e0 * e1 ); break;
             case STRING_pow_NUM:       MAKE_S0S1( pow( e0, e1 ) ); break;
@@ -875,7 +878,7 @@ Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) c
         reinterpret_cast<Ex *>(a.variables[i].data)->op->op_id = Op::current_op;
         reinterpret_cast<Ex *>(a.variables[i].data)->op->additional_info = reinterpret_cast<Ex *>(b.variables[i].data)->op->inc_ref();
     }
-    SubsRec sr( th, tok, *this );
+    SubsRec<> sr( th, tok, *this );
     return op->additional_info;
 }
 
@@ -883,7 +886,97 @@ Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
     ++Op::current_op;
     a.op->op_id = Op::current_op;
     a.op->additional_info = b.op->inc_ref();
-    SubsRec sr( th, tok, *this );
+    SubsRec<> sr( th, tok, *this );
+    return op->additional_info;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+
+struct ExpandOp {
+    Ex operator()( const Ex &ex ) const {
+        Op *a = ex.op;
+        if ( a->type == STRING_mul_NUM ) {
+            SplittedVec<Op *,32> ch;
+            get_child_not_of_type_mul( a, ch );
+            SplittedVec<SplittedVec<SumSeq,4,16,true>,4,16,true> sum_seqs;
+            for(unsigned i=0;i<ch.size();++i) {
+                find_add_items_and_coeff_rec( ch[i], *sum_seqs.new_elem() );
+            }
+            //
+            Ex res( 0 );
+            Rectilinear_iterator::Tvec beg, end;
+            for(unsigned i=0;i<sum_seqs.size();++i) {
+                beg.push_back( 0 );
+                end.push_back( sum_seqs[i].size() );
+            }
+            for( Rectilinear_iterator iter( beg, end ); iter; ++iter ) {
+                Ex tmp( 1 );
+                for(unsigned i=0;i<sum_seqs.size();++i)
+                    tmp *= sum_seqs[i][ iter.pos[i] ].to_op();
+                res += tmp;
+            }
+            return res;
+        }
+        return ex;
+    }
+};
+
+Ex Ex::expand( Thread *th, const void *tok ) const {
+    ++Op::current_op;
+    SubsRec<ExpandOp> sr( th, tok, *this );
+    return op->additional_info;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+struct LinearizeDiscOp {
+    Ex operator()( const Ex &ex ) const {
+        Op *a = ex.op;
+        if ( a->type == STRING_heaviside_NUM or a->type == STRING_abs_NUM or a->type == STRING_pos_part_NUM ) {
+            Ex ch( a->func_data()->children[0] );
+            ch.op->inc_ref();
+            ch.op->inc_ref();
+            
+            Ex res = ch.subs( th, tok, *vars, *mids );
+            std::cout << " -> " << ch  << std::endl;
+            for(unsigned i=0;i<nb_vars;++i) {
+                const Ex &var = *reinterpret_cast<const Ex *>(vars->variables[i].data);
+                const Ex &mid = *reinterpret_cast<const Ex *>(mids->variables[i].data);
+                std::cout << var << std::endl;
+                std::cout << mid << std::endl;
+                std::cout << ch.diff( th, tok, var ) << std::endl;
+                res += ch.diff( th, tok, var ).subs( th, tok, *vars, *mids ) * ( var - mid );
+            }
+            std::cout << res << std::endl;
+            switch ( a->type ) {
+                case STRING_heaviside_NUM:
+                    return ex; // heaviside( res + 0.1 );
+                case STRING_abs_NUM:
+                    return abs( res );
+                case STRING_pos_part_NUM:
+                    return pos_part( res );
+                default:
+                    assert( 0 );
+            }
+        }
+        return ex;
+    }
+    const VarArgs *vars;
+    const VarArgs *mids;
+    unsigned nb_vars;
+    Thread *th;
+    const void *tok;
+};
+
+
+Ex Ex::linearize_discontinuity_children( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
+    ++Op::current_op;
+    LinearizeDiscOp func;
+    func.vars = &a;
+    func.mids = &b;
+    func.th   = th;
+    func.tok  = tok;
+    func.nb_vars = std::min( a.variables.size(), b.variables.size() );
+    SubsRec<LinearizeDiscOp> sr( th, tok, *this, func );
     return op->additional_info;
 }
 
@@ -912,7 +1005,6 @@ Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) 
     }
     return res.value();
 }
-
 
 // ------------------------------------------------------------------------------------------------------------
 void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SplittedVec<Ex,8,8,true> &res ) {
@@ -964,6 +1056,8 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         SplittedVec<Ex,8,8,true> taylor_expansion;
         
         get_taylor_expansion( th, tok, ex_ch, beg, var, 3, taylor_expansion );
+        //         taylor_expansion[2] = 0;
+        //         taylor_expansion[3] = 0;
         Ex res( 0 );
         
         // order 1 or 0
@@ -984,25 +1078,40 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
             
             Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
             Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
-            res += o1 * ( int_p + int_n );
+            res += o1 * ( int_n + int_p );
         }
         // order 2
         Ex o2 = ( 1 - eqz( taylor_expansion[2] ) ) * eqz( taylor_expansion[3] );
         if ( o2.known_at_compile_time()==false or o2.value().is_zero()==false ) {
-            std::cout << "yaap" << std::endl;
-            Ex p2 = heaviside( taylor_expansion[2] );
-            Ex sg = p2 * 2 - 1;
+            static unsigned cpt = 0;
+            std::cout << "yaap " << cpt++ << std::endl;
             //
             Ex a = taylor_expansion[2], b = taylor_expansion[1], c = taylor_expansion[0];
+            Ex mid = beg - b / ( 2 * a + eqz( a ) );
+            Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+            Ex p_mid = heaviside( ex_ch.subs( th, tok, var, mid ) );
+            Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+            Ex n_beg = 1 - p_beg;
+            Ex n_mid = 1 - p_mid;
+            Ex n_end = 1 - p_end;
+            //
             Ex delta = pow( b, 2 ) - 4 * a * c;
             Ex sq_delta = pow( delta * heaviside( delta ), Rationnal( 1, 2 ) );
-            Ex x0 = beg - ( b + sg * sq_delta ) / ( 2 * a + eqz( a ) ); // first root
-            Ex x1 = beg - ( b - sg * sq_delta ) / ( 2 * a + eqz( a ) ); // x1 >= x0
+            Ex sg = ( 2 * heaviside( end - beg ) - 1 ) * ( 2 * heaviside( a ) - 1 );
+            Ex cu0 = beg - ( b + sg * sq_delta ) / ( 2 * a + eqz( a ) ); // first root
+            Ex cu1 = beg - ( b - sg * sq_delta ) / ( 2 * a + eqz( a ) ); // second >= first if end >= beg
+            //
             res += o2 * (
-                integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
-                integration( th, tok, p2 * subs_n + ( 1 - p2 ) * subs_p, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
-                integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, max(beg,x1), end        , deg_poly_max ) * heaviside( end - x1 )
+                integration( th, tok, subs_n, var, beg, end, deg_poly_max ) * n_beg * n_end +
+                integration( th, tok, subs_p, var, beg, end, deg_poly_max ) * p_beg * p_end -
+                integration( th, tok, subs_n, var, cu0, cu1, deg_poly_max ) * n_mid -
+                integration( th, tok, subs_p, var, cu0, cu1, deg_poly_max ) * p_mid
             );
+            //             res += o2 * (
+            //                 integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
+            //                 integration( th, tok, p2 * subs_n + ( 1 - p2 ) * subs_p, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
+            //                 integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, max(beg,x1), end        , deg_poly_max ) * heaviside( end - x1 )
+            //             );
         }
         // order 3
         Ex o3 = ( 1 - eqz( taylor_expansion[3] ) );

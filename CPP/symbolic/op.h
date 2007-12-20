@@ -53,6 +53,7 @@ struct Op {
     const Op *find_discontinuity( const Op *var ) const;
     const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
     
+    
     int nb_nodes() const; //
     int nb_nodes_rec() const; // without update of current_op
     
@@ -124,6 +125,8 @@ struct MulSeq {
 void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &items );
 
 void get_sub_symbols( Op *op, SplittedVec<Op *,32> &symbols );
+
+void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res );
 
 #endif
 

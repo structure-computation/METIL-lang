@@ -33,7 +33,7 @@ void Op::destroy() {
     if ( end_value_valid )
         end_value.destroy();
 }
-    
+
 Op *Op::new_number( const Rationnal &val ) {
     Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->init( NUMBER );
     
@@ -310,8 +310,8 @@ std::string tex_repr( const Rationnal &val, int type_parent ) {
     return os.str();
 }
 
-void tex_repr( const MulSeq &ms, std::ostream &os ) {
-    bool np = ( STRING_mul_NUM > ms.op->type ) and ms.op->type >= 0;
+void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
+    bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
     if ( np ) os << "(";
     if ( ms.e.is_one() ) {
         if ( ms.op->type == Op::NUMBER and ms.op->number_data()->val.is_minus_one() )
@@ -377,23 +377,37 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
         SplittedVec<MulSeq,4,16,true> items;
         find_mul_items_and_coeff_rec( op, items );
         SplittedVec<MulSeq,4,16,true> items_[2];
-        for(unsigned i=0;i<items.size();++i)
-            items_[ items[i].e.num.is_negative() ].push_back( items[i] );
+        Rationnal n_num = 1;
+        Rationnal n_den = 1;
+        for(unsigned i=0;i<items.size();++i) {
+            if ( items[i].op->type == Op::NUMBER ) {
+                n_num *= items[i].op->number_data()->val.num;
+                n_den *= items[i].op->number_data()->val.den;
+            }
+            else
+                items_[ items[i].e.num.is_negative() ].push_back( items[i] );
+        }
         //
-        if ( items_[1].size() ) {
+        if ( items_[1].size() ) { // den
             for(unsigned i=0;i<items_[1].size();++i)
                 items_[1][i].e.num.val *= -1;
             //
-            os << "\\frac{\\displaystyle ";
+            os << "\\frac{ "; // \\displaystyle
+            if ( not n_num.is_one() )
+                os << n_num << " ";
             for(unsigned i=0;i<items_[0].size();++i)
-                tex_repr( items_[0][i], os << ( i ? "\\," : " " ) );
-            os << "}{\\displaystyle ";
+                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), ( items_[0].size() != 1 ) * STRING_mul_NUM );
+            os << "}{ "; // \\displaystyle
+            if ( not n_den.is_one() )
+                os << n_den << " ";
             for(unsigned i=0;i<items_[1].size();++i)
-                tex_repr( items_[1][i], os << ( i ? "\\," : " " ) );
+                tex_repr( items_[1][i], os << ( i ? "\\," : " " ), ( items_[1].size() != 1 ) * STRING_mul_NUM );
             os << "}";
         } else { // only *
-            for(unsigned i=0;i<items.size();++i)
-                tex_repr( items[i], os << ( i ? "\\," : " " ) );
+            if ( n_num.is_one()==false or n_den.is_one()==false )
+                os << tex_repr( n_num / n_den, STRING_mul_NUM ) << " ";
+            for(unsigned i=0;i<items_[0].size();++i)
+                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), STRING_mul_NUM );
         }
     } else if ( is_a_sub( op ) ) { // -a
         bool np = type_parent > op->type;
@@ -540,7 +554,6 @@ const Op *Op::find_discontinuity( const Op *var ) const {
     return find_discontinuity_rec( var );
 }
 
-
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int Op::nb_nodes_rec() const {
     if ( op_id == current_op )
@@ -581,6 +594,15 @@ int Op::nb_nodes_of_type_rec( int t ) const {
 int Op::nb_nodes_of_type( int t ) const {
     ++current_op;
     return nb_nodes_of_type_rec( t );
+}
+
+void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res ) {
+    if ( op->type != STRING_mul_NUM )
+        res.push_back( op );
+    else {
+        get_child_not_of_type_mul( op->func_data()->children[0], res );
+        get_child_not_of_type_mul( op->func_data()->children[1], res );
+    }
 }
 
 

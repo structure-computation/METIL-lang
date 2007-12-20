@@ -367,7 +367,13 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "subs", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
     
+    primitive_functions.push_back( PrimitiveFunction( "linearize_discontinuity_children", "ret.init( self.linearize_discontinuity_children( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
+        set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
+
+    
     primitive_functions.push_back( PrimitiveFunction( "depends_on", "ret = self.depends_on( a );", /*ret*/"Bool" ).M("Op").A("Op") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "expand", "ret.init( self.expand( th, tok ) );", /*ret*/"Op" ).M("Op") );
         
     for(unsigned i=0;i<primitive_classes.size();++i)
         if ( arithmetic_class( primitive_classes[i] ) )

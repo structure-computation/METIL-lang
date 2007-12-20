@@ -32,9 +32,12 @@ class PyLabPlot
         f << "plot("
         for v, cpt in lst, 0...
             if v.tensor_order!=1 and ( cpt % 2 )
-                f << "[" << join(lst[cpt-1].map( Float64(v(_0)) ),",") << "], "
+                f << "["
+                for x in lst[cpt-1]
+                    f << Float64( v( x ) ).to_string(16) << ","
+                f << "], "
             else
-                f << "[" << join(v.map( Float64 ),",") << "], "
+                f << "[" << join(v.map( x => Float64(x).to_string(16) ),",") << "], "
         f <<< ")"
         f.flush()
     def show

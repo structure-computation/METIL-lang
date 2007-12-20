@@ -36,6 +36,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     def get_measure                   return pe.measure( var_inter, pos_nodes )
     def get_inv_jac_mat               return pe.inv_jac_mat( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
+    def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     
     #
     def get_order_interpolation
@@ -86,13 +87,16 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
             res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
         return res
 
-    #
-    def bestial_num_integration( expr, mul_by_jac = true, div_ = 20 )
-        res := Op( 0 )
-        for p in rectilinear( 0..div_, nvi )
+    # numerical integration
+    def bestial_num_integration( expr, mul_by_jac = true, div_ = 25 )
+        res   := Op( 0 )
+        expr_ := expr
+        if mul_by_jac
+            expr_ *= get_jac()
+        for p in rectilinear( 0..div_+1, nvi )
             v := p / div_
             if var_inter_is_inside( v )
-                res += expr.subs( var_inter, v )
+                res += expr_.subs( var_inter, v )
         return res / div_ ^ nvi
         
     # mean

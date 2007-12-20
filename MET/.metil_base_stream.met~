@@ -405,13 +405,6 @@ def scientific_repr( v )
     v2 := Float64(v) / 10 ^ e
     return "$(v2)e$e"
 
-def uleb( value )
-    byte := Int8( and_bitwise( value, 0x7f ) )
-    value >>= 7
-    if value
-        byte |= 0x80;
-    res += byte
-
 # ------------------------------------------------------------------------------------------------------------------------
 # class StreamFancy
     
