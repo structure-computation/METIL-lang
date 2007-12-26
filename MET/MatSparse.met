@@ -290,7 +290,6 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
                 finalize_extr << "r_$(r)_$(c) = ( $(join(v," - ")) ) / di[ $( lc.ind[c,c] ) ];\n                    "
                     
         main_body := ""
-        main_body <<<<
             
         #
         stream <<<<

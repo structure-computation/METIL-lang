@@ -135,235 +135,162 @@
       
       <!--  for i in (1 .. 17).reversed print "<RegExpr String='^$("\s"*i)\S' context='Long String $i'/>"  -->
       <context name="Begin Long String" attribute="Long String" lineEndContext="#stay">
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 16'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 15'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 14'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 13'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 12'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\S' context='Long String 11'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\S' context='Long String 10'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\s\S' context='Long String 9'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\s\S' context='Long String 8'/>
-          <RegExpr String='^\s\s\s\s\s\s\s\S' context='Long String 7'/>
-          <RegExpr String='^\s\s\s\s\s\s\S' context='Long String 6'/>
-          <RegExpr String='^\s\s\s\s\s\S' context='Long String 5'/>
-          <RegExpr String='^\s\s\s\s\S' context='Long String 4'/>
-          <RegExpr String='^\s\s\s\S' context='Long String 3'/>
-          <RegExpr String='^\s\s\S' context='Long String 2'/>
-          <RegExpr String='^\s\S' context='Long String 1'/>
-          <RegExpr String='^\S' context='#pop'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s' context='Long String 16'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s' context='Long String 15'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s\s' context='Long String 14'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s\s' context='Long String 13'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s\s' context='Long String 12'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s\s' context='Long String 11'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s\s' context='Long String 10'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s\s' context='Long String 9'/>
+          <RegExpr String='^\s\s\s\s\s\s\s\s' context='Long String 8'/>
+          <RegExpr String='^\s\s\s\s\s\s\s' context='Long String 7'/>
+          <RegExpr String='^\s\s\s\s\s\s' context='Long String 6'/>
+          <RegExpr String='^\s\s\s\s\s' context='Long String 5'/>
+          <RegExpr String='^\s\s\s\s' context='Long String 4'/>
+          <RegExpr String='^\s\s\s' context='Long String 3'/>
+          <RegExpr String='^\s\s' context='Long String 2'/>
+          <RegExpr String='^\s' context='Long String 1'/>
+          <RegExpr String='^' context='#pop'/>
       </context>
       <!--
 for i in 1 .. 17
     stdout <<<<
         <context name="Long String $i" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-    for j in 0 .. i
-        stdout <<<<
-                <RegExpr String="^$("\s"*j)\S" context="#pop#pop"/>
-    stdout <<<<
-            </context>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^$("\\s"*i)" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
+        </context>
 
       -->
         <context name="Long String 1" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 2" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 3" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 4" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 5" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 6" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 7" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 8" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 9" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 10" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 11" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 12" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 13" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 14" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 15" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
         
         <context name="Long String 16" attribute="Ccode" lineEndContext="#stay">
             <Detect2Chars attribute="OperatorInString" char="$" char1="(" context="OperatorInString"/>
-            <RegExpr String="^\S" context="#pop#pop"/>
-            <RegExpr String="^\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
-            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\S" context="#pop#pop"/>
+            <RegExpr attribute="OperatorInString" String="\&#036;[\_a-zA-Z][\_a-zA-Z0-9]*" context="#stay"/>
+            <RegExpr String="^\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s\s" context="#stay"/>
+            <RegExpr String="^" context="#pop#pop"/>
+            <RegExpr String="^." context="#pop#pop"/>
         </context>
      
             

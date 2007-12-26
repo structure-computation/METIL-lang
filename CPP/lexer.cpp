@@ -133,34 +133,40 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                         if ( num_op >= 0 ) {
                             app_tok( num_op, old_str, i, behavior_of_operator( num_op ) );
                             old_str += i;
-                            /// f <<< ...
+                            /// f <<<< ...
                             if ( num_op == STRING_shift_left_long_str_NUM ) {
-                                // nb_spaces
+                                // get nb_spaces from current line
                                 unsigned nb_spaces = 0;
                                 const char *b = s;
                                 while ( *(--b) and *b!='\n' and *b!='\r' );
                                 while ( *(++b)==' ' ) nb_spaces++;
-                                // skip spaces
+                                
+                                // skip spaces after <<<<
                                 while ( *old_str == ' ' ) ++old_str;
-                                // read str until nb_spaces < $nb_spaces
-                                s = old_str;
+                                if ( *old_str != '\n' and *old_str != '\r' ) {
+                                    error_list->add("After a '<<<<' and in the same line, only spaces and carriage returns are allowed.", old_str, provenance );
+                                    return;
+                                }
                                 old_str += ( *old_str == '\r' );
                                 old_str += ( *old_str == '\n' );
-                                while ( *s ) {
-                                    // next end of line
-                                    while ( *(++s) and *s!='\n' ); 
-                                    if ( not *s )
-                                        break;
-                                    ++s;
-                                    // new_nb_spaces
+                                
+                                //
+                                s = old_str;
+                                while ( true ) {
                                     unsigned new_nb_spaces = 0;
                                     while ( *s==' ' ) { ++s; ++new_nb_spaces; }
-                                    if ( new_nb_spaces < nb_spaces + 4 and *s != '\n' and *s != '\r' ) { // finished ?
+//                                     std::cout << *s << " " << new_nb_spaces << std::endl;
+                                    if ( new_nb_spaces < nb_spaces + 4 ) {
                                         while ( *s and *s!='\n' and *s!='\r' ) --s; // return to beginning of the line
                                         break;
                                     }
+                                    // else
+                                    while ( *s and *s!='\n' and *s!='\r' ) ++s; // next line
+                                    s += ( *s == '\r' );
+                                    s += ( *s == '\n' );
                                 }
-                                // 
+                                
+                                // $...
                                 const char *new_s = s;
                                 s = old_str;
                                 while ( s < new_s ) {
@@ -171,9 +177,13 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                                     else
                                         s++;
                                 }
-                                app_tok( Lexem::STRING, old_str, s-old_str + ( *s == '\n' ), nb_spaces + 4 );
+                                
+                                // app_tok
+                                app_tok( Lexem::STRING, old_str, s-old_str, nb_spaces + 4 );
+                                
                                 // out loop
                                 old_str = s;
+                                
                             }
                             break;
                         }

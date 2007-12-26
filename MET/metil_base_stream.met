@@ -250,7 +250,7 @@ def shift_left_then_endl(stream,a) # when stream.is_stream
     return stream
 
 def shift_left_long_str( stream, txt ) # when stream.is_stream
-    stream << txt
+    stream <<< txt
     return stream
     
 def shift_right(stream,a) when stream.is_stream

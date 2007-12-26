@@ -101,6 +101,7 @@ class StringStream
     def write( p, bytes )                       str.append( p, bytes )
     def read                                    return str
     def conversion_to( b ) when b.type == Bool  b.init( cur < str.size )
+    def flush                                   pass
     def for_lines( block )
         while true
             old_cur := cur

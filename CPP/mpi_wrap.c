@@ -28,7 +28,7 @@ int metil_mpi_recv( void *buf, int count, int src, int tag ) {
     #ifdef MPICH_NAME
     return stat.count;
     #else
-    return stat.st_length;
+    return 0; // stat.st_length;
     #endif
 }
 
