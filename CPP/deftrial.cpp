@@ -253,7 +253,10 @@ const void *play_with_callables( Thread *th, DefTrial *def_trial, const void *to
 }
 
 
+// unsigned nb_arg_lst[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 void fill_callable_lists( DefTrial *def_trial, Thread *th, const void *tok, Variable *&sp ) {
+    //     nb_arg_lst[ def_trial->nb_uargs + def_trial->nb_nargs + def_trial->def->def_data->has_self_as_arg() ]++;
+    
     DefinitionData *first_dd = def_trial->def->def_data;
     DefinitionData *dd = first_dd;
     Nstring name = dd->name;
