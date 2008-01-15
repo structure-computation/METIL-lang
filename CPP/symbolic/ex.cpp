@@ -608,6 +608,8 @@ Ex heaviside( const Ex &a ) {
         if ( c1->necessary_positive() ) return heaviside( Ex( c0 ) );
         //if ( c0->necessary_negative() ) return Ex ( 1 ) - heaviside( Ex( c1 ) ) + eqz( Ex( c1 ) );
         //if ( c1->necessary_negative() ) return Ex ( 1 ) - heaviside( Ex( c0 ) ) + eqz( Ex( c0 ) );
+        if ( c0->necessary_negative() and not c0->is_minus_one() ) return heaviside( Ex(-1) * Ex( c1 ) );
+        if ( c1->necessary_negative() and not c1->is_minus_one() ) return heaviside( Ex(-1) * Ex( c0 ) );
     }
     Op *res = Op::new_function( STRING_heaviside_NUM, a.op );
     if ( not res->cpt_use ) {
