@@ -460,6 +460,8 @@ void update_inter_pow( Op *res, Op *a, Op *b ) {
     if ( not res->cpt_use ) {
         if ( b->type == Op::NUMBER ) {
             Unsigned32 p( b->number_data()->val );
+            if ( b->number_data()->val.is_even() )
+                res->set_beg_value( 0, true );
             if ( b->number_data()->val.is_even() and b->number_data()->val.is_pos() ) { // ^2, ^4, ...
                 if ( a->beg_value_valid and a->end_value_valid ) {
                     if ( a->beg_value.is_neg_or_null() and a->end_value.is_pos_or_null() ) { // +-----0-----+
@@ -573,7 +575,21 @@ Ex atan2( const Ex &a, const Ex &b ) {
 Ex abs( const Ex &a ) {
     if ( is_a_number( a.op ) ) return abs( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return a;
+    if ( a.op->type == STRING_mul_NUM ) { // abs( c0 * c1 )
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->necessary_positive_or_null() )
+            return Ex( c0 ) * abs( Ex( c1 ) );
+        if ( c1->necessary_positive_or_null() )
+            return abs( Ex( c0 ) ) * Ex( c1 );
+        if ( c0->necessary_negative() )
+            return Ex( -1 ) * Ex( c0 ) * abs( Ex( c1 ) );
+        if ( c1->necessary_negative() )
+            return abs( Ex( c0 ) ) * Ex( -1 ) * Ex( c1 );
+    }
     Op *res = Op::new_function( STRING_abs_NUM, a.op );
+    if ( not res->cpt_use )
+        res->set_beg_value( 0, true );
     return res;
 }
 Ex log( const Ex &a ) {
@@ -585,6 +601,14 @@ Ex heaviside( const Ex &a ) {
     if ( is_a_number( a.op ) ) return heaviside( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return 1;
     if ( a.op->necessary_negative()         ) return 0;
+    if ( a.op->type == STRING_mul_NUM ) { // heaviside( c0 * c1 )
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->necessary_positive() ) return heaviside( Ex( c1 ) );
+        if ( c1->necessary_positive() ) return heaviside( Ex( c0 ) );
+        //if ( c0->necessary_negative() ) return Ex ( 1 ) - heaviside( Ex( c1 ) ) + eqz( Ex( c1 ) );
+        //if ( c1->necessary_negative() ) return Ex ( 1 ) - heaviside( Ex( c0 ) ) + eqz( Ex( c0 ) );
+    }
     Op *res = Op::new_function( STRING_heaviside_NUM, a.op );
     if ( not res->cpt_use ) {
         res->set_beg_value( 0, true );
@@ -611,6 +635,12 @@ Ex eqz( const Ex &a ) {
     if ( a.op->type == STRING_mul_NUM ) {
         if ( a.op->func_data()->children[0]->type == Op::NUMBER )
             return eqz( Ex( a.op->func_data()->children[1] ) );
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->necessary_positive() or c0->necessary_negative() )
+            return eqz( Ex( c1 ) );
+        if ( c1->necessary_positive() or c1->necessary_negative() )
+            return eqz( Ex( c0 ) );
     }
     if ( a.op->type == STRING_pow_NUM ) { // eqz( m ^ e )
         Op *m = a.op->func_data()->children[0];
@@ -620,6 +650,12 @@ Ex eqz( const Ex &a ) {
         if ( e->necessary_negative() ) // m ^ -5
             return Ex( 0 ); // -> can't be == 0
     }
+    else if ( a.op->type == STRING_log_NUM )
+        return eqz( Ex( a.op->func_data()->children[0] ) - 1 );
+    else if ( a.op->type == STRING_abs_NUM or a.op->type == STRING_sinh_NUM or a.op->type == STRING_tanh_NUM )
+        return eqz( Ex( a.op->func_data()->children[0] ) );
+    else if ( a.op->type == STRING_eqz_NUM or a.op->type == STRING_heaviside_NUM )
+        return 1 - a;
     // no simplifications
     Op *res = Op::new_function( STRING_eqz_NUM, a.op );
     if ( not res->cpt_use ) {
@@ -633,19 +669,50 @@ Ex exp( const Ex &a ) {
     if ( a.op->type == STRING_log_NUM ) return a.op->func_data()->children[0];
     Op *res = Op::new_function( STRING_exp_NUM, a.op );
     if ( not res->cpt_use )
-        res->set_beg_value( 0, true );
+        res->set_beg_value( 0, false );
     return res;
 }
 Ex sin( const Ex &a ) {
     if ( is_a_number( a.op ) ) return sin_96( a.op->number_data()->val );
-    return Op::new_function( STRING_sin_NUM, a.op );
+    if ( a.op->type == STRING_mul_NUM )  {
+      Op *c0 = a.op->func_data()->children[0];
+      Op *c1 = a.op->func_data()->children[1];
+      if ( c0->number_data()->val.is_minus_one() )
+         return Ex( -1 ) * sin ( Ex( c1 ) );
+    }
+    if ( a.op->necessary_negative() ) return Ex(-1) * sin ( Ex( -1 ) * Ex( a.op ) );
+    Op *res = Op::new_function( STRING_sin_NUM, a.op );
+    if ( not res->cpt_use ) {
+        res->set_beg_value(-1, true );
+        res->set_end_value( 1, true );
+    }
+    return res;
 }
 Ex cos( const Ex &a ) {
     if ( is_a_number( a.op ) ) return cos_96( a.op->number_data()->val );
-    return Op::new_function( STRING_cos_NUM, a.op );
+    if ( a.op->type == STRING_mul_NUM )  {
+      Op *c0 = a.op->func_data()->children[0];
+      Op *c1 = a.op->func_data()->children[1];
+      if ( c0->number_data()->val.is_minus_one() )
+         return cos ( Ex ( c1 ));
+    }
+    if ( a.op->necessary_negative() ) return cos( Ex( -1 ) * Ex( a.op ) );
+    Op *res = Op::new_function( STRING_cos_NUM, a.op );
+    if ( not res->cpt_use ) {
+        res->set_beg_value(-1, true );
+        res->set_end_value( 1, true );
+    }
+    return res;
 }
 Ex tan( const Ex &a ) {
     if ( is_a_number( a.op ) ) return tan_96( a.op->number_data()->val );
+    if ( a.op->type == STRING_mul_NUM )  {
+      Op *c0 = a.op->func_data()->children[0];
+      Op *c1 = a.op->func_data()->children[1];
+      if ( c0->number_data()->val.is_minus_one() )
+         return Ex( -1 ) * tan( Ex ( c1 ) );
+    }
+    if ( a.op->necessary_negative() ) return Ex(-1) * tan ( Ex( -1 ) * Ex( a.op ) );
     return Op::new_function( STRING_tan_NUM, a.op );
 }
 Ex asin( const Ex &a ) {
@@ -666,7 +733,10 @@ Ex sinh( const Ex &a ) {
 }
 Ex cosh( const Ex &a ) {
     if ( is_a_number( a.op ) ) return cosh_96( a.op->number_data()->val );
-    return Op::new_function( STRING_cosh_NUM, a.op );
+    Op *res = Op::new_function( STRING_cosh_NUM, a.op );
+    if ( not res->cpt_use )
+        res->set_beg_value( 1, true );
+    return res;
 }
 Ex tanh( const Ex &a ) {
     if ( is_a_number( a.op ) ) return tanh_96( a.op->number_data()->val );
@@ -690,25 +760,38 @@ Ex max( const Ex &a, const Ex &b, const Ex &c ) {
 }
 
 void sort( Ex &a, Ex &b, Ex &c ) {
-    int perm[] = {
-        0, 1, 2,
-        0, 2, 1,
-        1, 0, 2,
-        1, 2, 0,
-        2, 0, 1,
-        2, 1, 0,
-    };
-    Ex val[] = { a, b, c };
-    Ex cond( 0 );
-    Ex ra, rb, rc;
-    for(unsigned num_perm=0;num_perm<6;++num_perm) {
-        cond = ( 1 - cond ) * heaviside( val[ perm[num_perm*3+2] ] - val[ perm[num_perm*3+1] ] ) * heaviside( val[ perm[num_perm*3+1] ] - val[ perm[num_perm*3+0] ] );
-        ra += cond * val[ perm[num_perm*3+0] ];
-        rb += cond * val[ perm[num_perm*3+1] ];
-        rc += cond * val[ perm[num_perm*3+2] ];
-    }
-    //
-    a = ra; b = rb; c = rc;
+    Ex t;
+        
+    t = a;
+    a = b * ( 1 - heaviside( b - a ) ) + a * heaviside( b - a );
+    b = t * ( 1 - heaviside( b - t ) ) + b * heaviside( b - t );
+    
+    t = b;
+    b = c * ( 1 - heaviside( c - b ) ) + b * heaviside( c - b );
+    c = t * ( 1 - heaviside( c - t ) ) + c * heaviside( c - t );
+    
+    t = a;
+    a = b * ( 1 - heaviside( b - a ) ) + a * heaviside( b - a );
+    b = t * ( 1 - heaviside( b - t ) ) + b * heaviside( b - t );
+//     int perm[] = {
+//         0, 1, 2,
+//         0, 2, 1,
+//         1, 0, 2,
+//         1, 2, 0,
+//         2, 0, 1,
+//         2, 1, 0,
+//     };
+//     Ex val[] = { a, b, c };
+//     Ex cond( 0 );
+//     Ex ra, rb, rc;
+//     for(unsigned num_perm=0;num_perm<6;++num_perm) {
+//         cond = ( 1 - cond ) * heaviside( val[ perm[num_perm*3+2] ] - val[ perm[num_perm*3+1] ] ) * heaviside( val[ perm[num_perm*3+1] ] - val[ perm[num_perm*3+0] ] );
+//         ra += cond * val[ perm[num_perm*3+0] ];
+//         rb += cond * val[ perm[num_perm*3+1] ];
+//         rc += cond * val[ perm[num_perm*3+2] ];
+//     }
+//     //
+//     a = ra; b = rb; c = rc;
 }
 
 
