@@ -7,6 +7,8 @@
 #include <complex>
 #include <map>
 
+typedef SplittedVec<Ex,8,8,true> SEX;
+
 struct ExPtrCmp {
     bool operator()( const Ex &a, const Ex &b ) const {
         if ( a.op->type==Op::NUMBER and b.op->type==Op::NUMBER )
@@ -745,7 +747,7 @@ Ex tanh( const Ex &a ) {
     return Op::new_function( STRING_tanh_NUM, a.op );
 }
 Ex min( const Ex &a, const Ex &b ) {
-    return a - pos_part( a - b );
+    return b - pos_part( b - a );
     //     Ex s = heaviside( b - a );
     //     return s * a + ( 1 - s ) * b;
 }
@@ -762,38 +764,17 @@ Ex max( const Ex &a, const Ex &b, const Ex &c ) {
 }
 
 void sort( Ex &a, Ex &b, Ex &c ) {
-    Ex t;
-        
-    t = a;
-    a = b * ( 1 - heaviside( b - a ) ) + a * heaviside( b - a );
-    b = t * ( 1 - heaviside( b - t ) ) + b * heaviside( b - t );
+    Ex t = a;
+    a = b - pos_part( b - t );
+    b = t + pos_part( b - t );
     
     t = b;
-    b = c * ( 1 - heaviside( c - b ) ) + b * heaviside( c - b );
-    c = t * ( 1 - heaviside( c - t ) ) + c * heaviside( c - t );
+    b = c - pos_part( c - t );
+    c = t + pos_part( c - t );
     
     t = a;
-    a = b * ( 1 - heaviside( b - a ) ) + a * heaviside( b - a );
-    b = t * ( 1 - heaviside( b - t ) ) + b * heaviside( b - t );
-//     int perm[] = {
-//         0, 1, 2,
-//         0, 2, 1,
-//         1, 0, 2,
-//         1, 2, 0,
-//         2, 0, 1,
-//         2, 1, 0,
-//     };
-//     Ex val[] = { a, b, c };
-//     Ex cond( 0 );
-//     Ex ra, rb, rc;
-//     for(unsigned num_perm=0;num_perm<6;++num_perm) {
-//         cond = ( 1 - cond ) * heaviside( val[ perm[num_perm*3+2] ] - val[ perm[num_perm*3+1] ] ) * heaviside( val[ perm[num_perm*3+1] ] - val[ perm[num_perm*3+0] ] );
-//         ra += cond * val[ perm[num_perm*3+0] ];
-//         rb += cond * val[ perm[num_perm*3+1] ];
-//         rc += cond * val[ perm[num_perm*3+2] ];
-//     }
-//     //
-//     a = ra; b = rb; c = rc;
+    a = b - pos_part( b - t );
+    b = t + pos_part( b - t );
 }
 
 
@@ -978,29 +959,27 @@ Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
 // ------------------------------------------------------------------------------------------------------------
 
 struct ExpandOp {
+    Ex make_mul( const SplittedVec<Op *,32> &res, unsigned beg ) const {
+        if ( res.size() == beg )
+            return 1;
+        //
+        Op *a = res[ beg ];
+        if ( a->type != STRING_add_NUM )
+            return a;
+        //
+        SplittedVec<Op *,32> add_children;
+        get_child_not_of_type_add( a, add_children );
+        Ex sum, rem = make_mul( res, beg + 1 );
+        for(unsigned i=0;i<add_children.size();++i)
+            sum += add_children[i] * rem;
+        return sum;
+    }
     Ex operator()( const Ex &ex ) const {
         Op *a = ex.op;
         if ( a->type == STRING_mul_NUM ) {
-            SplittedVec<Op *,32> ch;
-            get_child_not_of_type_mul( a, ch );
-            SplittedVec<SplittedVec<SumSeq,4,16,true>,4,16,true> sum_seqs;
-            for(unsigned i=0;i<ch.size();++i) {
-                find_add_items_and_coeff_rec( ch[i], *sum_seqs.new_elem() );
-            }
-            //
-            Ex res( 0 );
-            Rectilinear_iterator::Tvec beg, end;
-            for(unsigned i=0;i<sum_seqs.size();++i) {
-                beg.push_back( 0 );
-                end.push_back( sum_seqs[i].size() );
-            }
-            for( Rectilinear_iterator iter( beg, end ); iter; ++iter ) {
-                Ex tmp( 1 );
-                for(unsigned i=0;i<sum_seqs.size();++i)
-                    tmp *= sum_seqs[i][ iter.pos[i] ].to_op();
-                res += tmp;
-            }
-            return res;
+            SplittedVec<Op *,32> res;
+            get_child_not_of_type_mul( a, res );
+            return make_mul( res, 0 );
         }
         return ex;
     }
@@ -1092,10 +1071,11 @@ Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) 
 }
 
 // ------------------------------------------------------------------------------------------------------------
-void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SplittedVec<Ex,8,8,true> &res ) {
+void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SEX &res ) {
     Rationnal r( 1 );
     for(Int32 i=0;i<=deg_poly_max;++i) {
-        res.push_back( r * expr.subs( th, tok, var, beg ) );
+        Ex t = r * expr.subs( th, tok, var, beg );
+        res.push_back( t );
         if ( i < deg_poly_max ) {
             expr = expr.diff( th, tok, var );
             r /= i + 1;
@@ -1105,7 +1085,7 @@ void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, 
 
 Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     //
-    SplittedVec<Ex,8,8,true> taylor_expansion;
+    SEX taylor_expansion;
     get_taylor_expansion( th, tok, expr, ( beg + end ) / 2, var, deg_poly_max, taylor_expansion );
     //
     Ex res( 0 ), d = ( end - beg ) / 2;
@@ -1114,209 +1094,152 @@ Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &exp
     return res;
 }
 
+std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {
+    Ex mo = v.real() * v.real() + v.imag() * v.imag();
+    Ex m = log( mo + eqz( mo ) ) / 2, a = atan2( v.imag(), v.real() );
+    return std::exp( Ex( p ) * std::complex<Ex>( m, a ) );
+}
+
+std::complex<Ex> sqrtc( const Ex &v ) {
+    Ex s = pow( abs( v ), Rationnal(1,2) );
+    Ex p = heaviside( v );
+    return std::complex<Ex>( s * p, s * ( 1 - p ) );
+}
+
+Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validity ) {
+    for(unsigned i=0;i<std::min(3u,taylor_expansion.size());++i) {
+        roots   .push_back( 0 );
+        validity.push_back( 0 );
+    }
+    
+    //
+    Ex z = taylor_expansion[3], ez = eqz( z );
+    Ex a = taylor_expansion[2] / ( z + ez ), b = taylor_expansion[1] / ( z + ez ), c = taylor_expansion[0] / ( z + ez );
+    Ex delta = pow( b, 2 ) - 4 * a * c;
+    Ex ea = eqz( a ), eb = eqz( b ), hd = heaviside( delta );
+    Ex sq_delta = pow( delta * hd, Rationnal( 1, 2 ) );
+    roots   [ 0 ] = - ( ( 1 - ea ) * ( b + sq_delta ) + ea * c ) / ( 2 * a + ea * ( b + eb ) ); // first root
+    roots   [ 1 ] = - (                b - sq_delta            ) / ( 2 * a + ea              ); // second one
+    validity[ 0 ] = 1 - ea * eb;
+    validity[ 1 ] = ( 1 - ea ) * hd;
+
+    // order 3
+    if ( not z.op->is_zero() ) {
+        Ex p = b - pow(a,2) / 3;
+        Ex q = pow(a,3) * Rationnal(2,27) - a * b / 3 + c;
+        Ex delta = 4 * pow(p,3) + 27 * pow(q,2);
+        //delta >= 0
+        //         Ex u = (-27*q+sqrt(27*delta))/2;
+        //         Ex v = (-27*q-sqrt(27*delta))/2;
+        //         res += heaviside( delta ) * ExVector(
+        //             sgn(u)*pow(abs(u),1.0/3.0)+sgn(v)*pow(abs(v),1.0/3.0)-a)/3.0
+        //         );
+        //delta < 0
+        std::complex<Ex> j( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+        std::complex<Ex> v( -27 * q / 2, 0 );
+        v += sqrtc( - Rationnal(27,4) * delta ) * std::complex<Ex>( 0, 1 );
+        std::complex<Ex> u( powc( v, Rationnal(1,3) ) );
+        Ex x0 = ( 2 * std::real(    u) - a ) / 3;
+        Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
+        Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
+        
+        Ex va = 1 - ez;
+        roots   [ 0 ] = ( 1 - va ) * roots   [ 0 ] + va * x0;
+        validity[ 0 ] = ( 1 - va ) * validity[ 0 ] + va;
+        va *= 1 - heaviside( delta );
+        roots   [ 1 ] = ( 1 - va ) * roots   [ 1 ] + va * x1;
+        roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
+        validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
+        validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
+        
+        std::cout << Float64( x0.value() )+5 << std::endl;
+        std::cout << Float64( x1.value() )+5 << std::endl;
+        std::cout << Float64( x2.value() )+5 << std::endl;
+    }
+    
+    return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
+}
+
 Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     const Op *disc = expr.op->find_discontinuity( var.op );
     if ( disc ) {
-        Ex ex_disc( disc );
-        // substitutions -> pos part and neg part
         const Op *ch = disc->func_data()->children[0];
+        Ex ex_disc( disc );
         Ex ex_ch( ch );
+        
+        // ch = f * g
+        //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
+        if ( ch->type == STRING_mul_NUM ) {
+            Ex new_expr;
+            if ( disc->type == STRING_heaviside_NUM ) {
+                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+                new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
+            }
+            else if ( disc->type == STRING_abs_NUM ) {
+                Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
+                Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
+                new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
+            }
+            else
+                assert( 0 /* TODO */ );
+            
+            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+        }
+        
+        // taylor_expansion
+        SEX taylor_expansion;
+        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+        get_taylor_expansion( th, tok, ex_ch, mid, var, 3, taylor_expansion );
+        
+        SEX roots, root_validity;
+        Ex leading_coefficient = get_roots_with_validity( taylor_expansion, roots, root_validity );
+        
+        // several roots ?
+        if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
+            Ex su = leading_coefficient;
+            for(unsigned i=0;i<roots.size();++i)
+                if ( not root_validity[i].op->is_zero() )
+                    su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
+            Ex new_expr = expr.subs( th, tok, ex_ch, su );
+            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+        }
+        
+        // special case ( the last one ) : only one root
+        Ex cut = mid + roots[0];
         Ex subs_p, subs_n;
         if ( disc->type == STRING_heaviside_NUM ) {
-            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
         }
         else if ( disc->type == STRING_abs_NUM ) {
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
             subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
+            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
         }
         else if ( disc->type == STRING_pos_part_NUM ) {
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
         }
         else
             assert( 0 ); //
-            
-        // intervals
-        SplittedVec<Ex,8,8,true> taylor_expansion;
-        
-        get_taylor_expansion( th, tok, ex_ch, beg, var, 3, taylor_expansion );
-        //         taylor_expansion[2] = 0;
-        //         taylor_expansion[3] = 0;
-        Ex res( 0 );
-        
-        // order 1 or 0
-        Ex o1 = eqz( taylor_expansion[2] ) * eqz( taylor_expansion[3] );
-        if ( o1.known_at_compile_time()==false or o1.value().is_zero()==false ) {
-            //
-            Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
-            Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
-            Ex n_beg = 1 - p_beg;
-            Ex n_end = 1 - p_end;
-            //
-            Ex cut = beg - taylor_expansion[0] / ( taylor_expansion[1] + eqz( taylor_expansion[1] ) );
-            //
-            Ex nb = beg + ( cut - beg ) * p_beg * n_end;
-            Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
-            Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
-            Ex pe = end + ( cut - end ) * p_beg * n_end;
-            
-            Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
-            Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
-            res += o1 * ( int_n + int_p );
-        }
-        // order 2
-        Ex o2 = ( 1 - eqz( taylor_expansion[2] ) ) * eqz( taylor_expansion[3] );
-        if ( o2.known_at_compile_time()==false or o2.value().is_zero()==false ) {
-            static unsigned cpt = 0;
-            std::cout << "yaap " << cpt++ << std::endl;
-            //
-            Ex a = taylor_expansion[2], b = taylor_expansion[1], c = taylor_expansion[0];
-            Ex mid = beg - b / ( 2 * a + eqz( a ) );
-            Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
-            Ex p_mid = heaviside( ex_ch.subs( th, tok, var, mid ) );
-            Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
-            Ex n_beg = 1 - p_beg;
-            Ex n_mid = 1 - p_mid;
-            Ex n_end = 1 - p_end;
-            //
-            Ex delta = pow( b, 2 ) - 4 * a * c;
-            Ex sq_delta = pow( delta * heaviside( delta ), Rationnal( 1, 2 ) );
-            Ex sg = ( 2 * heaviside( end - beg ) - 1 ) * ( 2 * heaviside( a ) - 1 );
-            Ex cu0 = beg - ( b + sg * sq_delta ) / ( 2 * a + eqz( a ) ); // first root
-            Ex cu1 = beg - ( b - sg * sq_delta ) / ( 2 * a + eqz( a ) ); // second >= first if end >= beg
-            //
-            res += o2 * (
-                integration( th, tok, subs_n, var, beg, end, deg_poly_max ) * n_beg * n_end +
-                integration( th, tok, subs_p, var, beg, end, deg_poly_max ) * p_beg * p_end -
-                integration( th, tok, subs_n, var, cu0, cu1, deg_poly_max ) * n_mid -
-                integration( th, tok, subs_p, var, cu0, cu1, deg_poly_max ) * p_mid
-            );
-            //             res += o2 * (
-            //                 integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
-            //                 integration( th, tok, p2 * subs_n + ( 1 - p2 ) * subs_p, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
-            //                 integration( th, tok, p2 * subs_p + ( 1 - p2 ) * subs_n, var, max(beg,x1), end        , deg_poly_max ) * heaviside( end - x1 )
-            //             );
-        }
-        // order 3
-        Ex o3 = ( 1 - eqz( taylor_expansion[3] ) );
-        if ( o3.known_at_compile_time()==false or o3.value().is_zero()==false ) {
-            std::cout << "yep" << std::endl;
-            Ex z = taylor_expansion[3] + eqz( taylor_expansion[3] );
-            Ex a = taylor_expansion[2] / z, b = taylor_expansion[1] / z, c = taylor_expansion[0] / z;
-            Ex p3 = heaviside( taylor_expansion[3] );
-            Ex p = b - pow( a, 2 ) * Rationnal( 1, 3 );
-            Ex q = pow( a, 3 ) * Rationnal( 2, 27 ) - a * b * Rationnal( 1, 3 ) + c;
-            Ex delta = 4 * pow( p, 3 ) + 27 * pow(q,2);
-            Ex delta_pos = heaviside( delta );
-            Ex sq_27_delta = pow( 27 * abs( delta ), Rationnal( 1, 2 ) );
-            // delta >= 0
-            if ( delta_pos.known_at_compile_time()==false or delta_pos.value().is_zero()==false ) {
-                Ex u = Rationnal( 1, 2 ) * ( -27 * q + sq_27_delta );
-                Ex v = Rationnal( 1, 2 ) * ( -27 * q - sq_27_delta );
-                Ex sgn_u = 2 * heaviside( u ) - 1;
-                Ex sgn_v = 2 * heaviside( v ) - 1;
-                Ex r = Rationnal( 1, 3 ) * ( sgn_u * pow( abs(u), Rationnal( 1, 3 ) ) + sgn_v * pow( abs(v), Rationnal( 1, 3 ) ) - a );
-                res += o3 * delta_pos * (
-                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, beg, min(end,r), deg_poly_max ) * heaviside( r - beg ) +
-                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,r), end, deg_poly_max ) * heaviside( end - r )
-                );
-            }
-            // delta < 0
-            Ex delta_neg = 1 - delta_pos;
-            if ( delta_neg.known_at_compile_time()==false or delta_neg.value().is_zero()==false ) {
-                std::complex<Ex> j( Rationnal( -1, 2 ), Rationnal( sqrt( (long double)3 ) / 2 ) );
-                std::complex<Ex> v( Rationnal( -27, 2 ) * q, Rationnal( 1, 2 ) * sq_27_delta );
-                Ex a_mod = v.real() * v.real() + v.imag() * v.imag();
-                Ex a_arg = atan2( v.imag(), v.real() );
-                std::complex<Ex> u = exp( Ex( Rationnal( 1, 3 ) ) * std::complex<Ex>( Rationnal( 1, 2 ) * log( a_mod + eqz(a_mod) ), a_arg ) ) * ( 1 - eqz( a_mod ) );
-                Ex x0 = Rationnal( 1, 3 ) * ( 2 * std::real(    u) - a );
-                Ex x1 = Rationnal( 1, 3 ) * ( 2 * std::real(  j*u) - a );
-                Ex x2 = Rationnal( 1, 3 ) * ( 2 * std::real(j*j*u) - a );
-                sort( x0, x1, x2 );
-                //
-                res += o3 * delta_neg * (
-                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, beg        , min(end,x0), deg_poly_max ) * heaviside( x0 - beg )                         +
-                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,x0), min(end,x1), deg_poly_max ) * heaviside( x1 - beg ) * heaviside( end - x0 ) +
-                    integration( th, tok, p3 * subs_n + ( 1 - p3 ) * subs_p, var, max(beg,x1), min(end,x2), deg_poly_max ) * heaviside( x2 - beg ) * heaviside( end - x1 ) +
-                    integration( th, tok, p3 * subs_p + ( 1 - p3 ) * subs_n, var, max(beg,x2), end        , deg_poly_max ) * heaviside( end - x2 )
-                );
-                // std::cout << double(r0.value()) << " " << double(r1.value()) << " " << double(r2.value()) << std::endl;
-            }
-        }
         
         //
-        return res;
+        Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+        Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+        Ex n_beg = 1 - p_beg;
+        Ex n_end = 1 - p_end;
+        
+        //
+        Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+        Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+        Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+        Ex pe = end + ( cut - end ) * p_beg * n_end;
+        
+        Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
+        Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
+        return int_n + int_p;
     }
     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
-}
-
-// encoding of <, >, <, ...
-struct IneqSet {
-    IneqSet() : impossible( false ) {}
-    IneqSet( const IneqSet &is, const Ex &ex, bool bo ) {
-        impossible = is.impossible;
-        ineq = is.ineq;
-        for(unsigned i=0;i<ineq.size();++i) {
-            if ( same_ex( ineq[i].first, ex ) ) {
-                impossible |= ( bo != ineq[i].second );
-                return;
-            }
-            else if ( same_ex( ineq[i].first, - ex ) ) {
-                impossible |= ( bo == ineq[i].second );
-                return;
-            }
-        }
-        ineq.push_back( std::pair<Ex,bool>( ex, bo ) );
-    }
-    std::vector<std::pair<Ex,bool> > ineq;
-    bool impossible;
-};
-std::ostream &operator<<(std::ostream &os,const IneqSet &is) {
-    if ( is.impossible )
-        os << "impossible";
-    else
-        for(unsigned i=0;i<is.ineq.size();++i)
-            os << is.ineq[i].first << ( is.ineq[i].second ? ">=0 " : "<0 " );
-    return os;
-}
-void get_mutimap_of_ineq_set_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, std::map<Ex,std::vector<IneqSet>,ExPtrCmp> &mutimap_of_ineq_set, const IneqSet &is ) {
-    const Op *disc = expr.op->find_discontinuity( var.op );
-    if ( disc ) {
-        Ex ex_disc( disc );
-        Ex ch( disc->func_data()->children[0] );
-        //
-        Ex subs_p, subs_n;
-        if ( disc->type == STRING_heaviside_NUM ) {
-            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
-            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-        }
-        else if ( disc->type == STRING_abs_NUM ) {
-            subs_p = expr.subs( th, tok, ex_disc,   ch );
-            subs_n = expr.subs( th, tok, ex_disc, - ch );
-        }
-        else
-            assert( 0 ); //
-        //
-        get_mutimap_of_ineq_set_rec( th, tok, subs_n, var, mutimap_of_ineq_set, IneqSet( is, ch, false ) );
-        get_mutimap_of_ineq_set_rec( th, tok, subs_p, var, mutimap_of_ineq_set, IneqSet( is, ch, true  ) );
-    }
-    else if ( not expr.op->is_zero() )
-        mutimap_of_ineq_set[ expr ].push_back( is );
-}
-
-Ex integration_with_discontinuities( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    std::map<Ex,std::vector<IneqSet>,ExPtrCmp> mutimap_of_ineq_set;
-    get_mutimap_of_ineq_set_rec( th, tok, expr, var, mutimap_of_ineq_set, IneqSet() );
-
-    for( std::map<Ex,std::vector<IneqSet>,ExPtrCmp>::const_iterator iter = mutimap_of_ineq_set.begin(); iter != mutimap_of_ineq_set.end(); ++iter ) {
-        std::cout << iter->first;
-        for(unsigned i=0;i<iter->second.size();++i)
-            std::cout << " ; " << iter->second[i];
-        std::cout << std::endl;
-    }
-
-    return 0; // integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
 }
 
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
@@ -1333,7 +1256,6 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         expr = expr.subs( th, tok, old_var, var );
     }
     
-    //     return integration_with_discontinuities( th, tok, expr, var, beg, end, deg_poly_max );
     return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
 }
 

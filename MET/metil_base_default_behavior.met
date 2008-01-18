@@ -53,12 +53,10 @@ def min( a, b )
     if a <= b return a; return b
 
 def max( a, b ) when is_of_type_Op(a) or is_of_type_Op(b) pertinence 100 
-    h := heaviside( a - b )
-    return a * h + b * (1-h)
+    return a + pos_part( b - a )
 
 def min( a, b ) when is_of_type_Op(a) or is_of_type_Op(b) pertinence 100 
-    h := heaviside( b - a )
-    return a * h + b * ( 1 - h )
+    return b - pos_part( b - a )
 
 def clamp( val, mi, ma ) when val.is_an_integer_number
     if val < mi
@@ -69,7 +67,7 @@ def clamp( val, mi, ma ) when val.is_an_integer_number
     
 def not_equal( a, b ) pertinence -1  return not equal( a, b )
 
-def odd( n )  return Bool( and_bitwise( n, 1 ) )
+def odd ( n ) return Bool( and_bitwise( n, 1 ) )
 def even( n ) return not ( and_bitwise( n, 1 ) )
 
 def swap( a, b )  t := a; a = b; b = t

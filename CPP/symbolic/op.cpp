@@ -605,6 +605,14 @@ void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res ) {
     }
 }
 
+void get_child_not_of_type_add( Op *op, SplittedVec<Op *,32> &res ) {
+    if ( op->type != STRING_add_NUM )
+        res.push_back( op );
+    else {
+        get_child_not_of_type_add( op->func_data()->children[0], res );
+        get_child_not_of_type_add( op->func_data()->children[1], res );
+    }
+}
 
 /*
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
