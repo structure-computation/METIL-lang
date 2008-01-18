@@ -680,12 +680,13 @@ class LU_matrix[ T, Storage, static_size, ST ]
             for col in ST(0) .. row
                 tmp := mat[ row, col ]
                 tmp -= dot( fact[ 0..col, col ], fact[ row, 0..col ] )
-                fact[ row, col ].init( tmp / fact[ col, col ] )
+                d := fact[ col, col ]
+                fact[ row, col ] = tmp / ( d + eqz(d) ) * ( 1 - eqz(d) )
             # U
             for col in ST(0) .. row+1
                 tmp := mat[ col, row ]
                 tmp -= dot( fact[ 0..col, row ], fact[ col, 0..col ] )
-                fact[ col, row ].init( tmp )
+                fact[ col, row ] = tmp
 
     def get_nb_rows
         return fact.nb_rows
@@ -703,7 +704,8 @@ def mul( a, b ) when a.is_a_LU_matrix and b.tensor_order == 1 pertinence 20
         res[r] -= dot( a.fact[r,0..r], res[0..r] )
     # U
     for c in ( 0 .. a.nb_cols ).reversed
-        res[c] /= a.fact[c,c]
+        d := a.fact[c,c]
+        res[c] /= ( d + eqz(d) )
         res[0..c] -= a.fact[0..c,c] * res[c]
     return res
 
