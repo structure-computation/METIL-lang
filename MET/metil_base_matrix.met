@@ -127,10 +127,11 @@ class ColOrRowExtraction[ ST, want_row ]
     property is_a_vector
     m := InternalVariable() # 
     r := ST()
-    
+
     def init( mat, n )     m.init_using_var( mat ); r.init( n )
     def get_size           return m->nb_cols
     def get_sub_types      return m->sub_types
+    def get_T              return m->T
     def reassign( vec ) when vec.tensor_order == 1
         for v, c in vec, 0...
             select( c ) = v
@@ -636,6 +637,7 @@ class MatMult[ST] inherits MatAncestor
     def init( m1_, m2_ )     m1.init_using_var( m1_ ); m2.init_using_var( m2_ )
     def get_nb_rows          return m1->nb_rows
     def get_nb_cols          return m2->nb_cols
+    def get_T                return type_promote( partial_instanciation m1->T, partial_instanciation m2->T, mul )
     def get_known_nb_values  return m1->known_nb_rows and m2->known_nb_cols
     def select( i, j )       return dot( m1->row(i), m2->col(j) )
     def get_sub_types        return type_promote( type_promote_list( m1->sub_types, m1->sub_types, mul ).map( partial_inst ), add )
