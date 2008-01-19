@@ -234,12 +234,22 @@ class MatAncestor
                 c = cols[0..nc] +++ cols[nc+1..cols.size]
                 res += ( 2 * and_bitwise( nr+nc, 1 ) - 1 ) *  partial_det( r, c )
         return res
-    def get_det pertinence -1
+    def get_det_tiny pertinence -1
         assert( nb_rows==nb_cols, "matrix determinant can be calculated only with square ones." )
         if structure.is_diag
             return reduction( diag, mul, T(0) )
         V := Vec[ ST, static_nb_rows ]
         return partial_det( V( 0..nb_rows ), V( 0..nb_cols ) )
+    def solve_cramer( vec )
+        s := nb_rows
+        d := get_det()
+        # d += eqz( d )
+        res := Vec[ T ]( size = s )
+        for i in 0 ..  s
+            m := self
+            m.col( i ) = vec
+            res[ i ] = m.get_det() / d
+        return res
     def solve( vec )
         # assert( 0, "Wrong procedure" )
         TR := type_promote( type_promote_list( vec.sub_types, [T], div ).map( partial_inst ), reassign )
@@ -681,6 +691,7 @@ class LU_matrix[ T, Storage, static_size, ST ]
                 tmp := mat[ row, col ]
                 tmp -= dot( fact[ 0..col, col ], fact[ row, 0..col ] )
                 d := fact[ col, col ]
+                # fact[ row, col ] = tmp / d
                 fact[ row, col ] = tmp / ( d + eqz(d) ) * ( 1 - eqz(d) )
             # U
             for col in ST(0) .. row+1

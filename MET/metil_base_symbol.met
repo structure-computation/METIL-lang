@@ -1,5 +1,4 @@
-
-## 
+##
     make an unknown variable of type T
 ##
 def symbol( cpp_name, tex_name = cpp_name )
