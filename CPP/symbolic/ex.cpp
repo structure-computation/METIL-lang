@@ -1151,6 +1151,10 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
         roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
         validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
         validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
+        
+        std::cout << Float64( x0.value() )+5 << std::endl;
+        std::cout << Float64( x1.value() )+5 << std::endl;
+        std::cout << Float64( x2.value() )+5 << std::endl;
     }
     
     return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
@@ -1186,16 +1190,10 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         // taylor_expansion
         SEX taylor_expansion;
         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
-        SEX poly_coeff; // best fitting of order 7 -> order 3
-        poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
-        poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
-
+        get_taylor_expansion( th, tok, ex_ch, mid, var, 3, taylor_expansion );
+        
         SEX roots, root_validity;
-        Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
+        Ex leading_coefficient = get_roots_with_validity( taylor_expansion, roots, root_validity );
         
         // several roots ?
         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {

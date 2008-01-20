@@ -175,9 +175,6 @@ int main(int argc,char **argv) {
             
             thread_loop( main_thread, false, want_prof );
             
-            //             for(unsigned i=0;i<16;++i)
-            //                 std::cout << i << " " <<  nb_arg_lst[i] << std::endl;
-
             if ( want_prof )
                 main_thread->interpreter_behavior.prof_entries.make_output();
             return main_thread->return_value;
@@ -205,7 +202,7 @@ int main(int argc,char **argv) {
     thread_loop( main_thread );
     if ( main_thread->error_list->data.size() )
         main_thread->return_value = 1;
-
+    
     #ifdef HAVE_MPI
         metil_mpi_finalize();
     #endif // HAVE_MPI

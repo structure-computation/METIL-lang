@@ -81,6 +81,5 @@ const void *end_of_a_try_block( Thread *th, bool ok, const void *tok, Variable *
 const void *play_with_callables( Thread *th, DefTrial *def_trial, const void *tok, Variable *&sp );
 const void *test_static_args( Thread *th, const void *tok, Callable *c, Variable *&sp );
 void init_scope_for_callable( Thread *th, Callable *c );
-// extern unsigned nb_arg_lst[];
 
 #endif // DEF_TRIAL_H
