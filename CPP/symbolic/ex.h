@@ -16,7 +16,9 @@ struct Ex {
     Ex( const Op * ex ) { init( const_cast<Op *>( ex ) ); }
     Ex( const Ex &ex ) { init( ex ); }
     Ex( const T &v ) { init( v ); }
-    Ex( int v ) { init( T( v ) ); }
+    Ex( double   v ) { init( T( v ) ); }
+    Ex( unsigned v ) { init( T( v ) ); }
+    Ex( int      v ) { init( T( v ) ); }
     Ex( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si ) { init( cpp_name_str, cpp_name_si, tex_name_str, tex_name_si ); }
     
     void operator=(const Ex &c) { reassign( c ); }
@@ -72,6 +74,8 @@ struct Ex {
 std::ostream &operator<<( std::ostream &os, const Ex &ex );
 
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max );
+
+Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly );
 
 // ------------------------------------------------------------------------------------------------------------------
 

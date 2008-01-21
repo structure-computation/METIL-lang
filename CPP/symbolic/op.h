@@ -8,7 +8,7 @@
 struct Op {
     static const int NUMBER = -3;
     static const int SYMBOL = -2;
-    static const int SUMSEQ = -1;
+    // static const int SUMSEQ = -1;
     
     // ------------------------------------
     struct NumberData { /// if NUMBER
@@ -52,7 +52,6 @@ struct Op {
 
     const Op *find_discontinuity( const Op *var ) const;
     const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
-    
     
     int nb_nodes() const; //
     int nb_nodes_rec() const; // without update of current_op

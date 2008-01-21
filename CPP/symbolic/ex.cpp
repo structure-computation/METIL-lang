@@ -765,16 +765,16 @@ Ex max( const Ex &a, const Ex &b, const Ex &c ) {
 
 void sort( Ex &a, Ex &b, Ex &c ) {
     Ex t = a;
-    a = b - pos_part( b - t );
-    b = t + pos_part( b - t );
-    
+    a = min(b,t);
+    b = max(b,t);
+     
     t = b;
-    b = c - pos_part( c - t );
-    c = t + pos_part( c - t );
-    
+    b = min(c,t);
+    c = max(c,t);
+     
     t = a;
-    a = b - pos_part( b - t );
-    b = t + pos_part( b - t );
+    a = min(b,t);
+    b = max(b,t);    
 }
 
 
@@ -1083,6 +1083,109 @@ void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, 
     }
 }
 
+#include "fit.h"
+
+template<unsigned n>
+struct Poly_fit_01_rec {
+    struct Coeffs {
+        Ex c[ n ];
+    };
+    
+    void get_poly( const Op *a ) {
+        if ( a->op_id == Op::current_op )
+            return;
+        a->op_id = Op::current_op;
+        Coeffs *pol = coeffs.new_elem();
+        a->additional_info = reinterpret_cast<Op *>( pol );
+        //
+        switch ( a->type ) {
+            case Op::NUMBER:
+            case Op::SYMBOL:
+                pol->c[0] = a;
+                break;
+            case STRING_add_NUM:
+                get_poly( a->func_data()->children[0] );
+                get_poly( a->func_data()->children[1] );
+                for(unsigned i=0;i<n;++i)
+                    pol->c[i] = reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c[i] +
+                                reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c[i];
+                break;
+            case STRING_mul_NUM:
+                get_poly( a->func_data()->children[0] );
+                get_poly( a->func_data()->children[1] );
+                get_fit_from_mul(
+                    reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c, 
+                    reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c,
+                    pol->c, N<n>()
+                );
+                break;
+            default:
+                th->add_error( "Unable to manage function of type "+std::string( Nstring( a->type ) )+" during poly fit propagation", tok );
+        }
+    }
+    
+    SplittedVec<Coeffs,64,64,true> coeffs;
+    Thread *th;
+    const void *tok;
+};
+
+
+template<int n>
+void get_poly_fit_01( Thread *th, const void *tok, const Ex &expr, const Ex &var, SEX &res, N<n> ) {
+    typedef Poly_fit_01_rec<n> PF;
+    PF p;
+    //
+    typename PF::Coeffs *pol = p.coeffs.new_elem();
+    pol->c[ 1 ] = 1;
+    //
+    ++Op::current_op;
+    var.op->op_id = Op::current_op;
+    var.op->additional_info = reinterpret_cast<Op *>( pol );
+    //
+    p.th = th;
+    p.tok = tok;
+    p.get_poly( expr.op );
+    for(unsigned i=0;i<n;++i)
+        res.push_back( reinterpret_cast<typename PF::Coeffs *>( expr.op->additional_info )->c[ i ] );
+}
+
+// get coeffs of P( x - beg )
+template<int n>
+void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, SEX &res, N<n> ) {
+    Ex new_var("v",1,"v",2);
+    Ex new_expr = expr.subs( th, tok, var, beg + new_var * ( end - beg ) );
+    get_poly_fit_01( th, tok, new_expr, new_var, res, N<n>() );
+    Ex d = end - beg;
+    for(unsigned i=0;i<n;++i)
+        res[ i ] = res[ i ] / pow( d, i );
+}
+
+void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly, SEX &res ) {
+    switch ( deg_poly ) {
+        case 0 : res.push_back( expr ); break;
+        case 1 : get_poly_fit( th, tok, expr, var, beg, end, res, N<2 >() ); break;
+        case 2 : get_poly_fit( th, tok, expr, var, beg, end, res, N<3 >() ); break;
+        case 3 : get_poly_fit( th, tok, expr, var, beg, end, res, N<4 >() ); break;
+//         case 4 : get_poly_fit( th, tok, expr, var, beg, end, res, N<5 >() ); break;
+//         case 5 : get_poly_fit( th, tok, expr, var, beg, end, res, N<6 >() ); break;
+//         case 6 : get_poly_fit( th, tok, expr, var, beg, end, res, N<7 >() ); break;
+//         case 7 : get_poly_fit( th, tok, expr, var, beg, end, res, N<8 >() ); break;
+//         case 8 : get_poly_fit( th, tok, expr, var, beg, end, res, N<9 >() ); break;
+//         case 9 : get_poly_fit( th, tok, expr, var, beg, end, res, N<10>() ); break;
+//         case 10: get_poly_fit( th, tok, expr, var, beg, end, res, N<11>() ); break;
+    }
+}
+
+Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly ) {
+    SEX pol;
+    get_poly_fit( th, tok, expr, beg, end, var, deg_poly, pol );
+    //
+    Ex res;
+    for(unsigned i=0;i<pol.size();++i)
+        res += pol[i] * pow( var - beg, i );
+    return res;
+}
+
 Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     //
     SEX taylor_expansion;
@@ -1181,6 +1284,11 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
                 Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
                 new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
             }
+            else if ( disc->type == STRING_pos_part_NUM ) {
+                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+                new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
+            }
             else
                 assert( 0 /* TODO */ );
             
@@ -1190,10 +1298,16 @@ Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &
         // taylor_expansion
         SEX taylor_expansion;
         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 3, taylor_expansion );
-        
+        Ex del = Rationnal( 1, 2 ) * ( end - beg );
+        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+        SEX poly_coeff; // best L2 fitting of order 7 -> order 3
+        poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
+        poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
+        poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
+        poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+
         SEX roots, root_validity;
-        Ex leading_coefficient = get_roots_with_validity( taylor_expansion, roots, root_validity );
+        Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
         
         // several roots ?
         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {

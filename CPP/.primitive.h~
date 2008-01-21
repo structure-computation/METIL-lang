@@ -367,7 +367,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "subs", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
     
-    primitive_functions.push_back( PrimitiveFunction( "linearize_discontinuity_children", "ret.init( self.subs( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
+    primitive_functions.push_back( PrimitiveFunction( "linearize_discontinuity_children", "ret.init( self.linearize_discontinuity_children( th, tok, a, b ) );", /*ret*/"Op" ).M("Op").A("VarArgs").A("VarArgs").
         set_supplementary_cond("reinterpret_cast<VarArgs *>(args[0]->data)->contains_only_Ops() and reinterpret_cast<VarArgs *>(args[1]->data)->contains_only_Ops()") );
 
     
@@ -381,6 +381,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
         
     //     primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "__integration__", "ret.init( integration( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "make_poly_fit", "ret.init( make_poly_fit( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
     
     
     primitive_functions.push_back( PrimitiveFunction( "beg_value_valid", "ret = self.beg_value_valid();", /*ret*/"Bool" ).M("Op") );

@@ -476,3 +476,6 @@ def newton_raphson_iteration( equations, unknowns, old_values = Vec[Op,unknowns.
     
     return M \ V
 
+# 
+def make_poly_fit( expr, var, beg, end, degre )
+    return __make_poly_fit__( expr, Op( var ), Op( beg ), Op( end ), Int32( degre ) )

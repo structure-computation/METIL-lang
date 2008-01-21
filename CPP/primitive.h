@@ -381,6 +381,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
         
     //     primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "__integration__", "ret.init( integration( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__make_poly_fit__", "ret.init( make_poly_fit( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
     
     
     primitive_functions.push_back( PrimitiveFunction( "beg_value_valid", "ret = self.beg_value_valid();", /*ret*/"Bool" ).M("Op") );
