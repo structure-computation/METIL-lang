@@ -226,7 +226,7 @@ def dot( v1, v2, default_value = 0 )   return sum( v1 * v2, default_value )
 
 ## sum( make_varargs( 1, 2, 3 ) ) -> 6 ##
 def vect_prod( v1, v2 ) when v1.size==3 and v2.size==3
-   return [ v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0] ]
+   return Vec[ type_promote( v1.T, v2.T, mul ) ]( [ v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0] ] )
     
 ##  ##
 def product( vec, default_value = 1 )  return reduction( vec, mul, default_value )
@@ -1192,56 +1192,55 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
                 ST reserved() const { return reserved_; }
         #
         if T in [ Float32 Float64 Float96 Int8 Int16 Int32 Int64 Unsigned8 Unsigned16 Unsigned32 Unsigned64 UntypedPtr ]
-            throw "ving"
-            # res <<<<
-                    # T *push_back_unique( const T &v ) {
-                        # for(unsigned i=0;i<size_;++i)
-                            # if ( data_[ i ] == v )
-                                # return data_ + i;
-                        # T *r = new_elem();
-                        # *r = v;
-                        # return r;
-                    # }
-                    # void resize( ST s ) { reserve( s ); size_ = s; }
-                    # void reserve( ST r ) {
-                        # if ( r <= reserved_ )
-                            # return;
-                        # if ( r ) {
-                            # T *nvec = (T *)malloc( sizeof( T ) *  r );
-                            # for(unsigned i=0;i<(size_>r?r:size_);++i)
-                                # nvec[i] = data_[i];
-                            # if ( reserved_ )
-                                # free( data_ );
-                            # data_ = nvec;
-                        # }
-                        # reserved_ = r;
-                    # }
-                    # T &pop_back() { return data_[--size_]; }
-                    # T *new_elem() {
-                        # if ( size_ >= reserved_ ) {
-                            # T *nd = (T *)malloc( sizeof(T) * ( 2 * size_ + 1 ) );
-                            # for(unsigned i=0;i<size_;++i)
-                                # nd[i] = data_[i];
-                            # data_ = nd;
-                            # reserved_ = 2 * size_ + 1;
-                        # }
-                        # return data_ + size_++;
-                    # }
-                    # void push_back( const T &val ) {
-                        # *new_elem() = val;
-                    # }
-                    # T *make_room_to_insert( ST from, ST n ) {
-                        # ST os = size_;
-                        # resize( size_ + n );
-                        # for( ST i = os - 1; i >= from; --i )
-                            # data_[ i + n ] = data_[ i ];
-                        # return data_ + from;
-                    # }
-                    # void operator=( const SelfType &v ) {
-                        # resize( v.size() );
-                        # for(unsigned i=0;i<size_;++i)
-                            # data_[ i ] = v[ i ];
-                    # }
+            res <<<<
+                    T *push_back_unique( const T &v ) {
+                        for(unsigned i=0;i<size_;++i)
+                            if ( data_[ i ] == v )
+                                return data_ + i;
+                        T *r = new_elem();
+                        *r = v;
+                        return r;
+                    }
+                    void resize( ST s ) { reserve( s ); size_ = s; }
+                    void reserve( ST r ) {
+                        if ( r <= reserved_ )
+                            return;
+                        if ( r ) {
+                            T *nvec = (T *)malloc( sizeof( T ) *  r );
+                            for(unsigned i=0;i<(size_>r?r:size_);++i)
+                                nvec[i] = data_[i];
+                            if ( reserved_ )
+                                free( data_ );
+                            data_ = nvec;
+                        }
+                        reserved_ = r;
+                    }
+                    T &pop_back() { return data_[--size_]; }
+                    T *new_elem() {
+                        if ( size_ >= reserved_ ) {
+                            T *nd = (T *)malloc( sizeof(T) * ( 2 * size_ + 1 ) );
+                            for(unsigned i=0;i<size_;++i)
+                                nd[i] = data_[i];
+                            data_ = nd;
+                            reserved_ = 2 * size_ + 1;
+                        }
+                        return data_ + size_++;
+                    }
+                    void push_back( const T &val ) {
+                        *new_elem() = val;
+                    }
+                    T *make_room_to_insert( ST from, ST n ) {
+                        ST os = size_;
+                        resize( size_ + n );
+                        for( ST i = os - 1; i >= from; --i )
+                            data_[ i + n ] = data_[ i ];
+                        return data_ + from;
+                    }
+                    void operator=( const SelfType &v ) {
+                        resize( v.size() );
+                        for(unsigned i=0;i<size_;++i)
+                            data_[ i ] = v[ i ];
+                    }
             #
         return res
 ##

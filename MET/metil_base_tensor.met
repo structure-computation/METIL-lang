@@ -21,12 +21,18 @@ class Tensor[ T, s=[], ST=SizeType ]
             # v.init()
         base.init("pouet")
     
-    # def init( tensor ) when tensor.tensor_order == tensor_order
-        # info self.type
-        # info tensor
-        # base.init("pouet")
-        # for v, cpt in data
-            # v.init( tensor[cpt] )
+    def init( tensor ) when tensor.tensor_order == tensor_order
+        base.init("pouet")
+        data.init()
+        for ind, val in data
+            val.init( tensor[ ind ] )
+    
+    def init( tensor ) when tensor.is_a_matrix pertinence 3
+        assert( tensor_order == 2, "Matrix -> Tensor imply Tensor.tensor_order==2" )
+        base.init("pouet")
+        data.init()
+        for ind, val in data
+            val.init( tensor[ ind[0], ind[1] ] )
     
     def get_size
         assert( tensor_order == 1, "size defined only if tensor_order == 1" )
@@ -188,21 +194,21 @@ def div( a, b ) when a.is_a_tensor and b.tensor_order<=0
     for ind, val in res.data val.init( a[ind] / b )
     return res
 
-def doubledot( a, b ) when a.is_a_tensor and b.is_a_tensor
+def doubledot( a, b ) when a.tensor_order > 0 and b.tensor_order > 0
     # -> scalar
-    if b.s.size == a.s.size
+    if a.tensor_order==2 and b.tensor_order==2
         return dot( a.data.values, b.data.values )
     # -> tensor
     T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
-    if a.s.size > b.s.size
-        ns := a.s.size-b.s.size
+    if a.tensor_order > b.tensor_order
+        ns := a.tensor_order - b.tensor_order
         s := Vec[a.ST,ns]( a.s[ 0 .. ns ] )
-        res := Tensor[ T, s, a.ST ]( x => 0 )
+        res := Tensor[ T, s, a.ST ]( function = x => 0 )
         for ind, val in a
             res[ ind[ 0 .. ns ] ] += val * b[ ind[ ns .. a.tensor_order ] ]
         return res
-    ns := b.s.size - a.s.size
-    sel := b.s.size - ns .. b.s.size
+    ns  := b.tensor_order - a.tensor_order
+    sel := b.tensor_order - ns .. b.tensor_order
     s := Vec[a.ST,ns]( b.s[ sel ] )
     res := Tensor[ T, s, a.ST ]( function = x => 0 )
     for ind, val in b

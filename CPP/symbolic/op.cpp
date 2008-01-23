@@ -311,13 +311,19 @@ std::string tex_repr( const Rationnal &val, int type_parent ) {
 }
 
 void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
-    bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
-    if ( np ) os << "(";
     if ( ms.e.is_one() ) {
-        if ( ms.op->type == Op::NUMBER and ms.op->number_data()->val.is_minus_one() )
+        if ( ms.op->type == Op::NUMBER and ms.op->number_data()->val.is_minus_one() ) {
+            bool np = ( type_parent > STRING_sub_NUM ) and ms.op->type >= 0;
+            if ( np ) os << "(";
             os << "-";
-        else
+            if ( np ) os << ")";
+        }
+        else {
+            bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
+            if ( np ) os << "(";
             ms.op->tex_repr( os );
+            if ( np ) os << ")";
+        }
     }
     else if ( ms.e.num.is_one() ) {
         if ( ms.e.den.is_two() )
@@ -327,15 +333,17 @@ void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
         ms.op->tex_repr( os ); 
         os << "}";
     } else {
+        bool p = ms.op->type == STRING_add_NUM or ms.op->type == STRING_mul_NUM;
         os << "{";
+        if ( p ) os << "(";
         ms.op->tex_repr( os );
+        if ( p ) os << ")";
         os << "}";
         if ( ms.e.is_integer() )
             os << "^{" << ms.e.num << "} ";
         else
             os << "^{ \\frac{" << ms.e.num << "}{" << ms.e.den << "} } ";
     }
-    if ( np ) os << ")";
     os << " ";
 }
 

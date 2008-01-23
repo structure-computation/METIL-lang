@@ -80,7 +80,10 @@ def diff( self, var ) when __is_a_Property__( self ) or __is_a_Property__( var )
 
 ## differenciation ( [toto pouet].diff(tata) ) ##
 def diff( self, var ) when self.tensor_order == 1
-    return self.map( _0.diff( var ) )
+    res := Vec[Op]( size = self.size )
+    for s, r in self, res
+        r = s.diff( var )
+    return res
 
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##

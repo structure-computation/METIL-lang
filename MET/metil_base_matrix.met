@@ -645,21 +645,21 @@ def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
-    if mat.nb_rows <= 4
-        return inv_tiny( mat ) * stat_vec( vec )
+    # if mat.nb_rows <= 4
+        # return inv_tiny( mat ) * stat_vec( vec )
         # return Vec[ type_promote(partial_instanciation mat.T,partial_instanciation vec.T,div) ]( inv_tiny( mat ) * vec )
     return lu( mat ) * vec # mat.solve( vec )
 
 
-def doubledot( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix
-    assert( m1.sub_types.size == 1, "TODO" )
-    assert( m2.sub_types.size == 1, "TODO" )
-    T := type_promote( partial_instanciation m1.sub_types[0], partial_instanciation m2.sub_types[0], mul )
-    res := T( 0 )
-    for r in 0 .. m1.nb_rows
-        for c in 0 .. m1.nb_cols
-            res += m1[r,c] * m2[r,c]
-    return res
+# def doubledot( m1, m2 ) when m1.tensor_order==2 and m2.tensor_order==2
+    # assert( m1.sub_types.size == 1, "TODO" )
+    # assert( m2.sub_types.size == 1, "TODO" )
+    # T := type_promote( partial_instanciation m1.sub_types[0], partial_instanciation m2.sub_types[0], mul )
+    # res := T( 0 )
+    # for r in 0 .. m1.nb_rows
+        # for c in 0 .. m1.nb_cols
+            # res += m1[r,c] * m2[r,c]
+    # return res
 
 def doubledotdot( m1, m2 ) when m1.tensor_order == 3 and m1.tensor_order == 3
     res := type_promote( partial_instanciation m1.T, partial_instanciation m2.T, mul )( 0 )

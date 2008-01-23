@@ -237,7 +237,7 @@ class LazyVecPartFromFormulation[ Form, TE, T, br ] inherits LazyVecPart[ T, Siz
 #~
     Base class for formulations like Elasticity, ...
 ~#
-class Formulation
+class Formulation[dim]
     static const dV := symbol("dV")
     static const dN := symbol("dN")
     
