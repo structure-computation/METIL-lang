@@ -306,11 +306,12 @@ inline Rationnal pow_96( const Rationnal &a, const Rationnal &b ) {
         if ( b.num.val == 1 ) return a;
         //
         int e = b.num.val;
-        Rationnal tmp = a, cp_a = a;
+        Rationnal tmp = a;
         if ( e < 0 )  {
             std::swap( tmp.num, tmp.den );
             e = -e;
         }
+        Rationnal cp_a = tmp;
         while ( --e ) {
             tmp.num = tmp.num * cp_a.num;
             tmp.den = tmp.den * cp_a.den;
