@@ -47,6 +47,10 @@ struct Ex {
     std::string tex_repr() const;
     T value() const;
     
+    unsigned node_count() const;
+    unsigned nb_sub_symbols() const;
+
+    
     Ex diff( Thread *th, const void *tok, const Ex &a ) const;
     Ex subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const;
     Ex subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const;

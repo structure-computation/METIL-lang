@@ -70,7 +70,19 @@ void CodeWriter::add_expr( const Ex &expr, Nstring method, char *name ) {
     }
 }
 
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------
+std::string CodeWriter::invariant( Thread *th, const void *tok, Int32 nb_spaces, const VarArgs &variables ) {
+    ++Op::current_op;
+    for(unsigned i=0;i<op_to_write.size();++i)
+        make_invariant_rec( op_to_write[i].op );
+    //
+    for(unsigned i=0;i<op_to_write.size();++i) {
+        op_to_write[i].op = ;
+    }
+}
 
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type ) {
     switch ( nb_to_write.method.v ) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }

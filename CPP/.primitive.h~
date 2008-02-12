@@ -327,6 +327,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("Op").M("Op",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( a );" ).A("Op").M("Op",/*modify*/"self.op != a.op") );
     
+    primitive_functions.push_back( PrimitiveFunction( "node_count", "ret = self.node_count();", /*ret*/"Unsigned32" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "nb_sub_symbols", "ret = self.nb_sub_symbols();", /*ret*/"Unsigned32" ).M("Op") );
+    
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) ) {
             primitive_functions.push_back( PrimitiveFunction( "init", "self.init( Rationnal(a) );" ).A(primitive_classes[i].met_name).M("Op",/*modify*/"true") );
@@ -381,7 +384,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
         
     //     primitive_functions.push_back( PrimitiveFunction( "discontinuities_separation", "discontinuities_separation( th, tok, return_var, a, b );", /*ret*/"manual" ).A("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "__integration__", "ret.init( integration( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "make_poly_fit", "ret.init( make_poly_fit( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__make_poly_fit__", "ret.init( make_poly_fit( th, tok, a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Int32") );
     
     
     primitive_functions.push_back( PrimitiveFunction( "beg_value_valid", "ret = self.beg_value_valid();", /*ret*/"Bool" ).M("Op") );
@@ -432,6 +435,7 @@ void get_primitives_CodeWriter( std::vector<PrimitiveClass> &primitive_classes, 
     );
     
     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "invariant", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
 }
 
 void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

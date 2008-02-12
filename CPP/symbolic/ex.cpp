@@ -957,6 +957,14 @@ Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
 }
 
 // ------------------------------------------------------------------------------------------------------------
+unsigned Ex::node_count() const {
+    return op->nb_nodes();
+}
+unsigned Ex::nb_sub_symbols() const {
+    return op->nb_nodes_of_type( Op::SYMBOL );
+}
+
+// ------------------------------------------------------------------------------------------------------------
 
 struct ExpandOp {
     Ex make_mul( const SplittedVec<Op *,32> &res, unsigned beg ) const {

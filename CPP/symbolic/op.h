@@ -71,6 +71,8 @@ struct Op {
     const SymbolData *symbol_data() const { return reinterpret_cast<const SymbolData *>( this + 1 ); }
     const FuncData   *func_data  () const { return reinterpret_cast<const FuncData   *>( this + 1 ); }
 
+    unsigned node_count_rec() const;
+
     // ----------------------------------
     int type;
     SplittedVec<Op *,2,8> parents;

@@ -327,6 +327,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("Op").M("Op",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( a );" ).A("Op").M("Op",/*modify*/"self.op != a.op") );
     
+    primitive_functions.push_back( PrimitiveFunction( "node_count", "ret = self.node_count();", /*ret*/"Unsigned32" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "nb_sub_symbols", "ret = self.nb_sub_symbols();", /*ret*/"Unsigned32" ).M("Op") );
+    
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) ) {
             primitive_functions.push_back( PrimitiveFunction( "init", "self.init( Rationnal(a) );" ).A(primitive_classes[i].met_name).M("Op",/*modify*/"true") );
@@ -432,6 +435,7 @@ void get_primitives_CodeWriter( std::vector<PrimitiveClass> &primitive_classes, 
     );
     
     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "invariant", "if ( return_var ) { std::string s=self.invariant(th,tok,a,b); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriter_").A("Int32").A("VarArgs") );
 }
 
 void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

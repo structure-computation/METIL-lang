@@ -21,6 +21,8 @@ struct CodeWriter {
     void add_expr( const Ex &op, Nstring method, char *name );
     std::string to_string( Thread *th, const void *tok, Int32 nb_spaces );
     
+    std::string invariant( Thread *th, const void *tok, Int32 nb_spaces, const VarArgs &variables );
+    
     operator bool() const { return true; }
     
     struct OpToWrite {
