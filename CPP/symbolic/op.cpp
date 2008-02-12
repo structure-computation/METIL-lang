@@ -574,7 +574,7 @@ int Op::nb_nodes_rec() const {
             res += func_data()->children[i]->nb_nodes_rec();
         return res;
     }
-    return 1;
+    return type == SYMBOL;
 }
 
 int Op::nb_nodes() const {

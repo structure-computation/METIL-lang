@@ -72,13 +72,13 @@ void CodeWriter::add_expr( const Ex &expr, Nstring method, char *name ) {
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 std::string CodeWriter::invariant( Thread *th, const void *tok, Int32 nb_spaces, const VarArgs &variables ) {
-    ++Op::current_op;
-    for(unsigned i=0;i<op_to_write.size();++i)
-        make_invariant_rec( op_to_write[i].op );
+//     ++Op::current_op;
+//     for(unsigned i=0;i<op_to_write.size();++i)
+//         make_invariant_rec( op_to_write[i].op );
     //
-    for(unsigned i=0;i<op_to_write.size();++i) {
-        make_invariant_rec( op_to_write[i].op );
-    }
+//     for(unsigned i=0;i<op_to_write.size();++i) {
+//         op_to_write[i].op = ;
+//     }
 }
 
 
