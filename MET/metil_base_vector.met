@@ -270,6 +270,8 @@ class SelectVec
     def __for__( block )
         for i in @selection
             block( vec->select(i) )
+    def get_T
+        return vec->T
 
 ## ##
 def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0  return SelectVec( self, vec )

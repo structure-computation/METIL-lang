@@ -64,6 +64,7 @@ struct CodeWriter {
     char *basic_type;
 private:
     void write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front, Int32 nb_spaces, bool &put_a_cr );
+    bool want_float;
 };
     
     

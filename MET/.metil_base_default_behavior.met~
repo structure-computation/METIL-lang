@@ -56,7 +56,6 @@ def max( a, b ) when is_of_type_Op(a) or is_of_type_Op(b) pertinence 100
     return a + pos_part( b - a )
 
 def min( a, b ) when is_of_type_Op(a) or is_of_type_Op(b) pertinence 100 
-    print "1"
     return b - pos_part( b - a )
 
 def clamp( val, mi, ma ) when val.is_an_integer_number

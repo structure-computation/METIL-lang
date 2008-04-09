@@ -81,6 +81,9 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
 
 Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly );
 
+Ex a_posteriori_simplification( const Ex &a );
+Ex add_a_posteriori_simplification( const Ex &a );
+
 // ------------------------------------------------------------------------------------------------------------------
 
 Ex operator+( const Ex &a, const Ex &b );
@@ -101,7 +104,7 @@ Ex heaviside( const Ex &a );
 Ex pos_part ( const Ex &a );
 Ex eqz      ( const Ex &a );
 Ex exp      ( const Ex &a );
-Ex sin      ( const Ex &a );
+Ex sin      ( Ex a );
 Ex cos      ( const Ex &a );
 Ex tan      ( const Ex &a );
 Ex asin     ( const Ex &a );

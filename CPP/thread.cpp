@@ -23,6 +23,7 @@
 #include "md5.h"
 #include "metil_interactive.h"
 #include "symbolic/codewriter.h"
+#include "symbolic/codewriteralt.h"
 #include "symbolic/ex.h"
 #include "lambda.h"
 #include "label.h"

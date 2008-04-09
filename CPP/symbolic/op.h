@@ -76,6 +76,7 @@ struct Op {
     // ----------------------------------
     int type;
     SplittedVec<Op *,2,8> parents;
+    mutable bool simplified; // already simplified
     mutable Op *additional_info;
     mutable unsigned op_id;
     mutable unsigned cpt_use;
@@ -125,10 +126,10 @@ struct MulSeq {
 };
 void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &items );
 
-void get_sub_symbols( Op *op, SplittedVec<Op *,32> &symbols );
+void get_sub_symbols( const Op *op, SplittedVec<const Op *,32> &symbols );
 
-void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res );
-void get_child_not_of_type_add( Op *op, SplittedVec<Op *,32> &res );
+void get_child_not_of_type_mul( const Op *op, SplittedVec<const Op *,32> &res );
+void get_child_not_of_type_add( const Op *op, SplittedVec<const Op *,32> &res );
 
 #endif
 

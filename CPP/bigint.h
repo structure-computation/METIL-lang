@@ -145,7 +145,7 @@ struct BigInt {
     bool operator<=(const BigInt &b) const {
         if ( val < 0 ) {
             if ( b.val < 0 )
-                return -*this > -b;
+                return -*this >= -b;
             return true;
         } else if ( b.val < 0 )
             return false;
@@ -248,6 +248,7 @@ struct BigInt {
     operator bool() const { return val; }
     bool is_one() const { return n==0 and val==1; }
     bool is_two() const { return n==0 and val==2; }
+    bool is_minus_one() const { return n==0 and val==-1; }
     
     T val;    /// first val ( high weight, the only one which can be < 0 )
     T *ext;   /// supplementary data ( if this > base )

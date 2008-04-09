@@ -208,7 +208,9 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
         n := dot( d, d )
-        return newton_raphson_minimize_iteration_rec( n, var_inter, nb_iterations, old_values = get_center_of_var_inter() )
+        return Vec[ Op ](
+            newton_raphson_minimize_iteration_rec( n, var_inter, nb_iterations, old_values = get_center_of_var_inter() )
+        )
 
     #
     def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
@@ -243,4 +245,13 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         vi := var_inter_with_normals( normals, point, nb_iterations )
         return extrusion_with_normals( normals, 0 ).subs( var_inter, vi[ 0 .. var_inter.size ] )
     
-    
+    #
+    def get_shape_functions
+        res := Vec[ Op, nb_nodes ]()
+        for i in 0 .. nb_nodes
+            val_on_nodes := Vec[ Op, nb_nodes ]( function = _0 == i )
+            res[ i ] = interpolation( val_on_nodes )
+        return res
+        
+        
+        

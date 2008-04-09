@@ -11,6 +11,7 @@ void Op::init( int type_ ) {
     op_id = 0;
     beg_value_valid = false;
     end_value_valid = false;
+    simplified = false;
 }
 
 void Op::destroy() {
@@ -54,8 +55,6 @@ Op *Op::new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *
 }
 
 Op *Op::new_function( int type, Op *a ) {
-    assert( a->type != Op::NUMBER );
-    
     // look in parents of a if function already created somewhere
     for(unsigned i=0;i<a->parents.size();++i) {
         Op *p = a->parents[ i ];
@@ -76,8 +75,6 @@ Op *Op::new_function( int type, Op *a ) {
 }
 
 Op *Op::new_function( int type, Op *a, Op *b ) {
-    assert( a->type != Op::NUMBER or b->type != Op::NUMBER );
-    
     // look in parents of a or b if function already created somewhere
     Op *c = ( a->type == Op::NUMBER ? b : a );
     for(unsigned i=0;i<c->parents.size();++i) {
@@ -515,7 +512,7 @@ void Op::graphviz_repr( std::ostream &os ) const {
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void get_sub_symbols_rec( Op *op, SplittedVec<Op *,32> &symbols ) {
+void get_sub_symbols_rec( const Op *op, SplittedVec<const Op *,32> &symbols ) {
     if ( op->op_id == Op::current_op )
         return;
     op->op_id = Op::current_op;
@@ -527,7 +524,7 @@ void get_sub_symbols_rec( Op *op, SplittedVec<Op *,32> &symbols ) {
             get_sub_symbols_rec( op->func_data()->children[i], symbols );
 }
 
-void get_sub_symbols( Op *op, SplittedVec<Op *,32> &symbols ) {
+void get_sub_symbols( const Op *op, SplittedVec<const Op *,32> &symbols ) {
     ++Op::current_op;
     get_sub_symbols_rec( op, symbols );
 }
@@ -602,7 +599,7 @@ int Op::nb_nodes_of_type( int t ) const {
     return nb_nodes_of_type_rec( t );
 }
 
-void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res ) {
+void get_child_not_of_type_mul( const Op *op, SplittedVec<const Op *,32> &res ) {
     if ( op->type != STRING_mul_NUM )
         res.push_back( op );
     else {
@@ -611,7 +608,7 @@ void get_child_not_of_type_mul( Op *op, SplittedVec<Op *,32> &res ) {
     }
 }
 
-void get_child_not_of_type_add( Op *op, SplittedVec<Op *,32> &res ) {
+void get_child_not_of_type_add( const Op *op, SplittedVec<const Op *,32> &res ) {
     if ( op->type != STRING_add_NUM )
         res.push_back( op );
     else {

@@ -7,6 +7,11 @@
 #include <complex>
 #include <map>
 
+// #define ALWAYS_DISTRIBUTE_NUMBER
+// #define NEVER_DISTRIBUTE_NUMBER
+#define WITHOUT_SIMP
+// #define A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
+
 typedef SplittedVec<Ex,8,8,true> SEX;
 
 struct ExPtrCmp {
@@ -140,7 +145,7 @@ Rationnal Ex::end_value() const {
 // --------------------------------------------------------------------------------------------
 struct SumSeq {
     Rationnal c;
-    Op *op;
+    const Op *op;
     Ex to_op() {
         if ( c.is_one() )
             return op;
@@ -159,7 +164,7 @@ Ex make_add_seq( SplittedVec<SumSeq,4,16,true> &items_c ) {
 }
 
 /// @see operator+
-void find_add_items_and_coeff_rec( Op *a, SplittedVec<SumSeq,4,16,true> &items ) {
+void find_add_items_and_coeff_rec( const Op *a, SplittedVec<SumSeq,4,16,true> &items ) {
     if ( a->type == STRING_add_NUM ) { // anything_but_a_number + anything_but_a_number
         find_add_items_and_coeff_rec( a->func_data()->children[0], items );
         find_add_items_and_coeff_rec( a->func_data()->children[1], items );
@@ -262,6 +267,10 @@ Ex operator+( const Ex &a, const Ex &b ) {
     
     // interval
     update_inter_add( res, a.op, b.op );
+
+    #ifdef A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
+    return add_a_posteriori_simplification( res );
+    #endif
     
     return res;
 }
@@ -331,14 +340,25 @@ Ex mul_number_and_expr( Ex a, Ex b ) { // a is a number
         Ex new_num = a.op->number_data()->val * b.op->func_data()->children[0]->number_data()->val;
         return mul_number_and_expr( new_num, b.op->func_data()->children[1] );
     }
-    // 10 * ( a + 5 * b ) -> 10 * a + 50 * b
+    // 10 * ( 3 * a + 5 * b ) -> 30 * a + 50 * b ( but 10*(a+5*b) is not transformed )
     if ( b.op->type == STRING_add_NUM ) {
         SplittedVec<SumSeq,4,16,true> items;
         find_add_items_and_coeff_rec( b.op->func_data()->children[0], items );
         find_add_items_and_coeff_rec( b.op->func_data()->children[1], items );
+        bool has_one = false;
         for(unsigned i=0;i<items.size();++i)
-            items[i].c *= a.op->number_data()->val;
-        return make_add_seq( items );
+            has_one |= ( items[i].c.is_one() or items[i].c.is_minus_one() );
+        #ifdef ALWAYS_DISTRIBUTE_NUMBER
+            has_one = false;
+        #endif
+        #ifdef NEVER_DISTRIBUTE_NUMBER
+            has_one = true;
+        #endif
+        if ( not has_one ) {
+            for(unsigned i=0;i<items.size();++i)
+                items[i].c *= a.op->number_data()->val;
+            return make_add_seq( items );
+        }
     }
     
     //
@@ -357,9 +377,9 @@ Ex make_mul_seq( SplittedVec<MulSeq,4,16,true> &items_c ) {
     if ( not items_c.size() )
         return 1;
     //
-    Ex res = to_op( items_c[0] );
+    Ex res = 1;
     Rationnal n = 1;
-    for(unsigned i=1;i<items_c.size();++i) {
+    for(unsigned i=0;i<items_c.size();++i) {
         if ( items_c[i].op->type == Op::NUMBER )
             n *= to_op( items_c[i] ).op->number_data()->val;
         else
@@ -388,7 +408,10 @@ void mul_items_and_coeffs( const SplittedVec<MulSeq,4,16,true> &items_a, Splitte
     }
 }
 
-Ex operator*( const Ex &a, const Ex &b ) {
+Ex operator*( const Ex &a_, const Ex &b_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    Ex b = a_posteriori_simplification( b_ );
+    
     // 10 * ...
     if ( a.op->type == Op::NUMBER ) {
         // 10 * 20
@@ -426,7 +449,7 @@ Ex operator*( const Ex &a, const Ex &b ) {
     unsigned old_size = items_a.size() + items_b.size();
     mul_items_and_coeffs( items_b, items_a );
     if ( old_size != items_a.size() )
-      return make_mul_seq( items_a );
+        return make_mul_seq( items_a );
     
     //
     Op *res;
@@ -516,7 +539,10 @@ void update_inter_pow( Op *res, Op *a, Op *b ) {
     }
 }
 
-Ex pow( const Ex &a, const Ex &b ) {
+Ex pow( const Ex &a_, const Ex &b_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    Ex b = a_posteriori_simplification( b_ );
+    
     if ( b.op->type == Op::NUMBER ) { // a ^ 10
         if ( a.op->type == Op::NUMBER ) // 10 ^ 32
             return Op::new_number( pow_96( a.op->number_data()->val, b.op->number_data()->val ) );
@@ -558,23 +584,31 @@ Ex pow( const Ex &a, const Ex &b ) {
     }
     //
     Op *res = Op::new_function( STRING_pow_NUM, a.op, b.op );
-    update_inter_pow( res, a.op, b.op );
+    update_inter_pow( res, a_.op, b_.op );
     //
     return res;
 }
 
-Ex mod( const Ex &a, const Ex &b ) {
+Ex mod( const Ex &a_, const Ex &b_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    Ex b = a_posteriori_simplification( b_ );
+    
     if ( are_numbers( a.op, b.op ) ) return mod( a.op->number_data()->val, b.op->number_data()->val );
     if ( a.op->is_zero() ) return a;
     return Op::new_function( STRING_mod_NUM, a.op, b.op );
 }
 
-Ex atan2( const Ex &a, const Ex &b ) {
+Ex atan2( const Ex &a_, const Ex &b_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    Ex b = a_posteriori_simplification( b_ );
+    
     if ( are_numbers( a.op, b.op ) ) return atan2_96( a.op->number_data()->val, b.op->number_data()->val );
     return Op::new_function( STRING_atan2_NUM, a.op, b.op );
 }
 
-Ex abs( const Ex &a ) {
+Ex abs( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return abs( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return a;
     if ( a.op->type == STRING_mul_NUM ) { // abs( c0 * c1 )
@@ -594,12 +628,16 @@ Ex abs( const Ex &a ) {
         res->set_beg_value( 0, true );
     return res;
 }
-Ex log( const Ex &a ) {
+Ex log( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return log_96( a.op->number_data()->val );
     if ( a.op->type == STRING_exp_NUM ) return a.op->func_data()->children[0];
     return Op::new_function( STRING_log_NUM, a.op );
 }
-Ex heaviside( const Ex &a ) {
+Ex heaviside( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return heaviside( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return 1;
     if ( a.op->necessary_negative()         ) return 0;
@@ -620,19 +658,23 @@ Ex heaviside( const Ex &a ) {
     }
     return res;
 }
-Ex pos_part( const Ex &a ) {
+Ex pos_part( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return pos_part( a.op->number_data()->val );
     if ( a.op->necessary_positive_or_null() ) return a;
     if ( a.op->necessary_negative()         ) return 0;
     Op *res = Op::new_function( STRING_pos_part_NUM, a.op );
     if ( not res->cpt_use ) {
-        if ( a.op->end_value_valid )
-            res->set_end_value( a.op->end_value, a.op->end_value_inclusive );
+        if ( a_.op->end_value_valid )
+            res->set_end_value( a_.op->end_value, a_.op->end_value_inclusive );
         res->set_beg_value( 0, true );
     }
     return res;
 }
-Ex eqz( const Ex &a ) {
+Ex eqz( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return eqz( a.op->number_data()->val );
     if ( a.op->necessary_positive() ) return 0;
     if ( a.op->necessary_negative() ) return 0;
@@ -668,7 +710,9 @@ Ex eqz( const Ex &a ) {
     }
     return res;
 }
-Ex exp( const Ex &a ) {
+Ex exp( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return exp_96( a.op->number_data()->val );
     if ( a.op->type == STRING_log_NUM ) return a.op->func_data()->children[0];
     Op *res = Op::new_function( STRING_exp_NUM, a.op );
@@ -676,8 +720,12 @@ Ex exp( const Ex &a ) {
         res->set_beg_value( 0, false );
     return res;
 }
-Ex sin( const Ex &a ) {
+Ex sin( Ex a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return sin_96( a.op->number_data()->val );
+    a = a_posteriori_simplification( a );
+    //
     if ( a.op->type == STRING_mul_NUM )  {
       Op *c0 = a.op->func_data()->children[0];
       Op *c1 = a.op->func_data()->children[1];
@@ -692,7 +740,9 @@ Ex sin( const Ex &a ) {
     }
     return res;
 }
-Ex cos( const Ex &a ) {
+Ex cos( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    
     if ( is_a_number( a.op ) ) return cos_96( a.op->number_data()->val );
     if ( a.op->type == STRING_mul_NUM )  {
       Op *c0 = a.op->func_data()->children[0];
@@ -708,7 +758,8 @@ Ex cos( const Ex &a ) {
     }
     return res;
 }
-Ex tan( const Ex &a ) {
+Ex tan( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return tan_96( a.op->number_data()->val );
     if ( a.op->type == STRING_mul_NUM )  {
       Op *c0 = a.op->func_data()->children[0];
@@ -719,30 +770,36 @@ Ex tan( const Ex &a ) {
     if ( a.op->necessary_negative() ) return Ex(-1) * tan ( Ex( -1 ) * Ex( a.op ) );
     return Op::new_function( STRING_tan_NUM, a.op );
 }
-Ex asin( const Ex &a ) {
+Ex asin( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return asin_96( a.op->number_data()->val );
     return Op::new_function( STRING_asin_NUM, a.op );
 }
-Ex acos( const Ex &a ) {
+Ex acos( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return acos_96( a.op->number_data()->val );
     return Op::new_function( STRING_acos_NUM, a.op );
 }
-Ex atan( const Ex &a ) {
+Ex atan( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return atan_96( a.op->number_data()->val );
     return Op::new_function( STRING_atan_NUM, a.op );
 }
-Ex sinh( const Ex &a ) {
+Ex sinh( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return sinh_96( a.op->number_data()->val );
     return Op::new_function( STRING_sinh_NUM, a.op );
 }
-Ex cosh( const Ex &a ) {
+Ex cosh( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return cosh_96( a.op->number_data()->val );
     Op *res = Op::new_function( STRING_cosh_NUM, a.op );
     if ( not res->cpt_use )
         res->set_beg_value( 1, true );
     return res;
 }
-Ex tanh( const Ex &a ) {
+Ex tanh( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return tanh_96( a.op->number_data()->val );
     return Op::new_function( STRING_tanh_NUM, a.op );
 }
@@ -967,15 +1024,15 @@ unsigned Ex::nb_sub_symbols() const {
 // ------------------------------------------------------------------------------------------------------------
 
 struct ExpandOp {
-    Ex make_mul( const SplittedVec<Op *,32> &res, unsigned beg ) const {
+    Ex make_mul( const SplittedVec<const Op *,32> &res, unsigned beg ) const {
         if ( res.size() == beg )
             return 1;
         //
-        Op *a = res[ beg ];
+        const Op *a = res[ beg ];
         if ( a->type != STRING_add_NUM )
             return a;
         //
-        SplittedVec<Op *,32> add_children;
+        SplittedVec<const Op *,32> add_children;
         get_child_not_of_type_add( a, add_children );
         Ex sum, rem = make_mul( res, beg + 1 );
         for(unsigned i=0;i<add_children.size();++i)
@@ -985,7 +1042,7 @@ struct ExpandOp {
     Ex operator()( const Ex &ex ) const {
         Op *a = ex.op;
         if ( a->type == STRING_mul_NUM ) {
-            SplittedVec<Op *,32> res;
+            SplittedVec<const Op *,32> res;
             get_child_not_of_type_mul( a, res );
             return make_mul( res, 0 );
         }
@@ -1054,7 +1111,7 @@ Ex Ex::linearize_discontinuity_children( Thread *th, const void *tok, const VarA
 
 // ------------------------------------------------------------------------------------------------------------
 Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const {
-    SplittedVec<Op *,32> symbols;
+    SplittedVec<const Op *,32> symbols;
     get_sub_symbols( op, symbols );
     if ( symbols.size() > 1 ) {
         std::ostringstream ss;
@@ -1072,11 +1129,213 @@ Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) 
     // TODO : Optimize
     Ex res = subs( th, tok, Ex( symbols[0] ), Ex( a ) );
     if ( symbols.size() > 1 ) {
-        th->add_error("Weird : substitution should have given a Number.",tok);
+        th->add_error("subs_numerical works on expr with only one symbol.",tok);
         return 0;
     }
     return res.value();
 }
+
+// ------------------------------------------------------------------------------------------------------------
+// a posteriori factorization
+// ------------------------------------------------------------------------------------------------------------
+bool same_abs_value( const Op *a, const Op *b ) {
+    if ( a->type == Op::NUMBER and b->type == Op::NUMBER )
+        return abs( a->number_data()->val ) == abs( b->number_data()->val );
+    return false;
+}
+bool same_op_or_same_abs_value( const Op *a, const Op *b ) {
+    if ( a == b )
+        return true;
+    return same_abs_value( a, b );
+}
+
+struct CmpByOpPtr {
+    bool operator()( const Ex &a, const Ex &b ) const { return a.op < b.op; }
+};
+
+struct SumMulSeq {
+    struct Item {
+        const Op *m;
+        Ex::T e;
+        const Op *corr_op;
+    };
+    typedef SplittedVec<Item      ,4,4,true> MulList;
+    typedef SplittedVec<MulList   ,4,4,true> AddList;
+    typedef SplittedVec<const Op *,4,4,true> AddOLst;
+    
+    void add_to_quo_lst( const Op *op, std::vector<Ex> &quo_lst ) {
+        if ( op->type == STRING_add_NUM ) {
+            add_to_quo_lst( op->func_data()->children[0], quo_lst );
+            add_to_quo_lst( op->func_data()->children[1], quo_lst );
+        }
+        else
+            quo_lst.push_back( op );
+    }
+    Ex sep_by( const Op *m, const Ex::T &e ) {
+        // m^e * quo + rem
+        std::vector<Ex> quo_lst, rem_lst;
+        for(unsigned i=0;i<items.size();++i) {
+            bool has = false;
+            for(unsigned j=0;j<items[i].size();++j) {
+                if ( same_op_or_same_abs_value( items[i][j].m, m ) ) {
+                    if ( items[i][j].e.is_pos() )
+                        has |= ( e.is_pos() and items[i][j].e >= e );
+                    else
+                        has |= ( e.is_neg() and items[i][j].e <= e );
+                }
+            }
+            if ( has ) {
+                Ex p( 1 );
+                for(unsigned j=0;j<items[i].size();++j) {
+                    if ( items[i][j].m == m ) {
+                        if ( items[i][j].e.is_pos() ) {
+                            if ( e.is_pos() and items[i][j].e >= e ) {
+                                if ( items[i][j].e != e )
+                                    p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
+                            } else
+                                p *= Ex( items[i][j].corr_op );
+                        } else {
+                            if ( e.is_neg() and items[i][j].e <= e ) {
+                                if ( items[i][j].e != e )
+                                    p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
+                            } else
+                                p *= Ex( items[i][j].corr_op );
+                        }
+                    }
+                    else if ( same_abs_value( items[i][j].m, m ) )
+                        p *= 1 - 2 * ( items[i][j].m->number_data()->val.is_pos() xor m->number_data()->val.is_pos() );
+                    else
+                        p *= items[i][j].corr_op;
+                }
+                add_to_quo_lst( p.op, quo_lst );
+            } else
+                rem_lst.push_back( corr_ops[i] );
+        }
+        //
+        std::sort( quo_lst.begin(), quo_lst.end(), CmpByOpPtr() );
+        std::sort( rem_lst.begin(), rem_lst.end(), CmpByOpPtr() );
+        Ex quo, rem;
+        for(unsigned i=0;i<quo_lst.size();++i) quo += quo_lst[i];
+        for(unsigned i=0;i<rem_lst.size();++i) rem += rem_lst[i];
+        return a_posteriori_simplification( pow( Ex( m ), Ex( e ) ) * a_posteriori_simplification( quo ) + a_posteriori_simplification( rem ) );
+    }
+    
+    AddList items;
+    AddOLst corr_ops;
+};
+void get_SumMulSeq_mul_seq( const Op *op, SumMulSeq::MulList &ml ) {
+    if ( op->type == STRING_mul_NUM ) {
+        get_SumMulSeq_mul_seq( op->func_data()->children[0], ml );
+        get_SumMulSeq_mul_seq( op->func_data()->children[1], ml );
+    }
+    else {
+        SumMulSeq::Item *item = ml.new_elem();
+        if ( op->type == STRING_pow_NUM and op->func_data()->children[1]->type == Op::NUMBER ) {
+            item->m       = op->func_data()->children[0];
+            item->e       = op->func_data()->children[1]->number_data()->val;
+            item->corr_op = op;
+        }
+        else {
+            item->m       = op;
+            item->e       = 1;
+            item->corr_op = op;
+        }
+    }
+}
+void get_SumMulSeq( const Op *op, SumMulSeq &sq ) {
+    if ( op->type == STRING_add_NUM ) {
+        get_SumMulSeq( op->func_data()->children[0], sq );
+        get_SumMulSeq( op->func_data()->children[1], sq );
+    }
+    else {
+        sq.corr_ops.push_back( op );
+        get_SumMulSeq_mul_seq( op, *sq.items.new_elem() );
+    }
+}
+std::ostream &operator<<( std::ostream &os, const SumMulSeq &sq ) {
+    for(unsigned i=0;i<sq.items.size();++i)
+        for(unsigned j=0;j<sq.items[i].size();++j)
+            os << ( j ? "*" : ( i ? "+" : "" ) ) << Ex( sq.items[i][j].m ) << "^" << sq.items[i][j].e;
+    return os;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+struct ItemAndFreqSet {
+    struct Item {
+        Item( const Op *m, Ex::T e ) : m( m ), e( e ), freq( 0 ) {}
+        const Op *m;
+        Ex::T e;
+        int freq;
+    };
+    void insert( const Op *m, Ex::T e ) {
+        for(unsigned i=0;i<items.size();++i)
+            if ( same_op_or_same_abs_value( items[i].m, m ) and items[i].e == e )
+                return;
+        if ( not m->is_minus_one() ) // -1
+            items.push_back( Item( m, e ) );
+    }
+    void add_freq( const Op *m, Ex::T e ) {
+        for(unsigned i=0;i<items.size();++i) {
+            if ( same_op_or_same_abs_value( items[i].m, m ) ) {
+                if ( items[i].e.is_pos() )
+                    items[i].freq += ( e.is_pos() and items[i].e <= e );
+                else
+                    items[i].freq += ( e.is_neg() and items[i].e >= e );
+            }
+        }
+    }
+    Item *best_item() {
+        int best_ind = 0;
+        for(unsigned i=0;i<items.size();++i)
+            if ( abs( items[best_ind].freq ) < abs( items[i].freq ) )
+                best_ind = i;
+        return &items[ best_ind ];
+    }
+    std::vector<Item> items;
+};
+std::ostream &operator<<( std::ostream &os, const ItemAndFreqSet::Item &item ) {
+    os << Ex( item.m ) << "^" << item.e << " (" << item.freq << ")";
+    return os;
+}
+
+Ex add_a_posteriori_simplification( const Ex &a ) {
+    if ( a.op->simplified )
+        return a;
+    a.op->simplified = true;
+    //
+    if ( a.op->type == STRING_add_NUM ) {
+        SumMulSeq sq;
+        get_SumMulSeq( a.op, sq );
+        // get frequency of sub items
+        ItemAndFreqSet items_and_freq;
+        for(unsigned i=0;i<sq.items.size();++i)
+            for(unsigned j=0;j<sq.items[i].size();++j)
+                items_and_freq.insert( sq.items[i][j].m, sq.items[i][j].e );
+        for(unsigned i=0;i<sq.items.size();++i)
+            for(unsigned j=0;j<sq.items[i].size();++j)
+                items_and_freq.add_freq( sq.items[i][j].m, sq.items[i][j].e );
+        ItemAndFreqSet::Item *best_item = items_and_freq.best_item();
+        // 
+        if ( best_item->freq > 1 )
+            return a_posteriori_simplification( sq.sep_by( best_item->m, best_item->e ) );
+        
+    }
+    //
+    return a;
+}
+Ex a_posteriori_simplification( const Ex &a ) {
+    #ifdef WITHOUT_SIMP
+    return a;
+    #endif
+    return add_a_posteriori_simplification( a );
+}
+
+
+
+
+
+
+
 
 // ------------------------------------------------------------------------------------------------------------
 void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SEX &res ) {
@@ -1203,6 +1462,13 @@ Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &exp
     for( Int32 i=0; i<(Int32)taylor_expansion.size(); i += 2 )
         res = res + 2 * taylor_expansion[i] * pow( d, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
     return res;
+    //     SEX taylor_expansion;
+    //     get_taylor_expansion( th, tok, expr, beg, var, deg_poly_max, taylor_expansion );
+    //     //
+    //     Ex res( 0 ), d = end - beg;
+    //     for( Int32 i=0; i<(Int32)taylor_expansion.size(); ++i )
+    //         res = res + taylor_expansion[i] * pow( d, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
+    //     return res;
 }
 
 std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {

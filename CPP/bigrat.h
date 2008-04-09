@@ -241,6 +241,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     (a.num * b.den).basic_assert();
     res.num = a.num * b.den + b.num * a.den;
     res.cannonicalize();
+    if ( std::abs( Float96( res ) - ( Float96( a ) + Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+        std::cout << res << " ?= " << a << " " << b << std::endl;
+        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+        assert( 0 );
+    }
     return res;
 }
 
@@ -249,6 +254,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.den = a.den * b.den;
     res.num = a.num * b.den - b.num * a.den;
     res.cannonicalize();
+    if ( std::abs( Float96( res ) - ( Float96( a ) - Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+        std::cout << res << " ?= " << a << " " << b << std::endl;
+        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+        assert( 0 );
+    }
     return res;
 }
 
@@ -257,6 +267,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.num = a.num * b.num;
     res.den = a.den * b.den;
     res.cannonicalize();
+    if ( std::abs( Float96( res ) - ( Float96( a ) * Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+        std::cout << res << " ?= " << a << " " << b << std::endl;
+        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+        assert( 0 );
+    }
     return res;
 }
 
@@ -265,6 +280,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.num = a.num * b.den;
     res.den = a.den * b.num;
     res.cannonicalize();
+    if ( std::abs( Float96( res ) - ( Float96( a ) / Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+        std::cout << res << " ?= " << a << " " << b << std::endl;
+        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+        assert( 0 );
+    }
     return res;
 }
 

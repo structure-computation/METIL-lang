@@ -90,6 +90,8 @@ ADD_LIBRARY( metil_thread STATIC
     symbolic/ex.cpp
     symbolic/op.cpp
     symbolic/codewriter.cpp
+    symbolic/OpWithSeq.cpp
+    symbolic/codewriteralt.cpp
     thread.cpp
     variable.cpp
     type.cpp

@@ -119,6 +119,10 @@ def pow( a, i ) when i.is_an_integer_number and a.tensor_order<=0 and not is_of_
 # \sqrt a
 def sqrt( a )
     return pow( a, 0.5 )
+
+# \rsqrt a
+def rsqrt( a )
+    return pow( a, -0.5 )
     
 # heaviside( something )
 def heaviside( a )

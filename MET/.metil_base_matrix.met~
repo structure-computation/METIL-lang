@@ -103,7 +103,7 @@ class TriSup[ static_size = -1, ST = Int32 ] inherits Sym[ static_size, ST ]
 class TriInf[ static_size = -1, ST = Int32 ] inherits Sym[ static_size, ST ]
     static const is_diag := false
     static const is_sym := false
-    def extract_val_from_dense_matrix( data, r, c, simd_compatible, simd_size )
+    def extract_val_from_dense_matrix( data, r, c, simd_compatible, simd_size ) pertinence 2
         if r >= c
             return data[ (r * ( r + 1 )) // 2 + c ]
         return 0
@@ -121,6 +121,24 @@ class Diag[ static_size = -1, ST = None, default_value = 0 ] inherits Sym[ stati
 class Dense[ simd_compatible = true, simd_size = 0 ]
     toto := 0
     
+# -----------------------------------------------------------------------------------------------------------------------------------
+def ml_div( M, V ) when M.tensor_order == 2 and M.Structure == TriInf and V.tensor_order == 1
+    T := type_promote_list( [ M.T ], V.sub_types, mul, add )
+    res := Vec[T]( V )
+    for r in 0 .. a.nb_rows
+        res[r] -= M[r,r] * ( V[r] - dot( M[r,0..r], res[0..r] ) )
+    return res
+    
+# def ml_div( M, V ) when M.tensor_order == 2 and M.structure == TriSup and V.tensor_order == 1
+    # tmpvec := res
+    # for c in ( 0 .. a.nb_cols ).reversed
+        # tmp := tmpvec[ c ] * a.fact[ c, c ]
+        # for i in 0 .. c
+            # tmpvec[ i ] -= a.fact[ c, i ] * tmp
+        # res[ c ] = tmp
+    # return res
+    
+
 # -----------------------------------------------------------------------------------------------------------------------------------
 class ColOrRowExtraction[ ST, want_row ]
     static const tensor_order := 1
@@ -295,6 +313,14 @@ class SubMatExtraction[ ST ] inherits MatAncestor
     def get_sub_types      return m->sub_types
     def select( r, c ) 
         return m->select( v1->select(r), v2->select(c) )
+    def get_T
+        return m->T
+    def get_static_nb_rows
+        return m->static_nb_rows
+    def get_static_nb_cols
+        return m->static_nb_cols
+    def get_Storage
+        return m->Storage
 
 ##class SubMatExtraction[ ST ]
     static const tensor_order := 2
@@ -645,8 +671,8 @@ def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
-    if mat.nb_rows <= 4
-        return inv_tiny( mat ) * stat_vec( vec )
+    # if mat.nb_rows <= 4
+        # return inv_tiny( mat ) * stat_vec( vec )
         # return Vec[ type_promote(partial_instanciation mat.T,partial_instanciation vec.T,div) ]( inv_tiny( mat ) * vec )
     return lu( mat ) * vec # mat.solve( vec )
 
@@ -708,7 +734,10 @@ def mul( a, b ) when a.is_a_LU_matrix and b.tensor_order == 1 pertinence 20
     return res
 
 def lu( mat ) when mat.tensor_order == 2
-    return LU_matrix[ mat.T, mat.Storage, mat.static_nb_rows, mat.ST ]( mat )
+    TR := mat.T
+    if ( partial_instanciation TR ).is_an_integer_number
+        TR = Rationnal
+    return LU_matrix[ TR, mat.Storage, mat.static_nb_rows, mat.ST ]( mat )
     # def test_lu
         # m := Mat[ Rationnal ]( nb_rows = 15, nb_cols = 15, function = ( x => rand()%10000 ) )
         # infon m # infon lu( m ).fact
@@ -718,10 +747,56 @@ def lu( mat ) when mat.tensor_order == 2
 def inv( m, def_pos = true ) when m.is_a_matrix and m.structure.is_diag==false and ( m.structure.is_sym==false or def_pos==false )
     return lu( m )
 
+# ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
+class Chol_matrix[ T, Storage, static_size, ST ]
+    property is_a_Chol_matrix
+    fact := Mat[ T, Sym[static_size], Storage, ST ]()
+    
+    def init( mat ) when mat.is_a_matrix
+        fact.init( mat )
+        for row in ST(0) .. mat.nb_rows
+            for col in ST(0) .. row
+                fact[ row, col ] = fact[ col, col ] * ( mat[ row, col ] - dot( fact[ col, 0..col ], fact[ row, 0..col ] ) )
+            fact[ row, row ] = 1 / sqrt( mat[ row, row ] - sum( fact[ row, 0..row ] ^ 2 ) )
+
+    def get_nb_rows
+        return fact.nb_rows
+    def get_nb_cols
+        return fact.nb_cols
+    def get_det
+        return product( fact.diag ) ^ 2
+        
+def mul( M, V ) when M.is_a_Chol_matrix and V.tensor_order == 1 pertinence 20
+    T := type_promote_list( [ M.T ], V.sub_types, mul, add )
+    res := Vec[T]( size = V.size )
+    for r in 0 .. M.fact.nb_rows
+        res[r] = M.fact[r,r] * ( V[r] - dot( M.fact[r,0..r], res[0..r] ) )
+    #
+    tmpvec := res
+    for c in ( 0 .. M.fact.nb_cols ).reversed
+        tmp := tmpvec[ c ] * M.fact[ c, c ]
+        for i in 0 .. c
+            tmpvec[ i ] -= M.fact[ c, i ] * tmp
+        res[ c ] = tmp
+    return res
+
+def mul( M, V ) when M.is_a_Chol_matrix and V.tensor_order == 2 pertinence 20
+    T := type_promote_list( [ M.T ], V.sub_types, mul, add )
+    res := Mat[T]( V.nb_rows, V.nb_cols )
+    for c in 0 .. res.nb_cols
+        res[ 0..., c ] = M * V[ 0..., c ]
+    return res
+
+
+def chol( mat ) when mat.tensor_order == 2
+    TR := mat.T
+    if ( partial_instanciation TR ).is_an_integer_number
+        TR = Rationnal
+    return Chol_matrix[ TR, mat.Storage, mat.static_nb_rows, mat.ST ]( mat )
+
 #
 def inv( m, def_pos = true ) when m.is_a_matrix and m.structure.is_sym and def_pos
-    return lu( m )
-    # return chol( m )
+    return chol( m )
     
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
 class QR_unnormed_matrix[ T, static_size, ST ]
@@ -917,4 +992,32 @@ class LazyMatPartOperatorMulMatVecList[ T, ST ] inherits LazyMatPartFull[ T, ST 
     
     virtual def write_to_stream( stream )
         stream << "MulMatVecList"
+    
+    
+#~
+    M = [ 2,1 1,3 ]
+    V = [ 1 7 ]
+    
+    S := Mat[ Op ]()
+    F := Vec[ Op ]()
+    shur( M, V, [ 1 ], S, F )
+    
+    info M \ V
+    info S \ F
+~#
+def shur( M, V, indices, S, F, solver )
+    T := M.T
+    neg_ind := Vec[ Int32 ]()
+    for i in 0 .. M.nb_rows
+        if not ( i in indices )
+            neg_ind.push_back( i )
+    A := M[ indices, indices ]
+    B := M[ indices, neg_ind ]
+    C := M[ neg_ind, indices ]
+    D := M[ neg_ind, neg_ind ]
+    a := V[ indices ]
+    b := V[ neg_ind ]
+    fact := solver( D )
+    S = A - B * ( fact * C )
+    F = a - B * ( fact * b )
     
