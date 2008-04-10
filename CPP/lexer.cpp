@@ -282,7 +282,11 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                 break;
             }
             case TYPE_CHAR_parenthesis: {
-                app_tok( Lexem::PAREN, s++, 1, 0 );
+                if ( s[0]=='(' and s[1]=='*' and s[2]==')' ) {
+                    app_tok( STRING_tensorial_product_NUM, s, 3, behavior_of_operator( STRING_tensorial_product_NUM ) );
+                    s += 3;
+                } else // (...
+                    app_tok( Lexem::PAREN, s++, 1, 0 );
                 break;
             }
             case TYPE_CHAR_comment: {

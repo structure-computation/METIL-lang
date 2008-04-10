@@ -166,42 +166,24 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                                     s += ( *s == '\n' );
                                 }
                                 
+                                // $...
+                                const char *new_s = s;
+                                s = old_str;
+                                while ( s < new_s ) {
+                                    if ( s[0] == '$' and s[-1] != '\\' and s[-1] != '$' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
+                                        read_dollar( old_str, nb_spaces + 4 );
+                                        old_str = s - 1;
+                                    }
+                                    else
+                                        s++;
+                                }
+                                
                                 // app_tok
                                 app_tok( Lexem::STRING, old_str, s-old_str, nb_spaces + 4 );
                                 
                                 // out loop
                                 old_str = s;
                                 
-//                                 // read str until nb_spaces < $nb_spaces
-//                                 s = old_str;
-//                                 old_str += ( *old_str == '\r' );
-//                                 old_str += ( *old_str == '\n' );
-//                                 while ( *s ) {
-//                                     // next end of line
-//                                     while ( *s and *s!='\n' ) s++; 
-//                                     if ( not *s )
-//                                         break;
-//                                     // new_nb_spaces
-//                                     const char *ns = s;
-//                                     unsigned new_nb_spaces = 0;
-//                                     while ( *ns==' ' ) { ++ns; ++new_nb_spaces; }
-//                                     if ( new_nb_spaces < nb_spaces + 4 and *ns != '\n' and *ns != '\r' ) { // finished ?
-//                                         // while ( *ns and *ns!='\n' and *ns!='\r' ) --ns; // return to beginning of the line
-//                                         break;
-//                                     }
-//                                     s = ns;
-//                                 }
-//                                 // 
-//                                 const char *new_s = s;
-//                                 s = old_str;
-//                                 while ( s < new_s ) {
-//                                     if ( s[0] == '$' and s[-1] != '\\' and s[-1] != '$' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
-//                                         read_dollar( old_str, nb_spaces + 4 );
-//                                         old_str = s - 1;
-//                                     }
-//                                     else
-//                                         s++;
-//                                 }
                             }
                             break;
                         }
@@ -300,7 +282,11 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                 break;
             }
             case TYPE_CHAR_parenthesis: {
-                app_tok( Lexem::PAREN, s++, 1, 0 );
+                if ( s[]=='(' and s[1]=='*' and s[2]==')' ) {
+                    app_tok( STRING_tensorial_product_NUM, s, 3, behavior_of_operator( STRING_tensorial_product_NUM ) );
+                    s += 3;
+                } else // (...
+                    app_tok( Lexem::PAREN, s++, 1, 0 );
                 break;
             }
             case TYPE_CHAR_comment: {
