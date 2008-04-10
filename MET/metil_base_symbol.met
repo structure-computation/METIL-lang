@@ -85,6 +85,16 @@ def diff( self, var ) when self.tensor_order == 1
         r = s.diff( var )
     return res
 
+## differenciation ( [toto pouet].diff(tata) ) ##
+def diff( self, var ) when self.is_a_matrix
+    res := Mat[Op]( self.nb_rows, self.nb_cols )
+    for r in 0 .. self.nb_rows
+        for c in 0 .. self.nb_cols
+            res[r,c] = self[r,c].diff( var )
+    return res
+
+
+
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
 def subs( self, from, to ) when from.tensor_order == 1 and to.tensor_order == 1 and not ( is_of_type_VarArgs(from) or is_of_type_VarArgs(to) )
