@@ -1024,3 +1024,15 @@ def shur( M, V, indices, S, F, solver )
     S = A - B * ( fact * C )
     F = a - B * ( fact * b )
     
+
+#~
+~#
+def tensorial_product( a, b ) when a.is_a_vector and b.is_a_vector
+    T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
+    res := Mat[ T ]( a.size, b.size )
+    for r in 0 .. a.size
+        for c in 0 .. b.size
+            res[ r, c ] = a[ r ] * b[ c ]
+    return res
+    
+    

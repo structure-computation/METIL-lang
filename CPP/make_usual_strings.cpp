@@ -142,6 +142,8 @@ OpInfo operators[] = {
     { "^"          , "__pow__"               , Need2args  },
     { "~"          , "not_bitwise"           , Needrarg   },
     { "'"          , "trans"                 , Needlarg   },
+    
+    { "***"        , "tensorial_product"     , Need2args  },
         
     { "--"         , "post_dec"              , Needlarg   },
     { "++"         , "post_inc"              , Needlarg   },
