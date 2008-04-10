@@ -270,6 +270,8 @@ class SelectVec
     def __for__( block )
         for i in @selection
             block( vec->select(i) )
+    def get_T
+        return vec->T
 
 ## ##
 def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0  return SelectVec( self, vec )
@@ -687,6 +689,11 @@ class VecOp
     def get_values
         return self
         
+    def get_T
+        if va.size == 1
+            return type_promote( va[0].T, @op )
+        return type_promote( partial_instanciation va[0].T, partial_instanciation va[1].T, @op )
+        
     def reassign( v ) when v.is_a_VecOp pertinence 2
         # assert( 0, "Reassigning a VecOp is forbidden." )
         va = v.make_cp_va()
@@ -775,7 +782,7 @@ class VecCst
     def select( n )             return @val
     def __for__( block )        cpt := 0; while cpt++ < size  block( @val )
     def get_sub_types           return [ val->type ]
-    # def get_T                   return val->type
+    def get_T                   return val->type
 
 ## vector with all identical values ##
 class VecCst[ value ]
@@ -787,10 +794,11 @@ class VecCst[ value ]
         size = s
     def select( n )             return value
     def __for__( block )        cpt := 0; while cpt++ < size  block( value )
-    # def get_T                   return value.type
+    def get_T                   return value.type
     
 ## ##
 def vec_cst( size, val )  return VecCst( size, val )
+
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
 ## vector with false expect on 1 index ##
 class VecDirac
