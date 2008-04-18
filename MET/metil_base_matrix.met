@@ -44,6 +44,8 @@ class Gen[ static_nb_rows = -1, static_nb_cols = static_nb_rows, ST = Int32 ]
             for c in 0 .. nb_cols
                 data[ r * nb_cols + c ].init( default_value )
         nb_rows_.reassign_value( nb_rows ); nb_cols_.reassign_value( nb_cols )
+    def get_transpose_type
+        return Gen[ static_nb_cols, static_nb_rows, ST ]
     nb_rows_ := StaticValIf[ known_nb_rows, static_nb_rows, ST ]()
     nb_cols_ := StaticValIf[ known_nb_cols, static_nb_cols, ST ]()
 
@@ -83,6 +85,8 @@ class Sym[ static_size = -1, ST = Int32 ]
         for i in size_.val * ( size_.val + 1 ) / 2 .. nb_rows * ( nb_rows + 1 ) / 2
             data[i].init( default_value )
         size_.reassign_value( nb_rows )
+    def get_transpose_type
+        return Sym[ static_size, ST ]
 
     size_ := StaticValIf[ known_nb_rows, static_size, ST ]()
 
@@ -98,6 +102,8 @@ class TriSup[ static_size = -1, ST = Int32 ] inherits Sym[ static_size, ST ]
         for i in 0 .. size_.val
             for j in 0 .. i+1
                 block( ( j, i ) )
+    def get_transpose_type
+        return TriInf[ static_size, ST ]
 
 ## Structure for class Mat ##
 class TriInf[ static_size = -1, ST = Int32 ] inherits Sym[ static_size, ST ]
@@ -107,6 +113,8 @@ class TriInf[ static_size = -1, ST = Int32 ] inherits Sym[ static_size, ST ]
         if r >= c
             return data[ (r * ( r + 1 )) // 2 + c ]
         return 0
+    def get_transpose_type
+        return TriSup[ static_size, ST ]
 
 ## Structure for class Mat ##
 class Diag[ static_size = -1, ST = None, default_value = 0 ] inherits Sym[ static_size, ST ]
@@ -116,6 +124,8 @@ class Diag[ static_size = -1, ST = None, default_value = 0 ] inherits Sym[ stati
         if r != c
             return data.T( default_value )
         return data[ r ]
+    def get_transpose_type
+        return Diag[ static_size, ST, default_value ]
 
 ## ##
 class Dense[ simd_compatible = true, simd_size = 0 ]
@@ -658,19 +668,77 @@ def mul( vec, mat ) when mat.is_a_matrix and vec.tensor_order==1 pertinence 4
     return res
 
 # -----------------------------------------------------------------------------------------------------------------------------------
-class MatMult[ST] inherits MatAncestor
-    m1 := InternalVariable() #
-    m2 := InternalVariable() #
+# class MatMult[ST] inherits MatAncestor
+    # m1 := InternalVariable() #
+    # m2 := InternalVariable() #
     
-    def init( m1_, m2_ )     m1.init_using_var( m1_ ); m2.init_using_var( m2_ )
-    def get_nb_rows          return m1->nb_rows
-    def get_nb_cols          return m2->nb_cols
-    def get_known_nb_values  return m1->known_nb_rows and m2->known_nb_cols
-    def select( i, j )       return dot( m1->row(i), m2->col(j) )
-    def get_sub_types        return type_promote( type_promote_list( m1->sub_types, m1->sub_types, mul ).map( partial_inst ), add )
+    # def init( m1_, m2_ )     m1.init_using_var( m1_ ); m2.init_using_var( m2_ )
+    # def get_nb_rows          return m1->nb_rows
+    # def get_nb_cols          return m2->nb_cols
+    # def get_known_nb_values  return m1->known_nb_rows and m2->known_nb_cols
+    # def select( i, j )       return dot( m1->row(i), m2->col(j) )
+    # def get_sub_types        return type_promote( type_promote_list( m1->sub_types, m1->sub_types, mul ).map( partial_inst ), add )
+    
+# def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
+    # return MatMult[ type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add ) ]( m1, m2 )
+    
     
 def mul( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
-    return MatMult[ type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add ) ]( m1, m2 )
+    ST := type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add )
+    TR := type_promote( type_promote_list( m1.sub_types, m2.sub_types, mul ).map( partial_inst ), add )
+    GE := [ Gen[ m1.static_nb_rows, m2.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m2.structure.is_sym ]
+    res := Mat[ TR, GE, ST = ST ]( m1.nb_rows, m2.nb_cols )
+    for r in 0 .. m1.nb_rows
+        for c in 0 .. m2.nb_cols
+            res[ r, c ] = dot( m1.row( r ), m2.col( c ) )
+    return res
+
+def add( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
+    assert( m1.nb_rows == m2.nb_rows and m1.nb_cols == m2.nb_cols, "sum of matrices with != sizes if forbidden ( $(m1.nb_rows)x$(m2.nb_rows) and $(m1.nb_cols)x$(m2.nb_cols) )" )
+    ST := type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add )
+    TR := type_promote( type_promote_list( m1.sub_types, m2.sub_types, add ).map( partial_inst ), add )
+    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m1.structure.is_sym ]
+    res := Mat[ TR, GE, ST = ST ]( m1.nb_rows, m1.nb_cols )
+    for r in 0 .. m1.nb_rows
+        for c in 0 .. m1.nb_cols
+            res[ r, c ] = m1[ r, c ] + m2[ r, c ]
+    return res
+
+def sub( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
+    assert( m1.nb_rows == m2.nb_rows and m1.nb_cols == m2.nb_cols, "sum of matrices with != sizes if forbidden ( $(m1.nb_rows)x$(m2.nb_rows) and $(m1.nb_cols)x$(m2.nb_cols) )" )
+    ST := type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add )
+    TR := type_promote( type_promote_list( m1.sub_types, m2.sub_types, sub ).map( partial_inst ), sub )
+    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m1.structure.is_sym ]
+    res := Mat[ TR, GE, ST = ST ]( m1.nb_rows, m1.nb_cols )
+    for r in 0 .. m1.nb_rows
+        for c in 0 .. m1.nb_cols
+            res[ r, c ] = m1[ r, c ] - m2[ r, c ]
+    return res
+
+# scalar * matrix
+def mul( s, m ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
+    ST := m.ST
+    TR := type_promote( type_promote_list( [s.type], m.sub_types, mul ).map( partial_inst ), reassign )
+    res := Mat[ TR, m.Structure, ST = ST ]( m.nb_rows, m.nb_cols )
+    for r in 0 .. m.nb_rows
+        for c in 0 .. m.nb_cols
+            res[ r, c ] = s * m[ r, c ]
+    return res
+
+# matrix * scalar
+def mul( m, s ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
+    return s * m
+
+# matrix / scalar
+def div( m, s ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
+    ST := m.ST
+    TR := type_promote( type_promote_list( [s.type], m.sub_types, div ).map( partial_inst ), reassign )
+    res := Mat[ TR, m.Structure, ST = ST ]( m.nb_rows, m.nb_cols )
+    for r in 0 .. m.nb_rows
+        for c in 0 .. m.nb_cols
+            res[ r, c ] = m[ r, c ] / s
+    return res
+
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 def ml_div( mat, vec )
@@ -904,8 +972,16 @@ class MatTrans[ST] inherits MatAncestor
     def get_sub_types        return mat->sub_types
     
 ## general definition of map ##
-def trans( m ) when m.is_a_matrix
-    return MatTrans[ m.ST ]( m )
+# def trans( m ) when m.is_a_matrix
+    # return MatTrans[ m.ST ]( m )
+
+def trans( m ) when m.is_a_matrix pertinence 4
+    res := Mat[ m.T, m.structure.transpose_type, ST = m.ST ]( m.nb_cols, m.nb_rows )
+    for r in 0 .. m.nb_rows
+        for c in 0 .. m.nb_cols
+            res[ c, r ] = m[ r, c ]
+    return res
+
 
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
 class MatDiag inherits MatAncestor
