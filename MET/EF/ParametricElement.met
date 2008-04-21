@@ -8,6 +8,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         base_name := String( TE )
         for name, value in TemplateAttributeExplorer( partial_instanciation TE )
             base_name += "_$(name)_$value"
+        system("mkdir $base_generated_files 2> /dev/null") # hum
         filename = "$base_generated_files/$base_name.$dim.met"
         
         must_be_generated := ( last_modification_time_or_zero_of_file_named( filename ) == Int64( 0 ) )
