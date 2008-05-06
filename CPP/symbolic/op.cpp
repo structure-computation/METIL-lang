@@ -302,8 +302,8 @@ std::string tex_repr( const Rationnal &val, int type_parent ) {
     
     if ( want_par ) os << "(";
     if ( val.den == Rationnal::BI(1) ) os << val.num;
-    else os << "\\frac{" << val.num << "}{" << val.den << "}";;
-    if ( want_par ) os << ")";
+    else os << "\\linebreak[1] \\frac{" << val.num << "}{" << val.den << "}";;
+    if ( want_par ) os << ")"<<"\\linebreak[0]\n";
     return os.str();
 }
 
@@ -313,13 +313,13 @@ void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
             bool np = ( type_parent > STRING_sub_NUM ) and ms.op->type >= 0;
             if ( np ) os << "(";
             os << "-";
-            if ( np ) os << ")";
+            if ( np ) os << ")"<<"\\linebreak[0]\n";
         }
         else {
             bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
             if ( np ) os << "(";
             ms.op->tex_repr( os );
-            if ( np ) os << ")";
+            if ( np ) os << ")"<<"\\linebreak[0]\n";
         }
     }
     else if ( ms.e.num.is_one() ) {
@@ -328,25 +328,25 @@ void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
         else    
             os << "\\sqrt[" << ms.e.den << "]{";
         ms.op->tex_repr( os ); 
-        os << "}";
+        os << "}"<< "\\linebreak[0]\n";
     } else {
         bool p = ms.op->type == STRING_add_NUM or ms.op->type == STRING_mul_NUM;
         os << "{";
         if ( p ) os << "(";
         ms.op->tex_repr( os );
-        if ( p ) os << ")";
+        if ( p ) os << ")"<< "\\linebreak[0]\n";
         os << "}";
         if ( ms.e.is_integer() )
             os << "^{" << ms.e.num << "} ";
         else
             os << "^{ \\frac{" << ms.e.num << "}{" << ms.e.den << "} } ";
     }
-    os << " ";
+    os << " "<< "\\linebreak[0]\n";
 }
 
 void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
     if ( op->type == Op::NUMBER ) {
-        os << tex_repr( op->number_data()->val, type_parent );
+        os << tex_repr( op->number_data()->val, type_parent ) << "\\linebreak[0]\n";
     } else if ( op->type == Op::SYMBOL ) {
         os << op->symbol_data()->tex_name_str;
     } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
@@ -357,20 +357,20 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
         find_p_and_s_parts_rec( op, p_part, s_part );
     
         for(unsigned i=0;i<p_part.size();++i) {
-            if ( i ) os << "+";
+            if ( i ) os << "+" << "\\linebreak[2]\n";
             tex_repr_rec( os, p_part[i], STRING_add_NUM );
         }
         for(unsigned i=0;i<s_part.size();++i) {
-            os << "-";
+            os << "-"<<"\\linebreak[2]\n";
             if ( s_part[i]->type == Op::NUMBER ) // + (-2)
-                os << tex_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+                os << tex_repr( - s_part[i]->number_data()->val, STRING_add_NUM )<< "\\linebreak[0]\n";
             else { // ( -2 ) * a
                 Op *ch_0 = s_part[i]->func_data()->children[0];
                 Op *ch_1 = s_part[i]->func_data()->children[1];
                 if ( ch_0->number_data()->val.is_minus_one() )
                     tex_repr_rec( os, ch_1, STRING_sub_NUM );
                 else {
-                    os << tex_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    os << tex_repr( - ch_0->number_data()->val, STRING_mul_NUM ) << "\\linebreak[0]\n";
                     //os << "*";
                     tex_repr_rec( os, ch_1, STRING_mul_NUM );
                 }
@@ -397,7 +397,7 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
             for(unsigned i=0;i<items_[1].size();++i)
                 items_[1][i].e.num.val *= -1;
             //
-            os << "\\frac{ "; // \\displaystyle
+            os << "\\linebreak[0] \\frac{ "; // \\displaystyle
             if ( not n_num.is_one() )
                 os << n_num << " ";
             for(unsigned i=0;i<items_[0].size();++i)
@@ -407,19 +407,19 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
                 os << n_den << " ";
             for(unsigned i=0;i<items_[1].size();++i)
                 tex_repr( items_[1][i], os << ( i ? "\\," : " " ), ( items_[1].size() != 1 ) * STRING_mul_NUM );
-            os << "}";
+            os << "}"<< "\\linebreak[0]\n";
         } else { // only *
             if ( n_num.is_one()==false or n_den.is_one()==false )
-                os << tex_repr( n_num / n_den, STRING_mul_NUM ) << " ";
+                os << tex_repr( n_num / n_den, STRING_mul_NUM ) << " " << "\\linebreak[0]\n" ;
             for(unsigned i=0;i<items_[0].size();++i)
-                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), STRING_mul_NUM );
+                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), STRING_mul_NUM ) ;
         }
     } else if ( is_a_sub( op ) ) { // -a
         bool np = type_parent > op->type;
         if ( np ) os << "(";
         os << "-";
         tex_repr_rec( os, op->func_data()->children[1], op->type );
-        if ( np ) os << ")";
+        if ( np ) os << ")"<< "\\linebreak[0]\n";
     } else if ( op->type == STRING_pow_NUM ) { // (...) ^ (...)
         bool np = type_parent > STRING_pow_NUM; if ( np ) os << "(";
         if ( op->func_data()->children[1]->type == Op::NUMBER and op->func_data()->children[1]->number_data()->val.num.is_one() and op->func_data()->children[1]->number_data()->val.den.is_one()==false ) {
@@ -428,27 +428,27 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
             else
                 os << "\\sqrt[" << op->func_data()->children[1]->number_data()->val.den << "]{";
             tex_repr_rec( os, op->func_data()->children[0], 0 );
-            os << "}";
+            os << "}"<< "\\linebreak[0]\n";
         } else {
             os << "{";
             tex_repr_rec( os, op->func_data()->children[0], STRING_pow_NUM );
             os << "}^{";
             tex_repr_rec( os, op->func_data()->children[1], STRING_pow_NUM );
-            os << "}";
+            os << "}"<< "\\linebreak[0]\n";
         }
-        if ( np ) os << ")";
+        if ( np ) os << ")"<< "\\linebreak[0]\n";
     } else if ( op->type == STRING_mod_NUM ) { // (...) % (...)
         bool np = type_parent > op->type; if ( np ) os << "(";
         os << "{";
         tex_repr_rec( os, op->func_data()->children[0], op->type );
         os << "}\\bmod{";
         tex_repr_rec( os, op->func_data()->children[1], op->type );
-        os << "}";
-        if ( np ) os << ")";
+        os << "}"<< "\\linebreak[0]\n";
+        if ( np ) os << ")"<< "\\linebreak[0]\n";
     } else if ( op->type == STRING_abs_NUM ) { // abs( a )
         os << "\\left|";
         tex_repr_rec( os, op->func_data()->children[0], op->type );
-        os << "\\right|";
+        os << "\\right|"<< "\\linebreak[0]\n";
     } else {
         if ( op->type==STRING_heaviside_NUM )
             os << "\\mathop{\\mathrm{H}}(";
@@ -460,7 +460,7 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
             if ( i ) os << ",";
             tex_repr_rec( os, op->func_data()->children[i], 0 );
         }
-        os << ")";
+        os << ")"<< "\\linebreak[0]\n";
     }
 }
 

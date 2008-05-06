@@ -30,13 +30,13 @@ def graphviz_string( self ) when self.tensor_order == 1
 ##
 def launch_and_display_tex_with_str( str, filename="res" )
     f := File("$filename.tex","w")
-    f << "\\documentclass{article}\n\\usepackage[latin1]{inputenc}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    f << "\\documentclass[landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
     f << str << "\n"
     f << "\\end{document}\n"
     f.close()
 
     display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
-    if system( "latex $filename.tex > /dev/null 2> /dev/null && dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
             "&& evince $filename.eps 2> /dev/null" ) #  && ( $display_command )
         stderr << "erroneous symbol in the formula.\n"
 
@@ -44,17 +44,80 @@ def launch_and_display_tex_with_str( str, filename="res" )
     display symbolic formual of variable v
 ##
 def display_tex( self, filename="res" )
-    launch_and_display_tex_with_str( "$$" + self.tex_string() + "$$", filename )
+    launch_and_display_tex_with_str( "$\displaystyle" + self.tex_string() + "$", filename )
+    
+def display_few_eqns(V, filename="res") when V.is_a_vector
+    t:=V.size
+    f:= File("$filename.tex","w")
+    f<<"\\documentclass[a3paper,landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    for i in 0..t
+        f << "$\displaystyle" +V[i].tex_string() + " $\\\ "
+    f << "\\end{document}\n"
+    f.close()
+    display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
+            "&& evince $filename.eps 2> /dev/null" ) #  && ( $display_command )
+        stderr << "erroneous symbol in the formula.\n"
+
+def store_tex_file( str, filename="storage")
+    f := File("$filename.tex","w")
+    f << "\\documentclass[a3paper,landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    f << str << "\n"
+    f << "\\end{document}\n"
+    f.close()
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " )
+        stderr << "erroneous symbol in the formula.\n"
+    
+
+def store_tex( self, filename="storage")
+    store_tex_file( "$\displaystyle" + self.tex_string() + "$", filename )
+    
+
+def store_few_eqns(V, filename="res") when V.is_a_vector
+    t:=V.size
+    f:= File("$filename.tex","w")
+    f<<"\\documentclass[landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    for i in 0..t
+        f << "$\displaystyle" +V[i].tex_string() + " $\\\ "
+    f << "\\end{document}\n"
+    f.close()
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " )
+        stderr << "erroneous symbol in the formula.\n"
+
+def store_few_eqns(self, filename="res") when self.is_a_vector
+    t:=self.size
+    f:= File("$filename.tex","w")
+    f<<"\\documentclass[landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    for i in 0..t
+        f << "$\displaystyle" +self[i].tex_string() + " $\\\ "
+    f << "\\end{document}\n"
+    f.close()
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " )
+        stderr << "erroneous symbol in the formula.\n"
+
+def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vector
+    t:=V.size
+    f := File("$filename.tex","w")
+    f<<"\\documentclass[landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
+    for i in 0..t
+        f << "$\displaystyle" +V[i].tex_string() +"=" + RHS[i] +" $\\\ "
+    f << "\\end{document}\n"
+    f.close()
+    display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
+            "&& evince $filename.eps 2> /dev/null" ) #  && ( $display_command )
+        stderr << "erroneous symbol in the formula.\n"
+
 
 ## 
     display symbolic formual of variable v
 ##
 def display_tex( self, filename="res" ) when self.tensor_order == 1
     str := StringStream()
-    str <<< "$$\\left[\\begin{array}{c}"
+    str <<< "$\displaystyle\\left[\\begin{array}{c}"
     for i in self.values
         str << i.tex_string() <<< "\\\\"
-    str <<< "\\end{array}\\right]$$"
+    str <<< "\\end{array}\\right]$"
     launch_and_display_tex_with_str( str, filename )
 
 ## 
@@ -62,12 +125,12 @@ def display_tex( self, filename="res" ) when self.tensor_order == 1
 ##
 def display_tex( self, filename="res" ) when self.tensor_order == 2
     str := StringStream()
-    str <<< "$$\\left[\\begin{array}{$("c"*self.nb_cols)}"
+    str <<< "$\displaystyle\\left[\\begin{array}{$("c"*self.nb_cols)}"
     for r in 0 .. self.nb_rows
         for c in 0 .. self.nb_cols
             str << self[r,c].tex_string() <<< "&" * ( c != self.nb_cols-1 )
         str <<< "\\\\" * ( r != self.nb_rows-1 )
-    str <<< "\\end{array}\\right]$$"
+    str <<< "\\end{array}\\right]$"
     # info str.str
     launch_and_display_tex_with_str( str, filename )
 
@@ -107,6 +170,15 @@ def subs( self, from, to ) when from.tensor_order == 1 and to.tensor_order == 1 
         t.push_unnamed( Op(i_t) )
     return self.subs( f, t )
 
+## substitution dans une matrice##
+def subs( self, from, to ) when self.is_a_matrix pertinence 20
+    toto:=self
+    for r in 0 .. self.nb_rows
+        for c in 0 .. self.nb_cols
+            toto[r,c]=self[r,c].subs( from, to )
+    return toto
+
+
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2 ##
 def subs( self, from, to ) when is_of_type_Op( from )
     return self.subs( make_varargs(from), make_varargs(Op(to)) )
@@ -117,13 +189,45 @@ def subs( self, from, to ) when self.tensor_order == 1 and self.sub_types==[Op] 
         res[r].init( self[r].subs( from, to ) )
     return res
 
+##
 def subs( self, from, to ) when self.is_a_matrix pertinence 20
     res := Mat[ Op, self.Structure, self.Storage, self.ST ]( nb_rows = self.nb_rows, nb_rows = self.nb_cols )
     for r in 0 .. res.nb_rows
         for c in 0 .. res.nb_cols
             res[r,c].init( self[r,c].subs( from, to ) )
     return res
+##
 
+## Développements asymptotiques ##
+def asympt_dvp( self, with_regards_to, small_param, new_var, order) when is_of_type_Op( self ) and is_of_type_Op ( with_regards_to ) and is_of_type_Op ( small_param ) and is_of_type_Int32 ( order ) and is_of_type_Op ( new_var )
+    toto := self.subs(with_regards_to,small_param*new_var)
+    resv := taylor_expansion(toto,small_param,0,order)
+    res := Op()
+    for o in 0 .. order+1
+            res += (small_param^o) * resv[o]
+    return res
+
+def asympt_dvp( self, with_regards_to, small_param, new_var, order) when is_of_type_Op( self ) and is_of_type_Op ( small_param ) and is_of_type_Int32 ( order ) and with_regards_to.is_a_vector and new_var.is_a_vector and with_regards_to.sizes == new_var.sizes pertinence 20
+    toto := self.subs(with_regards_to,small_param*new_var)
+    resv := taylor_expansion(toto,small_param,0,order)
+    res := Op()
+    for o in 0 .. order+1
+            res += (small_param^o) * resv[o]
+    return res
+
+def asympt_dvp( self, with_regards_to, small_param, new_var order) when self.is_a_matrix pertinence 20
+    res:=self
+    for r in 0 .. self.nb_rows
+        for c in 0 .. self.nb_cols
+            res[r,c]=self[r,c].asympt_dvp(with_regards_to, small_param, new_var, order)
+    return res
+
+def asympt_dvp( self, with_regards_to, small_param, new_var order) when self.is_a_vector pertinence 20
+    res:=self
+    for r in 0 .. self.size
+        res[r]=self[r].asympt_dvp(with_regards_to, small_param, new_var, order)
+    return res
+        
 def depends_on( self, val ) when is_of_type_Op( self ) and val.tensor_order > 0
     # return any( val.map( x => self.depends_on(x) ) )
     for v in val
