@@ -176,9 +176,10 @@ struct BigRat {
         if ( num.n > lim or den.n > lim ) {
             BigInt<base,T> n = num;
             BigInt<base,T> d = den;
-            for(unsigned i=std::max( num.n, den.n );i>lim;--i) { // hum -> TODO
-                if ( n.n ) n.div_by_base();
-                if ( d.n ) d.div_by_base();
+            assert ( abs( num.n - den.n ) < int(lim) );
+            while ( n.n >= lim or d.n >= lim ) {
+                n.div_by_base();
+                d.div_by_base();
             }
             return Float64(n) / Float64(d);
         }
@@ -196,16 +197,21 @@ struct BigRat {
     
     bool operator>=(int b) const { return *this >= BigRat(b); }
     
-    bool is_integer  () const { return den.n == 0 and den.val == 1; }
-    bool is_odd      () const { return is_integer() and num.is_odd (); }
-    bool is_even     () const { return is_integer() and num.is_even(); }
-    bool is_neg      () const { return num.val < 0; }
-    bool is_pos      () const { return num.val > 0; }
-    bool is_zero     () const { return num.val ==  0; }
-    bool is_one      () const { return num.n == 0 and num.val ==  1 and den.n == 0 and den.val == 1; }
-    bool is_minus_one() const { return num.n == 0 and num.val == -1 and den.n == 0 and den.val == 1; }
-    bool is_pos_or_null() const { return num.val >= 0; }
-    bool is_neg_or_null() const { return num.val <= 0; }
+    bool is_integer  ()      const { return den.n == 0 and den.val == 1; }
+    bool is_odd      ()      const { return is_integer() and num.is_odd (); }
+    bool is_even     ()      const { return is_integer() and num.is_even(); }
+    bool is_neg      ()      const { return num.val < 0; }
+    bool is_pos      ()      const { return num.val > 0; }
+    bool is_zero     ()      const { return num.val ==  0; }
+    bool is_one      ()      const { return num.n == 0 and num.val ==  1 and den.n == 0 and den.val == 1; }
+    bool is_two      ()      const { return num.n == 0 and num.val ==  2 and den.n == 0 and den.val == 1; }
+    bool is_three    ()      const { return num.n == 0 and num.val ==  3 and den.n == 0 and den.val == 1; }
+    bool is_minus_one()      const { return num.n == 0 and num.val == -1 and den.n == 0 and den.val == 1; }
+    bool is_minus_two()      const { return num.n == 0 and num.val == -2 and den.n == 0 and den.val == 1; }
+    bool is_pos_or_null()    const { return num.val >= 0; }
+    bool is_neg_or_null()    const { return num.val <= 0; }
+    bool is_one_half()       const { return num.n == 0 and num.val ==  1 and den.n == 0 and den.val == 2; }
+    bool is_minus_one_half() const { return num.n == 0 and num.val == -1 and den.n == 0 and den.val == 2; }
     
     BigInt<base,T,offset,owning> num, den;
 };
@@ -233,19 +239,19 @@ template<int base,class T,int offset,bool owning> BigRat<base,T,offset> inv( con
 template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,offset> operator+(const BigRat<base,T,offset,owninga> &a,const BigRat<base,T,offset,owningb> &b) {
     BigRat<base,T,offset> res;
     res.den = a.den * b.den;
-    a.num.basic_assert(); 
-    a.den.basic_assert(); 
-    b.num.basic_assert(); 
-    b.den.basic_assert();
-    (b.num * a.den).basic_assert();
-    (a.num * b.den).basic_assert();
+//     a.num.basic_assert(); 
+//     a.den.basic_assert(); 
+//     b.num.basic_assert(); 
+//     b.den.basic_assert();
+//     (b.num * a.den).basic_assert();
+//     (a.num * b.den).basic_assert();
     res.num = a.num * b.den + b.num * a.den;
     res.cannonicalize();
-    if ( std::abs( Float96( res ) - ( Float96( a ) + Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
-        std::cout << res << " ?= " << a << " " << b << std::endl;
-        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
-        assert( 0 );
-    }
+//     if ( std::abs( Float96( res ) - ( Float96( a ) + Float96( b ) ) ) > ( std::abs( Float96( res ) ) + std::abs( Float96( a ) ) + std::abs( Float96( b ) ) ) * 1e-16 ) {
+//         std::cout << res << " ?= " << a << " " << b << std::endl;
+//         std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+//         assert( 0 );
+//     }
     return res;
 }
 
@@ -254,11 +260,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.den = a.den * b.den;
     res.num = a.num * b.den - b.num * a.den;
     res.cannonicalize();
-    if ( std::abs( Float96( res ) - ( Float96( a ) - Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
-        std::cout << res << " ?= " << a << " " << b << std::endl;
-        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
-        assert( 0 );
-    }
+//     if ( std::abs( Float96( res ) - ( Float96( a ) - Float96( b ) ) ) > ( std::abs( Float96( res ) ) + std::abs( Float96( a ) ) + std::abs( Float96( b ) ) ) * 1e-16 ) {
+//         std::cout << res << " ?= " << a << " " << b << std::endl;
+//         std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+//         assert( 0 );
+//     }
     return res;
 }
 
@@ -267,11 +273,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.num = a.num * b.num;
     res.den = a.den * b.den;
     res.cannonicalize();
-    if ( std::abs( Float96( res ) - ( Float96( a ) * Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
-        std::cout << res << " ?= " << a << " " << b << std::endl;
-        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
-        assert( 0 );
-    }
+//     if ( std::abs( Float96( res ) - ( Float96( a ) * Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+//         std::cout << res << " ?= " << a << " " << b << std::endl;
+//         std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+//         assert( 0 );
+//     }
     return res;
 }
 
@@ -280,11 +286,11 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     res.num = a.num * b.den;
     res.den = a.den * b.num;
     res.cannonicalize();
-    if ( std::abs( Float96( res ) - ( Float96( a ) / Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
-        std::cout << res << " ?= " << a << " " << b << std::endl;
-        std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
-        assert( 0 );
-    }
+//     if ( std::abs( Float96( res ) - ( Float96( a ) / Float96( b ) ) ) > std::abs( Float96( res ) ) * 1e-16 ) {
+//         std::cout << res << " ?= " << a << " " << b << std::endl;
+//         std::cout << Float96( res ) << " ?= " << Float96( a ) << " + " << Float96( b ) << std::endl;
+//         assert( 0 );
+//     }
     return res;
 }
 

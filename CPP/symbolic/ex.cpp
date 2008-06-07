@@ -9,10 +9,9 @@
 
 // #define ALWAYS_DISTRIBUTE_NUMBER
 // #define NEVER_DISTRIBUTE_NUMBER
-#define WITHOUT_SIMP
+// #define WITHOUT_SIMP
 // #define A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
-
-typedef SplittedVec<Ex,8,8,true> SEX;
+#define USE_SERIES_FOR_TAYLOR
 
 struct ExPtrCmp {
     bool operator()( const Ex &a, const Ex &b ) const {
@@ -26,9 +25,12 @@ inline bool same_ex( const Ex &a, const Ex &b ) {
     return same_op( a.op, b.op );
 }
 
+
 void Ex::init() {
-    op = Op::new_number( 0 );
-    op->inc_ref();
+    static Ex zero( 0 );
+//     op = Op::new_number( 0 );
+//     op->inc_ref();
+    op = zero.op->inc_ref();
 }
 
 void Ex::init( Op *ex ) {
@@ -850,8 +852,214 @@ void destroy_rec( Op *a ) {
 }
 
 // ------------------------------------------------------------------------------------------------------------
+struct PolynomialExpansion {
+    PolynomialExpansion( Thread *th, const void *tok, int order ) : th(th), tok(tok), zero(0), one(1), nb_elements(order+1) {
+    }
+    
+    void exp_rec_val( Ex *r, const Ex &val ) {
+        r[0] = val;
+        for(unsigned i=1;i<nb_elements;++i)
+            r[i] = zero;
+    }
+    void exp_rec_add( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
+        for(unsigned i=0;i<nb_elements;++i)
+            r[i] = r_0[ i ] + r_1[ i ];
+    }
+    void exp_rec_mul( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
+        for(unsigned i=0;i<nb_elements;++i) {
+            r[i] = r_0[ 0 ] * r_1[ i ];
+            for(unsigned j=1;j<=i;++j)
+                r[i] += r_0[ j ] * r_1[ i - j ];
+        }
+    }
+    void exp_rec_abs( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Ex m = 2 * heaviside( ch_0 ) - 1;
+        for(unsigned i=0;i<nb_elements;++i)
+            r[i] = m * r_0[ i ];
+    }
+    void exp_rec_ppa( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Ex m = heaviside( ch_0 );
+        for(unsigned i=0;i<nb_elements;++i)
+            r[i] = m * r_0[ i ];
+    }
+    void exp_rec_exp( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Ex e = exp( r_0[ 0 ] );
+        r[0] = e;
+        for(unsigned i=1;i<nb_elements;++i)
+            r[i] = e;
+    }
+    void exp_rec_pow( Ex *r, Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
+        //
+        bool r_1_is_a_cst = true; for(unsigned i=1;i<nb_elements;++i) r_1_is_a_cst &= r_1[i].op->is_zero();
+        if ( r_1_is_a_cst ) {
+            if ( r_1[0].op->type == Op::NUMBER ) {
+                Rationnal n = r_1[0].op->number_data()->val;
+                if ( n.is_integer() and abs(n.num) < 50 ) { // a ^ n
+                    int abs_n = abs(n.num);
+                    const Ex *r_o = r_0;
+                    if ( n.is_neg() ) { // a ^ ( -... )
+                        Ex *t_o = tmp_vec.get_room_for( nb_elements );
+                        const Ex *r_o = t_o;
+                        switch ( nb_elements ) {
+                            case 9:
+                                t_o[8] = -40320*(-4*r_0[1]*r_0[1]*r_0[1]*r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+5*r_0[1]*r_0[1]*r_0[1]*r_0[1]*
+                                    r_0[4]*r_0[0]*r_0[0]*r_0[0]-6*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[3]*r_0[0]*r_0[0]+7*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]
+                                    *r_0[2]*r_0[0]-r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]+3*r_0[2]*r_0[3]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-
+                                    r_0[2]*r_0[2]*r_0[2]*r_0[2]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-r_0[4]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-2*r_0[7]*r_0[1]*r_0[0]
+                                    *r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+3*r_0[1]*r_0[1]*r_0[6]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-2*r_0[2]*r_0[6]*r_0[0]*r_0[0]*
+                                    r_0[0]*r_0[0]*r_0[0]*r_0[0]-2*r_0[3]*r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+r_0[8]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]
+                                    *r_0[0]+20*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]-12*r_0[1]*r_0[2]*r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]
+                                    -6*r_0[1]*r_0[1]*r_0[3]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-12*r_0[1]*r_0[1]*r_0[2]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+6*
+                                    r_0[1]*r_0[3]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+3*r_0[2]*r_0[2]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+6*r_0[1]*r_0[2]
+                                    *r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-15*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[2]*r_0[0]*r_0[0]+10*r_0[1]*r_0[1]*r_0[2]*
+                                    r_0[2]*r_0[2]*r_0[0]*r_0[0]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 8:
+                                t_o[7] = -5040*(-2*r_0[1]*r_0[6]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-2*r_0[2]*r_0[5]*r_0[0]*r_0[0]*r_0[0]*
+                                    r_0[0]*r_0[0]-2*r_0[3]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+3*r_0[1]*r_0[1]*r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+3*r_0[2]
+                                    *r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-4*r_0[1]*r_0[1]*r_0[1]*r_0[4]*r_0[0]*r_0[0]*r_0[0]+5*r_0[1]*r_0[1]*r_0[1]*r_0[1]*
+                                    r_0[3]*r_0[0]*r_0[0]+10*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[2]*r_0[0]*r_0[0]+r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]-6*
+                                    r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[0]-12*r_0[1]*r_0[1]*r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]-4*r_0[1]*r_0[2]*r_0[2]*
+                                    r_0[2]*r_0[0]*r_0[0]*r_0[0]+6*r_0[1]*r_0[2]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+3*r_0[1]*r_0[3]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]
+                                    +r_0[7]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 7:
+                                t_o[6] = -720*(-r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]+5*r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[0]-6*r_0[1]
+                                    *r_0[1]*r_0[2]*r_0[2]*r_0[0]*r_0[0]-4*r_0[1]*r_0[1]*r_0[1]*r_0[3]*r_0[0]*r_0[0]+r_0[2]*r_0[2]*r_0[2]*r_0[0]*r_0[0]*r_0[0]+6*
+                                    r_0[1]*r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]+3*r_0[1]*r_0[1]*r_0[4]*r_0[0]*r_0[0]*r_0[0]-r_0[3]*r_0[3]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-2
+                                    *r_0[2]*r_0[4]*r_0[0]*r_0[0]*r_0[0]*r_0[0]-2*r_0[1]*r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0]+r_0[6]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0])/(
+                                    r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 6:
+                                t_o[5] = -120*(r_0[1]*r_0[1]*r_0[1]*r_0[1]*r_0[1]-4*r_0[1]*r_0[1]*r_0[1]*r_0[2]*r_0[0]+3*r_0[1]*r_0[2]*r_0[2]*
+                                    r_0[0]*r_0[0]+3*r_0[1]*r_0[1]*r_0[3]*r_0[0]*r_0[0]-2*r_0[2]*r_0[3]*r_0[0]*r_0[0]*r_0[0]-2*r_0[1]*r_0[4]*r_0[0]*r_0[0]*r_0[0]
+                                    +r_0[5]*r_0[0]*r_0[0]*r_0[0]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 5:
+                                t_o[4] = -24*(-r_0[1]*r_0[1]*r_0[1]*r_0[1]+3*r_0[1]*r_0[1]*r_0[2]*r_0[0]-r_0[2]*r_0[2]*r_0[0]*r_0[0]-2*r_0[1]*
+                                    r_0[3]*r_0[0]*r_0[0]+r_0[4]*r_0[0]*r_0[0]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 4:
+                                t_o[3] = -6*(r_0[1]*r_0[1]*r_0[1]-2*r_0[1]*r_0[2]*r_0[0]+r_0[3]*r_0[0]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]*r_0[0]);
+                            case 3:
+                                t_o[2] = -2*(-r_0[1]*r_0[1]+r_0[2]*r_0[0])/(r_0[0]*r_0[0]*r_0[0]);
+                            case 2:
+                                t_o[1] = -1/(r_0[0]*r_0[0])*r_0[1];
+                            case 1:
+                                t_o[0] = 1/r_0[0];
+                                break;
+                            default:
+                                th->add_error( "TODO : PolynomialExpansion for pow( a, < - 7 ). -> see file 'ex.cpp'.", tok );
+                        }
+                        if ( abs_n == 1 )
+                            for(unsigned i=0;i<nb_elements;++i)
+                                r[ i ] = r_o[ i ];
+                    }
+                    if ( abs_n > 1 ) {
+                        Ex *r_n = tmp_vec.get_room_for( nb_elements );
+                        for(unsigned i=0;i<nb_elements;++i)
+                            r_n[ i ] = r_o[ i ];
+                        for(int c=1;c<abs_n;++c) {
+                            for(unsigned i=0;i<nb_elements;++i) {
+                                r[ i ] = r_n[ 0 ] * r_o[ i ];
+                                for(unsigned j=1;j<=i;++j)
+                                    r[ i ] += r_n[ j ] * r_o[ i - j ];
+                            }
+                            if ( c + 1 < abs_n )
+                                for(unsigned i=0;i<nb_elements;++i)
+                                    r_n[ i ] = r[ i ];
+                        }
+                    }
+                } else if ( n.is_one_half() ) { // a ^ 0.5
+                    #include "series_sqrt.h"
+                } else if ( n.is_minus_one_half() ) { // a ^ (-0.5)
+                    #include "series_rsqrt.h"
+                } else {
+                    std::ostringstream s; s << n;
+                    th->add_error( "TODO : PolynomialExpansion for pow( a, "+s.str()+" ). -> see file 'ex.cpp'.", tok );
+                }
+            } else {
+                th->add_error( "TODO : PolynomialExpansion for pow( a, not a simple number ). -> see file 'ex.cpp'.", tok );
+            }
+        } else {
+            th->add_error( "TODO : PolynomialExpansion for pow( a, not a constant ). -> see file 'ex.cpp'.", tok );
+        }
+    }
+    
+    void exp_rec( Op *a ) {
+        if ( a->op_id == Op::current_op ) // already done ?
+            return;
+        a->op_id = Op::current_op;
+        Ex *r = tmp_vec.get_room_for( nb_elements );
+        a->additional_info = reinterpret_cast<Op *>( r );
+        //
+        switch ( a->type ) {
+            case Op::NUMBER:           exp_rec_val( r, a    ); break;
+            case Op::SYMBOL:           exp_rec_val( r, a    ); break;
+            case STRING_heaviside_NUM: exp_rec_val( r, zero ); break;
+            case STRING_eqz_NUM:       exp_rec_val( r, zero ); break;
+            case STRING_add_NUM:       exp_rec_add( r, a    ); break;
+            case STRING_mul_NUM:       exp_rec_mul( r, a    ); break;
+            // case STRING_log_NUM:       exp_rec_log( r, a    ); break;
+            case STRING_abs_NUM:       exp_rec_abs( r, a    ); break;
+            case STRING_pos_part_NUM:  exp_rec_ppa( r, a    ); break;
+            // case STRING_exp_NUM:       exp_rec_exp( r, a    ); break;
+            
+            case STRING_sin_NUM:       th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_cos_NUM:       th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_tan_NUM:       th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_asin_NUM:      th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_acos_NUM:      th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_atan_NUM:      th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+            case STRING_pow_NUM:       exp_rec_pow( r, a    ); break;
+            default:
+                th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+        }
+    }
+    
+    Thread *th;
+    const void *tok;
+    Ex zero, one;
+    unsigned nb_elements;
+    SplittedVec<Ex,2048,2048,true> tmp_vec;
+};
+
+void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res ) {
+    PolynomialExpansion pe( th, tok, order );
+    //
+    Ex *r = pe.tmp_vec.get_room_for( order + 1 );
+    var.op->additional_info = reinterpret_cast<Op *>( r );
+    for(int i=0;i<=order;++i)
+        r[i] = ( i == 1 ? pe.one : pe.zero.op );
+    var.op->op_id = ++Op::current_op;
+    //
+    for(unsigned n=0;n<expressions.size();++n)
+        pe.exp_rec( expressions[n].op );
+    //
+    for(unsigned n=0,c=0;n<expressions.size();++n)
+        for(int i=0;i<=order;++i,++c)
+            res[c] = reinterpret_cast<Ex *>( expressions[n].op->additional_info )[i].op;
+}
+
+void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res ) {
+    assert( res.nb_uargs() >= ( order + 1 ) * expressions.nb_uargs() );
+    SEX sex_expressions;
+    for(unsigned i=0;i<expressions.nb_uargs();++i)
+        sex_expressions.push_back( *reinterpret_cast<Ex *>(expressions.uarg(i)->data) );
+    //
+    SEX sex_res; sex_res.get_room_for( res.nb_uargs() );
+    polynomial_expansion( th, tok, sex_expressions, var, order, sex_res );
+    for(unsigned i=0;i<res.nb_uargs();++i)
+        *reinterpret_cast<Ex *>(res.uarg(i)->data) = sex_res[ i ];
+}
+
+// ------------------------------------------------------------------------------------------------------------
 struct DiffRec {
-    DiffRec( Thread *th, const void *tok, const Ex &expr, const Ex &d ) : th(th), tok(tok), zero(0), one(1), expr( expr ), d( d ) {
+    DiffRec( Thread *th, const void *tok, const Ex &expr, const Ex &d ) : th(th), tok(tok), zero(0), one(1), expr(expr), d(d) {
         d.op->additional_info = one.op->inc_ref();
         d.op->op_id = ++Op::current_op;
         //
@@ -1339,15 +1547,23 @@ Ex a_posteriori_simplification( const Ex &a ) {
 
 // ------------------------------------------------------------------------------------------------------------
 void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SEX &res ) {
-    Rationnal r( 1 );
-    for(Int32 i=0;i<=deg_poly_max;++i) {
-        Ex t = r * expr.subs( th, tok, var, beg );
-        res.push_back( t );
-        if ( i < deg_poly_max ) {
-            expr = expr.diff( th, tok, var );
-            r /= i + 1;
+    #ifdef USE_SERIES_FOR_TAYLOR
+        Ex tmp("tmp",3,"tmp",3);
+        Ex e = expr.subs( th, tok, var, beg + tmp );
+        SEX expressions; expressions.push_back( e );
+        res.get_room_for( deg_poly_max + 1 );
+        polynomial_expansion( th, tok, expressions, tmp, deg_poly_max, res );
+    #else
+        Rationnal r( 1 );
+        for(Int32 i=0;i<=deg_poly_max;++i) {
+            Ex t = r * expr.subs( th, tok, var, beg );
+            res.push_back( t );
+            if ( i < deg_poly_max ) {
+                expr = expr.diff( th, tok, var );
+                r /= i + 1;
+            }
         }
-    }
+    #endif
 }
 
 #include "fit.h"

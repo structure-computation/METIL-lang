@@ -84,12 +84,13 @@ std::string CodeWriter::invariant( Thread *th, const void *tok, Int32 nb_spaces,
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void disp_codewriter_number( std::ostream &os, const Rationnal &r, bool want_float ) {
+void disp_codewriter_number( std::ostream &os, const Rationnal &r, bool want_float, const char *basic_type ) {
     if ( want_float ) {
         os.precision( 9 );
         os << std::scientific << Float32( r ) << "f";
-    }
-    else {
+    } else if ( strcmp( basic_type, "Ex" ) == 0 ) {
+        os << "Rationnal(" << r.num << "," << r.den << ")";
+    } else {
         if ( r.is_integer() and r.is_pos_or_null() )
             os << r;
         else if ( r.den.n==0 and ( r.den.val==2 or r.den.val==4 or r.den.val==8 ) )
@@ -105,14 +106,14 @@ void disp_codewriter_number( std::ostream &os, const Rationnal &r, bool want_flo
 void disp_number_to_write( std::ostream &os, CodeWriter::NumberToWrite &nb_to_write, unsigned &cpt_op, bool &put_a_cr, Int32 nb_spaces, const char *basic_type, bool want_float ) {
     switch ( nb_to_write.method.v ) {
         if ( (cpt_op++ % 4) == 3 ) { os << '\n' << std::string(nb_spaces,' '); put_a_cr=true; } else { os << ' '; put_a_cr=false; }
-        case STRING_add_NUM:       os << nb_to_write.name << " += "; disp_codewriter_number( os, nb_to_write.n, want_float ); os << ';'; break;
-        case STRING_sub_NUM:       os << nb_to_write.name << " -= "; disp_codewriter_number( os, nb_to_write.n, want_float ); os << ';'; break;
-        case STRING_mul_NUM:       os << nb_to_write.name << " *= "; disp_codewriter_number( os, nb_to_write.n, want_float ); os << ';'; break;
-        case STRING_div_NUM:       os << nb_to_write.name << " /= "; disp_codewriter_number( os, nb_to_write.n, want_float ); os << ';'; break;
-        case STRING_reassign_NUM:  os << nb_to_write.name << " = " ; disp_codewriter_number( os, nb_to_write.n, want_float ); os << ';'; break;
+        case STRING_add_NUM:       os << nb_to_write.name << " += "; disp_codewriter_number( os, nb_to_write.n, want_float, basic_type ); os << ';'; break;
+        case STRING_sub_NUM:       os << nb_to_write.name << " -= "; disp_codewriter_number( os, nb_to_write.n, want_float, basic_type ); os << ';'; break;
+        case STRING_mul_NUM:       os << nb_to_write.name << " *= "; disp_codewriter_number( os, nb_to_write.n, want_float, basic_type ); os << ';'; break;
+        case STRING_div_NUM:       os << nb_to_write.name << " /= "; disp_codewriter_number( os, nb_to_write.n, want_float, basic_type ); os << ';'; break;
+        case STRING_reassign_NUM:  os << nb_to_write.name << " = " ; disp_codewriter_number( os, nb_to_write.n, want_float, basic_type ); os << ';'; break;
         case STRING_init_NUM:      
             os << nb_to_write.name << ( basic_type ? " = " :  " := " );
-            disp_codewriter_number( os, nb_to_write.n, want_float );
+            disp_codewriter_number( os, nb_to_write.n, want_float, basic_type );
             os << ';';
             break;
         case STRING___print___NUM: os << "printf( \"" << nb_to_write.name << " -> %f\\n\", " << nb_to_write.n << ".0 );";  break;
@@ -142,9 +143,9 @@ void disp_res( std::ostream &os, const Ex &op, CodeWriter::ParentsOpAndNumReg *p
 }
 
 
-void disp_codewriter( std::ostream &os, Op *c, bool want_float ) {
+void disp_codewriter( std::ostream &os, Op *c, bool want_float, const char *basic_type ) {
     if ( c->type == Op::NUMBER ) {
-        disp_codewriter_number( os, c->number_data()->val, want_float );
+        disp_codewriter_number( os, c->number_data()->val, want_float, basic_type );
     } else {
         CodeWriter::ParentsOpAndNumReg *poc = reinterpret_cast<CodeWriter::ParentsOpAndNumReg *>( c->additional_info );
         os << "R_" << poc->num_reg;
@@ -204,9 +205,9 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
             //                 disp_codewriter_number( os, - op->func_data()->children[0]->number_data()->val );
             //             } else { // a + b
             //             }
-            disp_codewriter( os, op->func_data()->children[0], want_float );
+            disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
             os << "+";
-            disp_codewriter( os, op->func_data()->children[1], want_float );
+            disp_codewriter( os, op->func_data()->children[1], want_float, basic_type );
         } else if ( op->type == STRING_mul_NUM ) { // a * b
             //             if ( is_a_inv( *op->func_data()->children[1] ) ) { // a * ( 1/b )
             //                 disp_codewriter( os, op->func_data()->children[0] );
@@ -218,36 +219,36 @@ void CodeWriter::write_code( std::ostream &os, SplittedVec<Op *,256,1024> &front
             //                 disp_codewriter( os, op->func_data()->children[0]->func_data()->children[1] );
             //             } else { // a + b
             //             }
-            disp_codewriter( os, op->func_data()->children[0], want_float );
+            disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
             os << "*";
-            disp_codewriter( os, op->func_data()->children[1], want_float );
+            disp_codewriter( os, op->func_data()->children[1], want_float, basic_type );
         } else if ( op->type == STRING_pow_NUM and op->func_data()->children[1]->type == Op::NUMBER ) { // a ^ b
             Rationnal b = op->func_data()->children[1]->number_data()->val;
             if ( b.is_minus_one() ) {
                 os << "1/";
-                disp_codewriter( os, op->func_data()->children[0], want_float );
+                disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
             } else if ( b.num.is_one() and b.den.is_two() ) {
                 os << "sqrt(";
-                disp_codewriter( os, op->func_data()->children[0], want_float );
+                disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
                 os << ")";
             } else if ( b.num.is_minus_one() and b.den.is_two() ) {
                 os << "rsqrt(";
-                disp_codewriter( os, op->func_data()->children[0], want_float );
+                disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
                 os << ")";
             } else if ( b.den.is_one() ) {
                 os << "pow(";
-                disp_codewriter( os, op->func_data()->children[0], want_float );
+                disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
                 os << "," << b << ")";
             } else {
                 os << "pow(";
-                disp_codewriter( os, op->func_data()->children[0], want_float );
+                disp_codewriter( os, op->func_data()->children[0], want_float, basic_type );
                 os << "," << b << ".0)";
             }
             
         } else { // function
             os << Nstring( op->type ) << "(";
             for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
-                disp_codewriter( os, op->func_data()->children[i], want_float );
+                disp_codewriter( os, op->func_data()->children[i], want_float, basic_type );
                 if ( i+1<Op::FuncData::max_nb_children and op->func_data()->children[i+1] ) os << ",";
             }
             os << ")";

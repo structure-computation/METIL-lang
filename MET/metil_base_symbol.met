@@ -1,3 +1,4 @@
+Pi := 2 * asin( Float64( 1 ) )
 
 ## 
     make an unknown variable of type T
@@ -289,6 +290,36 @@ class CodeWriter
     def to_string( nb_spaces = 4 )
         return cw.to_string( nb_spaces )
 
+##
+
+##
+class CodeWriterAlt
+    cw ~= CodeWriterAlt_
+    
+    def init( T = "double" ) when T.is_a_String
+        cw.init( T )
+        
+    def destroy
+        cw.destroy()
+    
+    def add( str, expr, method=init ) pertinence 10
+        cw.add_expr( String(str), Op(expr), method )
+        return self
+    
+    def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
+        for cpt, val in 0... , expr
+            self.add( "$str[$cpt]", val, method )
+        return self
+    
+    def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
+        for i in 0 .. expr.nb_rows
+            for j in 0 .. expr.nb_cols 
+                self.add( "$str($i,$j)", expr[i,j], method )
+        return self
+    
+    def to_string( nb_spaces = 4 )
+        return cw.to_string( nb_spaces )
+
 
 # return true if cond is known_at_compile_time and is true
 def assumed( cond ) when is_of_type_Op( cond )
@@ -491,7 +522,7 @@ def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         output <<< cw.to_string( nb_spaces = nb_spaces + 4 )
         for i in 0 .. R.size
             output <<< "$prel    $symbol_base_name[$i] += $(symbol_base_name)_delta_$i;"
-        cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(Float64(precision[_0]))" )
+        cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(precision[_0])" )
         output <<< "$prel    if ( $(join( cond," and " )) ) break;"
         output <<< "$prel}"
         
@@ -553,7 +584,7 @@ def newton_raphson_minimize_iteration( expr, unknowns, old_values = Vec[Op,unkno
         for j in 0 .. i+1
             M[i,j] = M[i,j].subs( unknowns, old_values )
     #
-    return old_values + M \ V
+    return Vec[Op]( old_values + M \ V )
 
 #~
     newton_raphson_minimize_iteration( (a-1)^4, [a] )
@@ -596,3 +627,26 @@ def newton_raphson_iteration( equations, unknowns, old_values = Vec[Op,unknowns.
 # 
 def make_poly_fit( expr, var, beg, end, degre )
     return __make_poly_fit__( expr, Op( var ), Op( beg ), Op( end ), Int32( degre ) )
+
+
+#
+def polynomial_expansion( expressions, var, order )
+    v_expressions := VarArgs()
+    for e in expressions
+        v_expressions.push_unnamed( e )
+    v_res := VarArgs()
+    for i in 0 .. expressions.size * ( order + 1 )
+        v_res.push_unnamed( Op( 0 ) )
+    polynomial_expansion_( v_expressions, var, Int32(order), v_res )
+    #
+    res := Vec[Vec[Op,order+1]]( size = expressions.size )
+    for c in 0 .. expressions.size
+        res[ c ] = v_res[ c * ( order + 1 ) .. ( c + 1 ) * ( order + 1 ) ]
+    return res
+
+
+#
+def polynomial_expansion( expr, var, order ) when expr.tensor_order <= 0
+    res := polynomial_expansion( [ expr ], var, order )
+    vec := res[ 0 ]
+    return vec

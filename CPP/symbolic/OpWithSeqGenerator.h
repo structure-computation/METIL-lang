@@ -10,8 +10,17 @@ struct OpWithSeqGenerator {
     std::string R( OpWithSeq *op ) {
         std::ostringstream ss;
         if ( op->type == OpWithSeq::NUMBER ) {
-            bool neg = op->val() < 0;
-            ss << ( neg ? "(" : "" ) << op->val() << ( neg ? ")" : "" );
+            if ( strcmp(T,"Ex") == 0 ) {
+                bool neg = op->val() < 0;
+                if ( op->den != 1 )
+                    ss << "Rationnal(" << op->num << "," << op->den << ")";
+                else
+                    ss << ( neg ? "(" : "" ) << op->val() << ( neg ? ")" : "" );
+            }
+            else {
+                bool neg = op->val() < 0;
+                ss << ( neg ? "(" : "" ) << op->val() << ( neg ? ")" : "" );
+            }
         }
         else
             ss << "R" << op->reg;

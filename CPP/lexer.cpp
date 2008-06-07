@@ -259,6 +259,7 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                         n->has_e = true;
                         int sgn = 1;
                         if ( s[1]=='-' ) { sgn = -1; ++s; }
+                        else if ( s[1]=='+' ) { ++s; }
                         int ae = 0;
                         while ( is_num(*(++s)) ) { ae *= 10; ae += s[0] - '0'; }
                         n->expo += sgn * ae;

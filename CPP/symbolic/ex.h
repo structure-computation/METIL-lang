@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "varargs.h"
+#include "splittedvec.h"
 
 struct Op;
 struct Thread;
@@ -75,6 +76,8 @@ struct Ex {
     Op *op;
 };
 
+typedef SplittedVec<Ex,8,8,true> SEX;
+
 std::ostream &operator<<( std::ostream &os, const Ex &ex );
 
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max );
@@ -83,6 +86,9 @@ Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, co
 
 Ex a_posteriori_simplification( const Ex &a );
 Ex add_a_posteriori_simplification( const Ex &a );
+
+void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res );
+void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res );
 
 // ------------------------------------------------------------------------------------------------------------------
 
@@ -113,6 +119,9 @@ Ex atan     ( const Ex &a );
 Ex sinh     ( const Ex &a );
 Ex cosh     ( const Ex &a );
 Ex tanh     ( const Ex &a );
+
+inline Ex sqrt( const Ex &a ) { return pow( a, Rationnal(1,2) ); }
+inline Ex rsqrt( const Ex &a ) { return pow( a, Rationnal(-1,2) ); }
 
 #define PRINT( A ) \
     std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl

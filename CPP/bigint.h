@@ -84,7 +84,7 @@ struct BigInt {
     void operator/=(const BigInt &b) { *this = *this / b; }
     void operator%=(const BigInt &b) { *this = *this % b; }
     
-    BigInt<base,T,offset> operator-() const { basic_assert(); BigInt<base,T,offset> r = *this; r.val = -r.val; r.basic_assert(); return r; }
+    BigInt<base,T,offset> operator-() const { /*basic_assert();*/ BigInt<base,T,offset> r = *this; r.val = -r.val; /*r.basic_assert();*/ return r; }
     
     template<int b2,class T2,int offset2,bool owning2> BigInt(const BigInt<b2,T2,offset2,owning2> &b) {
         n = 0; val = 0;
@@ -275,7 +275,7 @@ BigInt<base,T,offset> operator-(const BigInt<base,T,offset,owning> &a,const BigI
 
 template<int base, class T, int offset, bool owning>
 BigInt<base,T,offset> operator+(const BigInt<base,T,offset,owning> &a,const BigInt<base,T,offset,owning> &b) {
-    a.basic_assert();    b.basic_assert();    
+//     a.basic_assert();    b.basic_assert();    
     if ( b.val < 0 ) {
         if ( a.val < 0 )
             return - ( (-a) + (-b) );
@@ -347,14 +347,14 @@ BigInt<base,T,offset> operator+(const BigInt<base,T,offset,owning> &a,const BigI
         res.ext[0] = res.val;
         res.val = 1;
     }
-    res.basic_assert();    
+//     res.basic_assert();    
     return res;
 }
 
 template<int base, class T, int offset, bool owning>
 BigInt<base,T,offset> operator-(const BigInt<base,T,offset,owning> &a,const BigInt<base,T,offset,owning> &b) {
-    a.basic_assert();    
-    b.basic_assert();    
+//     a.basic_assert();    
+//     b.basic_assert();    
     
     if ( b.val < 0 ) {
         if ( a.val < 0 )
@@ -408,7 +408,7 @@ BigInt<base,T,offset> operator-(const BigInt<base,T,offset,owning> &a,const BigI
     // elimination of zeros at the beginning
     res.rm_zeroes_at_beginning();
     
-    res.basic_assert();    
+//     res.basic_assert();    
     return res;
 }
 
@@ -441,8 +441,8 @@ void partial_mac(BigInt<base,T,off> &res,const BigInt<base,T,off,owning> &a,int 
 
 template<int base, class T, int offset, bool owning>
 BigInt<base,T,offset> operator*(BigInt<base,T,offset,owning> a,BigInt<base,T,offset,owning> b) {
-    a.basic_assert();    
-    b.basic_assert();    
+//     a.basic_assert();    
+//     b.basic_assert();    
     
     if ( a.n + b.n == 0 ) {
         int v = a.val * b.val;
@@ -479,7 +479,7 @@ BigInt<base,T,offset> operator*(BigInt<base,T,offset,owning> a,BigInt<base,T,off
     
     if ( sgn )
         res.val = -res.val;
-    res.basic_assert();
+//     res.basic_assert();
     return res;
 }
 /* a is assumed to be < base */

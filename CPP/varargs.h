@@ -31,8 +31,10 @@ struct VarArgs {
     unsigned nb_args() const { return variables.size(); }
     
     Variable *uarg( unsigned i ) { return &variables[i]; }
+    const Variable *uarg( unsigned i ) const { return &variables[i]; }
     Variable *narg( unsigned i ) { return &variables[i+nb_uargs()]; }
-    Nstring name( unsigned i ) { return narg(i)->name; }
+    const Variable *narg( unsigned i ) const { return &variables[i+nb_uargs()]; }
+    Nstring name( unsigned i ) const { return narg(i)->name; }
     void copy_data_from( VarArgs *va );
     
     void push_unnamed( Variable *v ) {

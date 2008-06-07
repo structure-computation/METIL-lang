@@ -53,6 +53,7 @@ void signal_mgr(int sig) {
             exit( EXIT_FAILURE );
             break;
         case SIGUSR1:
+            std::cout << "SIGUSR1" << std::endl;
             main_thread->display_stack( NULL );
             break;
         default:
@@ -63,7 +64,7 @@ void signal_mgr(int sig) {
 
 int main(int argc,char **argv) {
     #ifndef WITHOUT_SIGNAL
-        signal( SIGINT , signal_mgr );
+        // signal( SIGINT , signal_mgr );
         signal( SIGSEGV, signal_mgr );
         signal( SIGUSR1, signal_mgr );
     #endif

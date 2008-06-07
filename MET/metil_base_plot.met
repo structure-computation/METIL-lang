@@ -28,20 +28,32 @@ class PyLabPlot
     def destroy
         if destroy_pipe
             f.destroy()
-    def plot( lst )
-        f << "plot("
+    def g_plot( t_plot, lst )
+        f << t_plot << "("
         for v, cpt in lst, 0...
-            if v.tensor_order!=1 and ( cpt % 2 )
+            if v.type == String
+                f << "'" << v << "'" << ","
+            else if v.tensor_order!=1 and ( cpt % 2 )
                 f << "["
                 for x in lst[cpt-1]
-                    f << Float64( v( x ) ).to_string(16) << ","
+                    f << Float64( v( x ) ).to_string(8) << ","
                 f << "], "
             else
-                f << "[" << join(v.map( x => Float64(x).to_string(16) ),",") << "], "
+                f << "[" << join(v.map( Float64 ),",") << "], " # (x).to_string(8)
         f <<< ")"
         f.flush()
-    def show
-        f << "show()" <<< fflush
+    def plot( lst )          g_plot( "plot"    , lst )
+    def loglog( varargs )    g_plot( "loglog"  , varargs )
+    def semilogx( varargs )  g_plot( "semilogx", varargs )
+    def semilogy( varargs )  g_plot( "semilogy", varargs )
+    def show                 f << "show()" <<< fflush
+    def save( filename )     f << "savefig( '$filename' )" <<< fflush
+    def reassign_xlabel( t ) f << "xlabel( '$t' )" <<< fflush
+    def reassign_ylabel( t ) f << "ylabel( '$t' )" <<< fflush
+    def reassign_xgrid( t )  f << "ax = subplot(111); ax.xaxis.grid( $(Int32(t)) )" <<< fflush
+    def reassign_ygrid( t )  f << "ax = subplot(111); ax.yaxis.grid( $(Int32(t)) )" <<< fflush
+    def reassign_title( t )  f << "title( '$t' )" <<< fflush
+    def reassign_xmin_xmax( t )  f << "ax = subplot(111); ax.xaxis.set_data_interval( $(t[0]), $(t[1]) )" <<< fflush
 
 #~  ~#
 class GnuPlot[ dim = 2 ] inherits GenericPlotDevice[ dim ]
