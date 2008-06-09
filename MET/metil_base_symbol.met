@@ -629,6 +629,8 @@ def make_poly_fit( expr, var, beg, end, degre )
     return __make_poly_fit__( expr, Op( var ), Op( beg ), Op( end ), Int32( degre ) )
 
 
+# ----------------------------------------------------------------------------------------------
+
 #
 def polynomial_expansion( expressions, var, order )
     v_expressions := VarArgs()
@@ -650,3 +652,52 @@ def polynomial_expansion( expr, var, order ) when expr.tensor_order <= 0
     res := polynomial_expansion( [ expr ], var, order )
     vec := res[ 0 ]
     return vec
+
+
+# ----------------------------------------------------------------------------------------------
+class QuadraticExpansionItem[ T = Op ]
+    m := Mat[ T, Sym ]()
+    v := Vec[ T ]()
+    s := T()
+
+#
+def quadratic_expansion( expressions, variables )
+    #
+    v_expressions := VarArgs()
+    for e in expressions
+        v_expressions.push_unnamed( e )
+    s := expressions.size
+    n := s * ( s + 1 ) / 2 + s + 1
+    #
+    v_variables := VarArgs()
+    for v in variables
+        v_variables.push_unnamed( v )
+    #
+    v_res := VarArgs()
+    for i in 0 .. expressions.size * n
+        v_res.push_unnamed( Op( 0 ) )
+    quadratic_expansion_( v_expressions, v_variables, v_res )
+    #
+    res := Vec[VecQuadraticExpansionItem[Op]]( size = expressions.size )
+    cpt := 0
+    for c in 0 .. expressions.size
+        qe := res[c]
+        qe.m.resize( variables.size )
+        qe.v.resize( variables.size )
+        #
+        qe.s = v_res[ cpt++ ]
+        for nv in 0 .. variables.size
+            qe.v[ nv ] = v_res[ cpt++ ]
+        for i in 0 .. variables.size
+            for j in 0 .. i + 1
+                qe.m[ i, j ] = v_res[ cpt++ ]
+    return res
+
+
+#
+def quadratic_expansion( expr, variables ) when expr.tensor_order <= 0
+    res := quadratic_expansion( [ expr ], variables )
+    vec := res[ 0 ]
+    return vec
+
+

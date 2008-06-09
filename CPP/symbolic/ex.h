@@ -87,8 +87,11 @@ Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, co
 Ex a_posteriori_simplification( const Ex &a );
 Ex add_a_posteriori_simplification( const Ex &a );
 
-void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res );
 void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res );
+void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res );
+
+void quadratic_expansion( Thread *th, const void *tok, const SEX &expressions, const SEX &variables, SEX &res );
+void quadratic_expansion( Thread *th, const void *tok, const VarArgs &expressions, const VarArgs &vars, VarArgs &res );
 
 // ------------------------------------------------------------------------------------------------------------------
 
