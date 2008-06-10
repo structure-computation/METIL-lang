@@ -88,7 +88,7 @@ void disp_codewriter_number( std::ostream &os, const Rationnal &r, bool want_flo
     if ( want_float ) {
         os.precision( 9 );
         os << std::scientific << Float32( r ) << "f";
-    } else if ( strcmp( basic_type, "Ex" ) == 0 ) {
+    } else if ( basic_type and strcmp( basic_type, "Ex" ) == 0 ) {
         os << "Rationnal(" << r.num << "," << r.den << ")";
     } else {
         if ( r.is_integer() and r.is_pos_or_null() )

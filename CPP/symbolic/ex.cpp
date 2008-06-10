@@ -1024,8 +1024,7 @@ struct PolynomialExpansion {
             }
         }
     }
-    #warning
-//     #include "series_func_1.h"
+    #include "series_func_1.h"
     
     void exp_rec( Op *a ) {
         if ( a->op_id == Op::current_op ) // already done ?
@@ -1039,19 +1038,18 @@ struct PolynomialExpansion {
             case STRING_eqz_NUM:       a->additional_info = NULL; break;
             case STRING_add_NUM:       exp_rec_add( a ); break;
             case STRING_mul_NUM:       exp_rec_mul( a ); break;
-    #warning
-//             case STRING_log_NUM:       exp_rec_log( a ); break;
-//             case STRING_abs_NUM:       exp_rec_abs( a ); break;
-//             case STRING_pos_part_NUM:  exp_rec_ppa( a ); break;
-//             case STRING_exp_NUM:       exp_rec_exp( a ); break;
-//             
-//             case STRING_sin_NUM:       exp_rec_sin( a ); break;
-//             case STRING_cos_NUM:       exp_rec_cos( a ); break;
-//             case STRING_tan_NUM:       exp_rec_tan( a ); break;
-//             case STRING_asin_NUM:      exp_rec_asin( a ); break;
-//             case STRING_acos_NUM:      exp_rec_acos( a ); break;
-//             case STRING_atan_NUM:      exp_rec_atan( a ); break;
-//             case STRING_pow_NUM:       exp_rec_pow( a ); break;
+            case STRING_log_NUM:       exp_rec_log( a ); break;
+            case STRING_abs_NUM:       exp_rec_abs( a ); break;
+            case STRING_pos_part_NUM:  exp_rec_ppa( a ); break;
+            case STRING_exp_NUM:       exp_rec_exp( a ); break;
+            
+            case STRING_sin_NUM:       exp_rec_sin( a ); break;
+            case STRING_cos_NUM:       exp_rec_cos( a ); break;
+            case STRING_tan_NUM:       exp_rec_tan( a ); break;
+            case STRING_asin_NUM:      exp_rec_asin( a ); break;
+            case STRING_acos_NUM:      exp_rec_acos( a ); break;
+            case STRING_atan_NUM:      exp_rec_atan( a ); break;
+            case STRING_pow_NUM:       exp_rec_pow( a ); break;
             default:
                 th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
         }
@@ -1072,8 +1070,10 @@ void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, 
     r[1] = pe.one;
     var.op->op_id = ++Op::current_op;
     //
-    for(unsigned n=0;n<expressions.size();++n)
+    for(unsigned n=0;n<expressions.size();++n) {
         pe.exp_rec( expressions[n].op );
+        pe.complete_if_necessary( reinterpret_cast<Ex *>( expressions[n].op->additional_info ), expressions[n].op );
+    }
     //
     for(unsigned n=0,c=0;n<expressions.size();++n)
         for(int i=0;i<=order;++i,++c)
@@ -1216,9 +1216,177 @@ struct QuadraticExpansion {
                 q.vec(i) = d * q_0.vec(i);
             for(unsigned i=0;i<nb_variables;++i)
                 for(unsigned j=0;j<=i;++j)
-                    q.mat(i,j) = d * ( q_0.mat(i,j) + d * q_0.vec(i) * q_0.vec(j) );
+                    q.mat(i,j) = d * ( q_0.mat(i,j) - d * q_0.vec(i) * q_0.vec(j) );
         }
     }
+    
+    /*
+a := symbol("q_0.scal()")
+for f in [ sin cos tan asin acos atan ]
+    stdout <<<<
+            void exp_rec_$f( Op *a ) {
+                Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+                if ( r_0==NULL ) {
+                    a->additional_info = NULL;
+                } else {
+                    CQI q_0( r_0, nb_variables );
+                    Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+                    a->additional_info = reinterpret_cast<Op *>( r );
+                    Ex d = $( f(a).diff(a) );
+                    Ex d2 = $( f(a).diff(a).diff(a) );
+                    q.scal() = $f( q_0.scal() );
+                    for(unsigned i=0;i<nb_variables;++i)
+                        q.vec(i) = d * q_0.vec(i);
+                    for(unsigned i=0;i<nb_variables;++i)
+                        for(unsigned j=0;j<=i;++j)
+                            q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j) );
+                }
+            }
+    */
+    // ********************************************************************************
+    void exp_rec_sin( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = cos(q_0.scal());
+            Ex d2 = -sin(q_0.scal());
+            q.scal() = sin( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    void exp_rec_cos( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = -sin(q_0.scal());
+            Ex d2 = -cos(q_0.scal());
+            q.scal() = cos( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    void exp_rec_tan( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = 1+pow(tan(q_0.scal()),2);
+            Ex d2 = 2*tan(q_0.scal())*(1+pow(tan(q_0.scal()),2));
+            q.scal() = tan( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    void exp_rec_asin( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = pow(1-pow(q_0.scal(),2),-1.0/2.0);
+            Ex d2 = q_0.scal()*pow(1-pow(q_0.scal(),2),-3.0/2.0);
+            q.scal() = asin( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    void exp_rec_acos( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = -pow(1-pow(q_0.scal(),2),-1.0/2.0);
+            Ex d2 = -q_0.scal()*pow(1-pow(q_0.scal(),2),-3.0/2.0);
+            q.scal() = acos( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    void exp_rec_atan( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        if ( r_0==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            CQI q_0( r_0, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex d = pow(1+pow(q_0.scal(),2),-1);
+            Ex d2 = (-2)*q_0.scal()*pow(1+pow(q_0.scal(),2),-2);
+            q.scal() = atan( q_0.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = d * q_0.vec(i);
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+        }
+    }
+
+    // ********************************************************************************
+    void exp_rec_pow( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
+        if ( r_0==NULL and r_1==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            r_0 = complete_if_necessary( r_0, ch_0 ); CQI q_0( r_0, nb_variables );
+            r_1 = complete_if_necessary( r_1, ch_1 ); CQI q_1( r_1, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r  , nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            bool r_1_is_a_cst = true; for(unsigned i=1;i<nb_elements;++i) r_1_is_a_cst &= r_1[i].op->is_zero();
+            if ( r_1_is_a_cst ) {
+                Rationnal n = r_1[0].op->number_data()->val;
+                Ex d = q_1.scal() * pow( q_0.scal(), q_1.scal() - 1 );
+                Ex d2 = ( q_1.scal() - 1 ) * q_1.scal() * pow( q_0.scal(), q_1.scal() - 2 );
+                q.scal() = pow( q_0.scal(), q_1.scal() );
+                for(unsigned i=0;i<nb_variables;++i)
+                    q.vec(i) = d * q_0.vec(i);
+                for(unsigned i=0;i<nb_variables;++i)
+                    for(unsigned j=0;j<=i;++j)
+                        q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+            } else {
+                th->add_error( "TODO : quadratic expansion for x^y when y contains a variable.", tok );
+                assert( 0 );
+            }
+        }
+    }
+    
     
     void exp_rec( Op *a ) {
         if ( a->op_id == Op::current_op ) // already done ?
@@ -1236,14 +1404,14 @@ struct QuadraticExpansion {
             case STRING_abs_NUM:       exp_rec_abs( a ); break;
             case STRING_pos_part_NUM:  exp_rec_ppa( a ); break;
             case STRING_exp_NUM:       exp_rec_exp( a ); break;
-//             
-//             case STRING_sin_NUM:       exp_rec_sin( a ); break;
-//             case STRING_cos_NUM:       exp_rec_cos( a ); break;
-//             case STRING_tan_NUM:       exp_rec_tan( a ); break;
-//             case STRING_asin_NUM:      exp_rec_asin( a ); break;
-//             case STRING_acos_NUM:      exp_rec_acos( a ); break;
-//             case STRING_atan_NUM:      exp_rec_atan( a ); break;
-//             case STRING_pow_NUM:       exp_rec_pow( a ); break;
+            
+            case STRING_sin_NUM:       exp_rec_sin( a ); break;
+            case STRING_cos_NUM:       exp_rec_cos( a ); break;
+            case STRING_tan_NUM:       exp_rec_tan( a ); break;
+            case STRING_asin_NUM:      exp_rec_asin( a ); break;
+            case STRING_acos_NUM:      exp_rec_acos( a ); break;
+            case STRING_atan_NUM:      exp_rec_atan( a ); break;
+            case STRING_pow_NUM:       exp_rec_pow( a ); break;
             default:
                 th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
         }
@@ -1268,8 +1436,10 @@ void quadratic_expansion( Thread *th, const void *tok, const SEX &expressions, c
         var.op->op_id = Op::current_op;
     }
     //
-    for(unsigned n=0;n<expressions.size();++n)
+    for(unsigned n=0;n<expressions.size();++n) {
         pe.exp_rec( expressions[n].op );
+        pe.complete_if_necessary( reinterpret_cast<Ex *>( expressions[n].op->additional_info ), expressions[n].op );
+    }
     //
     for(unsigned n=0,c=0;n<expressions.size();++n)
         for(unsigned i=0;i<pe.nb_elements;++i,++c)

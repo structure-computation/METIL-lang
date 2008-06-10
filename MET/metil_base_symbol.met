@@ -569,22 +569,28 @@ def newton_raphson_minimize_iteration( expr, unknowns, old_values = Vec[Op,unkno
     if expr.type != Op
         return newton_raphson_minimize_iteration( Op(expr), unknowns, old_values )
     #
-    nb_unknowns := unknowns.size
-    M := Mat[ Op, Sym[nb_unknowns] ]()
-    V := Vec[ Op, nb_unknowns ]()
+    # nb_unknowns := unknowns.size
+    # qe := quadratic_expansion( p, [ a b ] )
+    # M := Mat[ Op, Sym[nb_unknowns] ]()
+    # V := Vec[ Op, nb_unknowns ]()
+    # #
+    # for i in 0 .. nb_unknowns
+        # d := expr.diff( unknowns[i] )
+        # for j in 0 .. i+1
+            # M[i,j] = d.diff( unknowns[j] )
+        # V[i] = - d
+    # #
+    # for i in 0 .. nb_unknowns
+        # V[i] = V[i].subs( unknowns, old_values )
+        # for j in 0 .. i+1
+            # M[i,j] = M[i,j].subs( unknowns, old_values )
+    # #
+    # return Vec[Op]( old_values + M \ V )
+    tmp_unk  := Vec[Op]( size = unknowns.size, function = x => symbol("t_$x") )
+    tmp_expr := expr.subs( unknowns, old_values + tmp_unk )
+    qe := quadratic_expansion( tmp_expr, tmp_unk )
     #
-    for i in 0 .. nb_unknowns
-        d := expr.diff( unknowns[i] )
-        for j in 0 .. i+1
-            M[i,j] = d.diff( unknowns[j] )
-        V[i] = - d
-    #
-    for i in 0 .. nb_unknowns
-        V[i] = V[i].subs( unknowns, old_values )
-        for j in 0 .. i+1
-            M[i,j] = M[i,j].subs( unknowns, old_values )
-    #
-    return Vec[Op]( old_values + M \ V )
+    return Vec[Op]( old_values - qe.m \ qe.v )
 
 #~
     newton_raphson_minimize_iteration( (a-1)^4, [a] )
