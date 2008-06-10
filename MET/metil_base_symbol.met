@@ -655,10 +655,11 @@ def polynomial_expansion( expr, var, order ) when expr.tensor_order <= 0
 
 
 # ----------------------------------------------------------------------------------------------
+# s + < v, x > + x^T m x
 class QuadraticExpansionItem[ T = Op ]
     def apply( vec )
         t := Vec[Op](vec)
-        return s + dot( t, v + m * t )
+        return s + dot( t, v ) + dot( t, m * t ) / 2
     m := Mat[ T, Sym ]()
     v := Vec[ T ]()
     s := T()

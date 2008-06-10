@@ -1024,8 +1024,8 @@ struct PolynomialExpansion {
             }
         }
     }
-    
-    #include "series_func_1.h"
+    #warning
+//     #include "series_func_1.h"
     
     void exp_rec( Op *a ) {
         if ( a->op_id == Op::current_op ) // already done ?
@@ -1039,18 +1039,19 @@ struct PolynomialExpansion {
             case STRING_eqz_NUM:       a->additional_info = NULL; break;
             case STRING_add_NUM:       exp_rec_add( a ); break;
             case STRING_mul_NUM:       exp_rec_mul( a ); break;
-            case STRING_log_NUM:       exp_rec_log( a ); break;
-            case STRING_abs_NUM:       exp_rec_abs( a ); break;
-            case STRING_pos_part_NUM:  exp_rec_ppa( a ); break;
-            case STRING_exp_NUM:       exp_rec_exp( a ); break;
-            
-            case STRING_sin_NUM:       exp_rec_sin( a ); break;
-            case STRING_cos_NUM:       exp_rec_cos( a ); break;
-            case STRING_tan_NUM:       exp_rec_tan( a ); break;
-            case STRING_asin_NUM:      exp_rec_asin( a ); break;
-            case STRING_acos_NUM:      exp_rec_acos( a ); break;
-            case STRING_atan_NUM:      exp_rec_atan( a ); break;
-            case STRING_pow_NUM:       exp_rec_pow( a ); break;
+    #warning
+//             case STRING_log_NUM:       exp_rec_log( a ); break;
+//             case STRING_abs_NUM:       exp_rec_abs( a ); break;
+//             case STRING_pos_part_NUM:  exp_rec_ppa( a ); break;
+//             case STRING_exp_NUM:       exp_rec_exp( a ); break;
+//             
+//             case STRING_sin_NUM:       exp_rec_sin( a ); break;
+//             case STRING_cos_NUM:       exp_rec_cos( a ); break;
+//             case STRING_tan_NUM:       exp_rec_tan( a ); break;
+//             case STRING_asin_NUM:      exp_rec_asin( a ); break;
+//             case STRING_acos_NUM:      exp_rec_acos( a ); break;
+//             case STRING_atan_NUM:      exp_rec_atan( a ); break;
+//             case STRING_pow_NUM:       exp_rec_pow( a ); break;
             default:
                 th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
         }
@@ -1151,7 +1152,7 @@ struct QuadraticExpansion {
                 q.vec(i) = q_0.scal() * q_1.vec(i) + q_0.vec(i) * q_1.scal();
             for(unsigned i=0;i<nb_variables;++i)
                 for(unsigned j=0;j<=i;++j)
-                    q.mat(i,j) = q_0.scal() * q_1.mat(i,j) + q_0.mat(i,j) * q_1.scal() + q_0.vec(i) * q_1.vec(j) / 2;
+                    q.mat(i,j) = q_0.scal() * q_1.mat(i,j) + q_0.mat(i,j) * q_1.scal() + q_0.vec(i) * q_1.vec(j) + q_0.vec(j) * q_1.vec(i);
         }
     }
     
@@ -1197,7 +1198,7 @@ struct QuadraticExpansion {
                 q.vec(i) = e * q_0.vec(i);
             for(unsigned i=0;i<nb_variables;++i)
                 for(unsigned j=0;j<=i;++j)
-                    q.mat(i,j) = e / 2 * ( q_0.mat(i,j) * ( 1 + ( i == j ) ) + q_0.vec(i) * q_0.vec(j) );
+                    q.mat(i,j) = e * ( q_0.mat(i,j) + q_0.vec(i) * q_0.vec(j) );
         }
     }
     
@@ -1210,12 +1211,12 @@ struct QuadraticExpansion {
             Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r, nb_variables );
             a->additional_info = reinterpret_cast<Op *>( r );
             Ex d = 1 / q_0.scal();
-            q.scal() = d;
+            q.scal() = log( q_0.scal() );
             for(unsigned i=0;i<nb_variables;++i)
                 q.vec(i) = d * q_0.vec(i);
             for(unsigned i=0;i<nb_variables;++i)
                 for(unsigned j=0;j<=i;++j)
-                    q.mat(i,j) = d / 2 * ( q_0.mat(i,j) * ( 1 + ( i == j ) ) + d * q_0.vec(i) * q_0.vec(j) );
+                    q.mat(i,j) = d * ( q_0.mat(i,j) + d * q_0.vec(i) * q_0.vec(j) );
         }
     }
     
