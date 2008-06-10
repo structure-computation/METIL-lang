@@ -656,6 +656,9 @@ def polynomial_expansion( expr, var, order ) when expr.tensor_order <= 0
 
 # ----------------------------------------------------------------------------------------------
 class QuadraticExpansionItem[ T = Op ]
+    def apply( vec )
+        t := Vec[Op](vec)
+        return s + dot( t, v + m * t )
     m := Mat[ T, Sym ]()
     v := Vec[ T ]()
     s := T()
@@ -666,7 +669,7 @@ def quadratic_expansion( expressions, variables )
     v_expressions := VarArgs()
     for e in expressions
         v_expressions.push_unnamed( e )
-    s := expressions.size
+    s := variables.size
     n := s * ( s + 1 ) / 2 + s + 1
     #
     v_variables := VarArgs()
@@ -678,10 +681,10 @@ def quadratic_expansion( expressions, variables )
         v_res.push_unnamed( Op( 0 ) )
     quadratic_expansion_( v_expressions, v_variables, v_res )
     #
-    res := Vec[VecQuadraticExpansionItem[Op]]( size = expressions.size )
+    res := Vec[QuadraticExpansionItem[Op]]( size = expressions.size )
     cpt := 0
     for c in 0 .. expressions.size
-        qe := res[c]
+        qe := ref res[c]
         qe.m.resize( variables.size )
         qe.v.resize( variables.size )
         #

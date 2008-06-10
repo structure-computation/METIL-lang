@@ -730,7 +730,7 @@ def mul( m, s ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
     return s * m
 
 # matrix / scalar
-def mul( m, s ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
+def div( m, s ) when m.is_a_matrix and s.tensor_order <= 0 pertinence 4
     ST := m.ST
     TR := type_promote( type_promote_list( [s.type], m.sub_types, div ).map( partial_inst ), reassign )
     res := Mat[ TR, m.Structure, ST = ST ]( m.nb_rows, m.nb_cols )

@@ -417,7 +417,7 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
     def get_nb_values    return structure.nb_values
     def get_values       return data
     def select( i, j )   return structure.extract_val_from_dense_matrix( data, i, j, simd_compatible, simd_size )
-    def resize( nr, nc, default_value = T() ) structure.resize( nr, nc, data, default_value )
+    def resize( nr, nc = nr, default_value = T() ) structure.resize( nr, nc, data, default_value )
 
     def without_row( nr )
         res := Mat[ T, Gen[ max(static_nb_rows-1,-1), static_nb_cols ], Storage, ST ]( nb_rows - 1, nb_cols )
