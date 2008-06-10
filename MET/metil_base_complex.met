@@ -109,7 +109,7 @@ def equal( a, b ) when a.is_a_complex_number and b.is_a_complex_number
 # 
 def diff( self, var ) when self.is_a_complex_number
     return Complex[ Op ](
-        self.real.diff( var )
+        self.real.diff( var ),
         self.imag.diff( var )
     )
     

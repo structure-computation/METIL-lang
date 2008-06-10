@@ -1151,7 +1151,7 @@ struct QuadraticExpansion {
                 q.vec(i) = q_0.scal() * q_1.vec(i) + q_0.vec(i) * q_1.scal();
             for(unsigned i=0;i<nb_variables;++i)
                 for(unsigned j=0;j<=i;++j)
-                    q.mat(i,j) = q_0.scal() * q_1.mat(i,j) + q_0.mat(i,j) * q_1.scal() + q_0.vec(i) * q_1.vec(j);
+                    q.mat(i,j) = q_0.scal() * q_1.mat(i,j) + q_0.mat(i,j) * q_1.scal() + q_0.vec(i) * q_1.vec(j) / 2;
         }
     }
     
