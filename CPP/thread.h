@@ -18,7 +18,7 @@ struct Type;
 class Thread {
 public:
     // methods
-    Thread( Scope *main_scope, ErrorList *error_list, Thread *parent=0, unsigned prereserved_room_in_variable_stack = 4096 );
+    Thread( Scope *main_scope, ErrorList *error_list, Thread *parent=0, unsigned prereserved_room_in_variable_stack = 4096*4 );
     ~Thread();
     void push_prev_file_to_read( SourceFile *sf );
     void primitive_init();

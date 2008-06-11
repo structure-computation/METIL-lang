@@ -74,7 +74,7 @@ public:
     int return_value;
     bool compile_mode;
     unsigned max_recursive_depth;
-    std::ofstream display_stack_file;
+//     std::ofstream display_stack_file;
 private:
     void append_def_data_if_basic_conditions_are_checked( DefTrial *def_trial, Variable *&sp, DefinitionData *dd );
     void push_destroy_methods_rec( unsigned &nb_calls_to_destroy, Variable * &sp, Type *type, char *data, TransientData *transient_data );

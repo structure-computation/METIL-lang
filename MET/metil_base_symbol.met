@@ -688,19 +688,19 @@ def quadratic_expansion( expressions, variables )
         v_res.push_unnamed( Op( 0 ) )
     quadratic_expansion_( v_expressions, v_variables, v_res )
     #
-    res := Vec[QuadraticExpansionItem[Op]]( size = expressions.size )
+    res := Vec[QuadraticExpansionItem[Op]]()
     cpt := 0
     for c in 0 .. expressions.size
-        qe := ref res[c]
-        qe.m.resize( variables.size )
-        qe.v.resize( variables.size )
+        qe := &res.push_back()
+        qe->m.resize( variables.size )
+        qe->v.resize( variables.size )
         #
-        qe.s = v_res[ cpt++ ]
+        qe->s = v_res[ cpt++ ]
         for nv in 0 .. variables.size
-            qe.v[ nv ] = v_res[ cpt++ ]
+            qe->v[ nv ] = v_res[ cpt++ ]
         for i in 0 .. variables.size
             for j in 0 .. i + 1
-                qe.m[ i, j ] = v_res[ cpt++ ]
+                qe->m[ i, j ] = v_res[ cpt++ ]
     return res
 
 
