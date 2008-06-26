@@ -328,6 +328,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( a );" ).A("Op").M("Op",/*modify*/"self.op != a.op") );
     
     primitive_functions.push_back( PrimitiveFunction( "node_count", "ret = self.node_count();", /*ret*/"Unsigned32" ).M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "ops_count", "ret = self.ops_count();", /*ret*/"Unsigned32" ).M("Op") );
     primitive_functions.push_back( PrimitiveFunction( "nb_sub_symbols", "ret = self.nb_sub_symbols();", /*ret*/"Unsigned32" ).M("Op") );
     
     for(unsigned i=0;i<primitive_classes.size();++i) {
@@ -356,7 +357,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "symbol", "ret.init( *(const char **)a->data, *(Int32 *)((const char **)a->data+1), *(const char **)b->data, *(Int32 *)((const char **)b->data+1) );", /*ret*/"Op" ).A("any").A("any").
         set_supplementary_cond("args[0]->type == global_data.String").set_supplementary_cond("args[1]->type == global_data.String") );
         
-    primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(th,tok); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(th,tok,a); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "cpp_string"     , "if (return_var) {std::string s=self.cpp_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     primitive_functions.push_back( PrimitiveFunction( "tex_string"     , "if (return_var) {std::string s=self.tex_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     
@@ -366,7 +368,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     
     primitive_functions.push_back( PrimitiveFunction( "polynomial_expansion_", "polynomial_expansion( th, tok, a, b, c, d );" ).A("VarArgs").A("Op").A("Int32").A("VarArgs") );
-    primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b );" ).A("VarArgs").A("VarArgs") );
+    primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b, c );" ).A("VarArgs").A("VarArgs").A("VarArgs") );
     
     primitive_functions.push_back( PrimitiveFunction( "subs_numerical", "ret.init( self.subs_numerical( th, tok, a ) );", /*ret*/"Rationnal" ).M("Op").A("Rationnal") );
     
@@ -401,7 +403,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "set_beg_value", "self.set_beg_value(a,b);" ).M("Op").A("Rationnal").A("Bool") ); 
     primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(a,b);" ).M("Op").A("Rationnal").A("Bool") );
-    
+    primitive_functions.push_back( PrimitiveFunction( "set_access_cost", "self.set_access_cost(a);" ).M("Op").A("Float64") );
+    primitive_functions.push_back( PrimitiveFunction( "set_nb_simd_terms", "self.set_nb_simd_terms(a);" ).M("Op").A("Int32") );
+
     
     primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = Float64( self.value() );" ).M("Op").A("Float64") );
 }
@@ -448,7 +452,7 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     
     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriterAlt_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ));" ).A("any").M("CodeWriterAlt_").set_pertinence(1e5).
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ),*reinterpret_cast<const char **>(b->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(b->data) + 1 ));" ).A("any").A("any").M("CodeWriterAlt_").set_pertinence(1e5).
              set_supplementary_cond( "args[0]->type == global_data.String" ) );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriterAlt_").M("CodeWriterAlt_",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriterAlt_").M("CodeWriterAlt_",/*modify*/"true") );
@@ -460,6 +464,7 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     );
     
     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "to_graphviz", "if ( return_var ) { std::string s=self.to_graphviz(th,tok); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "invariant", "if ( return_var ) { std::string s=self.invariant(th,tok,a,b); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_").A("Int32").A("VarArgs") );
 }
 

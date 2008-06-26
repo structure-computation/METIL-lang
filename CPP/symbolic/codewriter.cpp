@@ -92,12 +92,12 @@ void disp_codewriter_number( std::ostream &os, const Rationnal &r, bool want_flo
         os << "Rationnal(" << r.num << "," << r.den << ")";
     } else {
         if ( r.is_integer() and r.is_pos_or_null() )
-            os << r;
+            os << r << ".0";
         else if ( r.den.n==0 and ( r.den.val==2 or r.den.val==4 or r.den.val==8 ) )
             os << double( r );
-        else if ( r.den != Rationnal::BI(1) )
+        else if ( r.den != Rationnal::BI(1) ) {
             os << "(" << r.num << ".0/" << r.den << ".0)";
-        else
+        } else
             os << "(" << r << ".0)";
     }
 }

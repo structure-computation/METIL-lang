@@ -17,6 +17,8 @@ struct Op {
     struct SymbolData { /// if SYMBOL
         char *cpp_name_str;
         char *tex_name_str;
+        double access_cost;
+        int nb_simd_terms;
     };
     struct FuncData { /// if type >= 0
         static const unsigned max_nb_children = 2;
@@ -46,7 +48,7 @@ struct Op {
     
     void cpp_repr( std::ostream &os ) const;
     void tex_repr( std::ostream &os ) const;
-    void graphviz_repr( std::ostream &os ) const;
+    void graphviz_repr( std::ostream &os, const SplittedVec<const Op *,32> &dep ) const;
     bool depends_on( const Op *a ) const;
     bool depends_on_rec( const Op *a ) const; // without update of current_op
 
@@ -55,6 +57,9 @@ struct Op {
     
     int nb_nodes() const; //
     int nb_nodes_rec() const; // without update of current_op
+    
+    int nb_ops() const; //
+    int nb_ops_rec() const; //
     
     int nb_nodes_of_type( int t ) const; //
     int nb_nodes_of_type_rec( int t ) const; // without update of current_op

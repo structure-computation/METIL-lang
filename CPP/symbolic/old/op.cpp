@@ -122,7 +122,7 @@ void graphviz_repr_rec( std::ostream &os, Op *op ) {
     else if ( op->type == Op::SYMBOL ) {
         os << "    node" << op << " [label=\"" << op->symbol_data()->cpp_name_str << "\"];\n";
     } else {
-        os << "    node" << op << " [label=\"" << Nstring( op->type ) << "\"];\n";
+        os << "    node" << op << " [label=\"" << Nstring( op->type ) << op-> << "\"];\n";
         for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
             os << "    node" << op << " -> node" << op->func_data()->children[i] << " [color=black];\n";
             graphviz_repr_rec( os, op->func_data()->children[i] );

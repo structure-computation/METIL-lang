@@ -51,6 +51,8 @@ Op *Op::new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *
     SymbolData *ds = res->symbol_data();
     ds->cpp_name_str = strdupp0( cpp_name_str, cpp_name_si );
     ds->tex_name_str = strdupp0( tex_name_str, tex_name_si );
+    ds->access_cost = 1.0;
+    ds->nb_simd_terms = 1;
     return res;
 }
 
@@ -313,13 +315,13 @@ void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
             bool np = ( type_parent > STRING_sub_NUM ) and ms.op->type >= 0;
             if ( np ) os << "(";
             os << "-";
-            if ( np ) os << ")"<<"\\linebreak[0]\n";
+            if ( np ) os << ")" << "\\linebreak[0]\n";
         }
         else {
             bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
             if ( np ) os << "(";
             ms.op->tex_repr( os );
-            if ( np ) os << ")"<<"\\linebreak[0]\n";
+            if ( np ) os << ")" << "\\linebreak[0]\n";
         }
     }
     else if ( ms.e.num.is_one() ) {
@@ -328,7 +330,7 @@ void tex_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
         else    
             os << "\\sqrt[" << ms.e.den << "]{";
         ms.op->tex_repr( os ); 
-        os << "}"<< "\\linebreak[0]\n";
+        os << "}" << "\\linebreak[0]\n";
     } else {
         bool p = ms.op->type == STRING_add_NUM or ms.op->type == STRING_mul_NUM;
         os << "{";
@@ -401,12 +403,12 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
             if ( not n_num.is_one() )
                 os << n_num << " ";
             for(unsigned i=0;i<items_[0].size();++i)
-                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), ( items_[0].size() != 1 ) * STRING_mul_NUM );
+                tex_repr( items_[0][i], os << ( i ? "\\," : " " ), ( items_[0].size() == 1 and n_num.is_one() ? 0 : STRING_mul_NUM ) );
             os << "}{ "; // \\displaystyle
             if ( not n_den.is_one() )
                 os << n_den << " ";
             for(unsigned i=0;i<items_[1].size();++i)
-                tex_repr( items_[1][i], os << ( i ? "\\," : " " ), ( items_[1].size() != 1 ) * STRING_mul_NUM );
+                tex_repr( items_[1][i], os << ( i ? "\\," : " " ), ( items_[1].size() == 1 and n_den.is_one() ? 0 : STRING_mul_NUM ) );
             os << "}"<< "\\linebreak[0]\n";
         } else { // only *
             if ( n_num.is_one()==false or n_den.is_one()==false )
@@ -488,10 +490,12 @@ bool Op::depends_on( const Op *a ) const {
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void graphviz_repr_rec( std::ostream &os, const Op *op ) {
-    if ( op->op_id == Op::current_op ) return; // already outputted ?
-        op->op_id = Op::current_op;
+bool graphviz_repr_rec( std::ostream &os, const Op *op, const SplittedVec<const Op *,32> &dep ) {
+    if ( op->op_id == Op::current_op )
+        return op->additional_info; // already outputted ?
+    op->op_id = Op::current_op;
     
+    bool has_dep = false;
     if ( op->type == Op::NUMBER )
         os << "    node" << op << " [label=\"" << op->number_data()->val << "\"];\n";
     else if ( op->type == Op::SYMBOL ) {
@@ -499,15 +503,19 @@ void graphviz_repr_rec( std::ostream &os, const Op *op ) {
     } else {
         os << "    node" << op << " [label=\"" << Nstring( op->type ) << "\"];\n";
         for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
-            os << "    node" << op << " -> node" << op->func_data()->children[i] << " [color=black];\n";
-            graphviz_repr_rec( os, op->func_data()->children[i] );
+            bool h = graphviz_repr_rec( os, op->func_data()->children[i], dep );
+            os << "    node" << op << " -> node" << op->func_data()->children[i] << " [color=" << ( h ? "red" : "black" ) << "];\n";
+            has_dep |= h;
         }
     }
+    bool h = has_dep or dep.has( op );
+    op->additional_info = const_cast<Op *>( h ? op : NULL );
+    return h;
 }
 
-void Op::graphviz_repr( std::ostream &os ) const {
+void Op::graphviz_repr( std::ostream &os, const SplittedVec<const Op *,32> &dep ) const {
     ++Op::current_op;
-    graphviz_repr_rec( os, this );
+    graphviz_repr_rec( os, this, dep );
 }
 
 
@@ -577,6 +585,26 @@ int Op::nb_nodes_rec() const {
 int Op::nb_nodes() const {
     ++current_op;
     return nb_nodes_rec();
+}
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int Op::nb_ops_rec() const {
+    if ( op_id == current_op )
+        return 0;
+    op_id = current_op;
+    //
+    if ( type > 0 ) {
+        int res = 1;
+        for(unsigned i=0;i<FuncData::max_nb_children and func_data()->children[i];++i)
+            res += func_data()->children[i]->nb_ops_rec();
+        return res;
+    }
+    return 0;
+}
+
+int Op::nb_ops() const {
+    ++current_op;
+    return nb_ops_rec();
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------

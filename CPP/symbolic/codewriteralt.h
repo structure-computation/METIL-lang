@@ -14,12 +14,13 @@ struct Variable;
 struct Definition;
 
 struct CodeWriterAlt {
-    void init( const char *s, Int32 si );
+    void init( const char *s, Int32 si, const char *t, Int32 ti );
     void init( CodeWriterAlt &c );
     void reassign( Thread *th, const void *tok, CodeWriterAlt &c );
     void add_expr( Thread *th, const void *tok, Variable *str, const Ex &expr, Definition &b );
     void add_expr( const Ex &op, Nstring method, char *name );
     std::string to_string( Thread *th, const void *tok, Int32 nb_spaces );
+    std::string to_graphviz( Thread *th, const void *tok );
     
     std::string invariant( Thread *th, const void *tok, Int32 nb_spaces, const VarArgs &variables );
     
@@ -40,8 +41,10 @@ struct CodeWriterAlt {
     SplittedVec<NumberToWrite,32> nb_to_write;
     
     bool has_init_methods;
-    char *basic_type;
+    char *basic_type, *basic_simd;
 private:
+    struct OpWithSeq *make_seq();
+
     bool want_float;
 };
     

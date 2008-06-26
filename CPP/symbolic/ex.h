@@ -43,12 +43,14 @@ struct Ex {
     
     // --------------------------
     bool known_at_compile_time() const;
-    std::string graphviz_repr() const;
+    std::string graphviz_repr( Thread *th, const void *tok ) const;
+    std::string graphviz_repr( Thread *th, const void *tok, const VarArgs &a ) const;
     std::string cpp_repr() const;
     std::string tex_repr() const;
     T value() const;
     
     unsigned node_count() const;
+    unsigned ops_count() const;
     unsigned nb_sub_symbols() const;
 
     
@@ -64,6 +66,8 @@ struct Ex {
     
     void set_beg_value( T b, bool inclusive );
     void set_end_value( T e, bool inclusive );
+    void set_access_cost( Float64 c );
+    void set_nb_simd_terms( Int32 c );
     
     bool beg_value_valid() const;
     bool end_value_valid() const;

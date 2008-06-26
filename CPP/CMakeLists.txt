@@ -88,6 +88,8 @@ ADD_LIBRARY( metil_thread STATIC
     mutex.cpp
     dlloader.cpp
     symbolic/ex.cpp
+    symbolic/quadratic_expansion.cpp
+    symbolic/polynomial_expansion.cpp
     symbolic/op.cpp
     symbolic/codewriter.cpp
     symbolic/OpWithSeq.cpp

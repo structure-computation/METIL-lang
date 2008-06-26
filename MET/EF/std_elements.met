@@ -13,23 +13,26 @@ class Bar
     static points   := [[0],[1]]
     static children := [(NodalElement,[0]),(NodalElement,[1])]
     static def interval_var_inter( vi )
-        return [ [0, 1] ]
+        return [ [0,1] ]
 
 
-# 0 -- 2 -- 1
+# 0 -- 1 -- 2
 class Bar_3 inherits Bar
     static vtk_num  := 4 # TODO
-    static points   := [[0],[1],[0.5]]
+    static children := [(NodalElement,[0]),(NodalElement,[2])]
+    static points   := [[0/2],[1/2],[2/2]]
 
-# 0 -- 2 -- 3 -- 1
+# 0 -- 1 -- 2 -- 3
 class Bar_4 inherits Bar
     static vtk_num  := 4 # TODO
-    static points   := [[0],[1],[1/3],[2/3]]
+    static children := [(NodalElement,[0]),(NodalElement,[3])]
+    static points   := [[0/3],[1/3],[2/3],[3/3]]
 
-# 0 - 2 - 3 - 4 - 1
+# 0 - 1 - 2 - 3 - 4
 class Bar_5 inherits Bar
     static vtk_num  := -1 # TODO
-    static points   := [[0],[1],[1/4],[1/2],[3/4]]
+    static children := [(NodalElement,[0]),(NodalElement,[4])]
+    static points   := [[0/4],[1/4],[2/4],[3/4],[4/4]]
 
 #~
     2
@@ -48,73 +51,86 @@ class Triangle
         return heaviside( tol + vi[0] ) * heaviside( tol + vi[1] ) * heaviside( tol + 1 - vi[0] - vi[1] )
 
 #~
-    2
+    5
     | \
-    5  4
+    3  4
     |   \
-    0-3-1
+    0-1-2
 ~#
 class Triangle_6 inherits Triangle
     static vtk_num  := -1 # TODO
-    static points   := [[0,0],[1,0],[0,1],[0.5,0],[0.5,0.5],[0,0.5]]
-    static children := [(Bar_3,[0,1,3]),(Bar_3,[1,2,4]),(Bar_3,[2,0,5])]
+    static points   := [[0,0],[0.5,0],[1,0],[0,0.5],[0.5,0.5],[0,1]]
+    static children := [(Bar_3,[0,1,2]),(Bar_3,[2,4,5]),(Bar_3,[5,3,0])]
 
 #~
-    2
+    8
     | \
-    7  6
+    6  7
     |  \
-    8   5
+    4   5
     |   \
-    0-3-4-1
+    0-1-2-3
 ~#
 class Triangle_9 inherits Triangle
     static vtk_num  := -1 # TODO
-    static points   := [[0,0],[1,0],[0,1],[1/3,0],[2/3,0],[2/3,1/3],[1/3,2/3],[0,2/3],[0,1/3]]
-    static children := [(Bar_4,[0,1,3,4]),(Bar_4,[1,2,5,6]),(Bar_4,[2,0,7,8])]
+    static points   := [
+        [0/3,0/3],[1/3,0/3],[2/3,0/3],[3/3,0/3],
+        [0/3,1/3],          [2/3,1/3],
+        [0/3,2/3],[1/3,2/3],
+        [0/3,3/3]
+    ]
+    static children := [(Bar_4,[0,1,2,3]),(Bar_4,[3,5,7,8]),(Bar_4,[8,6,4,0])]
 
 #~
-    2
+    9
     | \
-    7  6
+    7  8
     |   \
-    8 9 5
+    4 5 6
     |    \
-    0-3-4-1
+    0-1-2-3
 ~#
-class Triangle_10 inherits Triangle_9
+class Triangle_10 inherits Triangle
     static vtk_num  := -1 # TODO
-    static points   := Triangle_9::points +++ [[1/3,1/3]]
+    static points   := [
+        [0/3,0/3],[1/3,0/3],[2/3,0/3],[3/3,0/3],
+        [0/3,1/3],[1/3,1/3],[2/3,1/3],
+        [0/3,2/3],[1/3,2/3],
+        [0/3,3/3]
+    ]
+    static children := [(Bar_4,[0,1,2,3]),(Bar_4,[3,5,8,9]),(Bar_4,[9,7,4,0])]
 
 #~
-    2
-    |    \
-    9       8
-    10 14    7
-    11 12 13  6
+    14
+    |   \
+    12   13
+    |      \
+    9  10   11
+    |        \
+    5  6  7   8
     |          \
-    0--3--4--5--1
+    0--1--2--3--4
 ~#
 class Triangle_15 inherits Triangle
     static vtk_num  := -1 # TODO
     static points   := [
-        [0  ,0  ], [1  ,0  ],[0  ,1  ],
-        [1/4,0  ], [2/4,0  ],[3/4,0  ],
-        [3/4,1/4], [2/4,2/4],[1/4,3/4],
-        [0  ,3/4], [0  ,2/4],[0  ,1/4],
-        [1/4,1/4], [2/4,1/4],[1/4,2/4]
+        [0/4,0/4],[1/4,0/4],[2/4,0/4],[3/4,0/4],[4/4,0/4],
+        [0/4,1/4],[1/4,1/4],[2/4,1/4],[3/4,1/4],
+        [0/4,2/4],[1/4,2/4],[2/4,2/4],
+        [0/4,3/4],[1/4,3/4],
+        [0/4,4/4]        
     ]
-    static children := [(Bar_5,[0,1,3,4,5]),(Bar_4,[1,2,6,7,8]),(Bar_4,[2,0,9,10,11])]
+    static children := [(Bar_5,[0,1,2,3,4]),(Bar_4,[4,8,11,13,14]),(Bar_4,[14,12,9,5,0])]
     
 #~
-   3 - 2
+   2 - 3
    |   |
    0 - 1
 ~#
 class Quad
     static vtk_num  := 9
-    static points   := [[0,0],[1,0],[1,1],[0,1]]
-    static children := [(Bar,[0,1]),(Bar,[1,2]),(Bar,[2,3]),(Bar,[3,0])]
+    static points   := [[0,0],[1,0],[0,1],[1,1]]
+    static children := [(Bar,[0,1]),(Bar,[1,3]),(Bar,[3,2]),(Bar,[2,0])]
     static def interval_var_inter( vi )
         return [ [0,1], [0,1] ]
     static def var_inter_is_inside( vi, tol = 0 )
@@ -140,75 +156,131 @@ class Tetra
         return heaviside( tol + vi[0] ) * heaviside( tol + vi[1] ) * heaviside( tol + vi[2] ) * heaviside( tol + 1 - vi[0] - vi[1] - vi[2] )
 
 
-#~
-  3    6    2
-  x----x----x
-  |         |
- 7x         x5
-  |         |
-  x----x----x
-  0    4    1
-~#
-class Quad_8
-    static vtk_num  := -1 # TODO
-    static points   := [[0,0],[1,0],[1,1],[0,1],[1/2,0],[1,1/2],[1/2,1],[0,1/2]]
-    static children := [(Bar_3,[0,1,4]),(Bar_3,[1,2,5]),(Bar_3,[2,3,6]),(Bar_3,[3,0,7])]
-    static def interval_var_inter( vi )
-        return [ [0,1], [0,1] ]
 
 #~
-  3    9    8    2
-  x----x----x----x
-  |              |
-10x              x7
-  |              |
-11x              x6
-  |              |
-  x----x----x----x
-  0    4    5    1
+        9
+       /|\
+      / |8\
+    6/  |  \7
+    /  /5\  \
+   / /3   4\ \
+  0/--- 1----\2
 ~#
-class Quad_12
-    static vtk_num  := -1 # TODO
-    static points   := [[0,0],[1,0],[1,1],[0,1],
-                        [1/3,0],[2/3,0],
-                        [1,1/3],[1,2/3],
-                        [2/3,1],[1/3,1],
-                        [0,2/3],[0,1/3]]
-    static children := [(Bar_4,[0,1,4,5]),(Bar_4,[1,2,6,7]),(Bar_4,[2,3,8,9]),(Bar_4,[3,0,10,11])]
-    static def interval_var_inter( vi )
-        return [ [0,1], [0,1] ]
+class Tetra_10 inherits Tetra
+    static points := [
+        [0/2,0/2,0/2],[1/2,0/2,0/2],[2/2,0/2,0/2],
+        [0/2,1/2,0/2],[1/2,1/2,0/2],
+        [0/2,2/2,0/2],
+        
+        [0/2,0/2,1/2],[1/2,0/2,1/2],
+        [0/2,1/2,1/2],
+        
+        [0/2,0/2,2/2]
+    ]
+    static children := [(Triangle_6,[0,3,5,4,2,1]),(Triangle_6,[0,1,2,6,7,9]),(Triangle_6,[5,3,0,6,9,8]),(Triangle_6,[5,8,9,7,2,4])]
+    static def val_nodes_from_lower_degre( ptr )
+        return [
+            ptr[0]
+            0.5 * ( ptr[0] + ptr[2] )
+            ptr[2]
+            0.5 * ( ptr[0] + ptr[5] )
+            0.5 * ( ptr[2] + ptr[5] )
+            ptr[5]
+            0.5 * ( ptr[0] + ptr[9] )
+            0.5 * ( ptr[2] + ptr[9] )
+            0.5 * ( ptr[5] + ptr[9] )
+            ptr[9]
+        ]
+
 
 #~
-  3    12   11   10   2
-  x----x----x----x----x
-  |                   |
-13x                   x9
-  |                   |
-14x                   x8
-  |                   |
-15x                   x7
-  |                   |
-  x----x----x----x----x
-  0    4    5    6    1
+  5    6    7
+  x----x----x
+  |         |
+ 3x         x4
+  |         |
+  x----x----x
+  0    1    2
 ~#
-class Quad_16
+class Quad_8 inherits Quad
     static vtk_num  := -1 # TODO
-    static points   := [[0,0],[1,0],[1,1],[0,1],
-                        [1/4,0],[1/2,0],[3/4,0],
-                        [1,1/4],[1,1/2],[1,3/4],
-                        [3/4,1],[1/2,1],[1/4,1],
-                        [0,3/4],[0,1/2],[0,1/4]]
-    static children := [(Bar_5,[0,1,4,5,6]),(Bar_5,[1,2,7,8,9]),(Bar_5,[2,3,10,11,12]),(Bar_5,[3,0,13,14,15])]
-    static def interval_var_inter( vi )
-        return [ [0,1], [0,1] ]
+    static points   := [
+        [0/2,0/2],[1/2,0/2],[2/2,2/2],
+        [0/2,1/2],          [2/2,1/2],
+        [0/2,2/2],[1/2,2/2],[2/2,2/2]
+    ]
+    static children := [(Bar_3,[0,1,2]),(Bar_3,[2,4,7]),(Bar_3,[7,6,5]),(Bar_3,[5,3,0])]
+
 #~
-      7 ---------6
+  6    7    8
+  x----x----x
+  |         |
+ 3x    x4   x5
+  |         |
+  x----x----x
+  0    1    2
+~#
+class Quad_9 inherits Quad
+    static vtk_num  := -1 # TODO
+    static points   := [
+        [0/2,0/2],[1/2,0/2],[2/2,2/2],
+        [0/2,1/2],[1/2,1/2],[2/2,1/2],
+        [0/2,2/2],[1/2,2/2],[2/2,2/2]
+    ]
+    static children := [(Bar_3,[0,1,2]),(Bar_3,[2,5,8]),(Bar_3,[8,7,6]),(Bar_3,[6,3,0])]
+
+#~
+  8    9   10   11
+  x----x----x----x
+  |              |
+ 6x              x7
+  |              |
+ 4x              x5
+  |              |
+  x----x----x----x
+  0    1    2    3
+~#
+class Quad_12 inherits Quad
+    static vtk_num  := -1 # TODO
+    static points   := [
+        [0/3,0/3],[1/3,0/3],[2/3,0/3],[3/3,0/3],
+        [0/3,1/3],                    [3/3,1/3],
+        [0/3,2/3],                    [3/3,2/3],
+        [0/3,3/3],[1/3,3/3],[2/3,3/3],[3/3,3/3]
+    ]
+    static children := [(Bar_4,[0,1,2,3]),(Bar_4,[3,5,7,11]),(Bar_4,[11,10,9,8]),(Bar_4,[8,6,4,0])]
+
+# #~
+  # 3    12   11   10   2
+  # x----x----x----x----x
+  # |                   |
+# 13x                   x9
+  # |                   |
+# 14x                   x8
+  # |                   |
+# 15x                   x7
+  # |                   |
+  # x----x----x----x----x
+  # 0    4    5    6    1
+# ~#
+# class Quad_16
+    # static vtk_num  := -1 # TODO
+    # static points   := [[0,0],[1,0],[1,1],[0,1],
+                        # [1/4,0],[1/2,0],[3/4,0],
+                        # [1,1/4],[1,1/2],[1,3/4],
+                        # [3/4,1],[1/2,1],[1/4,1],
+                        # [0,3/4],[0,1/2],[0,1/4]]
+    # static children := [(Bar_5,[0,1,4,5,6]),(Bar_5,[1,2,7,8,9]),(Bar_5,[2,3,10,11,12]),(Bar_5,[3,0,13,14,15])]
+    # static def interval_var_inter( vi )
+        # return [ [0,1], [0,1] ]
+#~
+      6 ---------7
      /|         /|
     / |        / |
    /  |       /  |
-  4---|------5   |
+  4----------5   |
   |   |      |   |
-  |   3------|-- 2
+  |   2------|-- 3
   |  /       |  /
   | /        | /
   |/         |/
@@ -216,37 +288,57 @@ class Quad_16
 ~#
 class Hexa
     static vtk_num  := -1 # TODO
-    static points   := [[0,0,0],[1,0,0],[1,1,0],[0,1,0],
-                        [0,0,1],[1,0,1],[1,1,1],[0,1,1]]
-    static children := [(Quad,[0,3,2,1]),(Quad,[4,5,6,7]),(Quad,[0,1,5,4]),(Quad,[3,7,6,2]),(Quad,[0,4,7,3]),(Quad,[1,2,6,5])]
+    static points   := [[0,0,0],[1,0,0],[0,1,0],[1,1,0],
+                        [0,0,1],[1,0,1],[0,1,1],[1,1,1]]
+    static children := [(Quad,[0,2,1,3]),(Quad,[4,5,6,7]),(Quad,[0,1,4,5]),(Quad,[2,3,6,7]),(Quad,[0,4,2,6]),(Quad,[1,3,5,7])]
     static def interval_var_inter( vi )
         return [ [0,1], [0,1], [0,1] ]
 
 # #~
-    # 7 ---14----6
-   # /|         /|
- # 15 |       13 |
- # /  19      /  18
-# 4---|-12---5   |
-# |   |      |   |
-# |   3---10-|-- 2
-# 16 /      17  /
-# |11        | 9
-# |/         |/
-# 0-----8----1
+     # 7 ---14----6
+    # /|         /|
+  # 15 |       13 |
+  # /  19      /  18
+ # 4---|-12---5   |
+ # |   |      |   |
+ # |   3---10-|-- 2
+ # 16 /      17  /
+ # |11        | 9
+ # |/         |/
+ # 0-----8----1
 # ~#
-# class Hexa_20
-    # static vtk_num  := -1 # TODO
-    # static points   := [[0,0,0],[1,0,0],[1,1,0],[0,1,0],
-                        # [0,0,1],[1,0,1],[1,1,1],[0,1,1],
-                        # [1/2,0,0],[1,1/2,0],[1/2,1,0],[0,1/2,0],
-                        # [1/2,0,1],[1,1/2,1],[1/2,1,1],[0,1/2,1],
-                        # [0,0,1/2],[1,0,1/2],[1,1,1/2],[0,1,1/2]]
+# class Hexa_20 inherits Hexa
+    # def val_nodes_from_lower_degre( ptr )
+        # return val_nodes_from_lower_degre_Hexa_20( ptr )
+    # static points   := val_nodes_from_lower_degre_Hexa_20( Hexa::points )
     # static children := [(Quad_8,[0,1,2,3,8,9,10,11]),(Quad_8,[4,5,6,7,12,13,14,15]),
                         # (Quad_8,[0,1,5,4,8,17,12,16]),(Quad_8,[1,2,6,5,9,18,13,17]),
                         # (Quad_8,[3,2,6,7,10,18,14,19]),(Quad_8,[0,3,7,4,11,19,15,16])]
-    # static def interval_var_inter( vi )
-        # return [ [0,1], [0,1], [0,1] ]
+    # static def val_nodes_from_lower_degre( ptr )
+        # return [
+            # ptr[0]
+            # ptr[1]
+            # ptr[2]
+            # ptr[3]
+            # ptr[4]
+            # ptr[5]
+            # ptr[6]
+            # ptr[7]
+            # 0.5 * ( ptr[0] + ptr[1] )
+            # 0.5 * ( ptr[1] + ptr[2] )
+            # 0.5 * ( ptr[2] + ptr[3] )
+            # 0.5 * ( ptr[3] + ptr[0] )
+            # 0.5 * ( ptr[4] + ptr[5] )
+            # 0.5 * ( ptr[5] + ptr[6] )
+            # 0.5 * ( ptr[6] + ptr[7] )
+            # 0.5 * ( ptr[7] + ptr[4] )
+            # 0.5 * ( ptr[0] + ptr[4] )
+            # 0.5 * ( ptr[1] + ptr[5] )
+            # 0.5 * ( ptr[2] + ptr[6] )
+            # 0.5 * ( ptr[3] + ptr[7] )
+        # ]
+
+
 # #~
         # 7 ---- 21 ---- 20 ---- 6
        # /|                     /|
@@ -437,4 +529,28 @@ class HexaSerendip[ n ]
     static def interval_var_inter( vi )
         return [ [0,1], [0,1], [0,1] ]
         
+#~
+     5
+    /|\
+   / | \
+  /  |  \
+ 3_______4
+ |   |   |
+ |   2   |
+ |  / \  |
+ | /   \ |
+ |/     \|
+ 0______ 1
+
+~#
+class Wedge
+    property has_a_var_inter_is_inside_method
+    static vtk_num  := 10
+    static points   := [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,0,1],[0,1,1]]
+    static children := [(Triangle,[0,2,1]),(Triangle,[3,4,5]),(Quad,[0,3,5,2]),(Quad,[2,5,4,1]),(Quad,[0,1,4,3])]
+    static def interval_var_inter( vi )
+        return [ [0,1], [0,1-vi[0]], [0,1] ]
+    static def var_inter_is_inside( vi, tol = 0 )
+        return heaviside( tol + vi[0] ) * heaviside( tol + vi[1] ) * heaviside( tol + 1 - vi[0] - vi[1] ) * heaviside( tol + vi[2] ) * heaviside( tol + 1 - vi[2] )
+
         

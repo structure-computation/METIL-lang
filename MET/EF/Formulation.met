@@ -372,12 +372,9 @@ class Formulation[dim]
     def grad( t )       return current_element->grad( t )
     def grad_sym( t )   return current_element->grad_sym( t )
 
-    def sigma_hooke_iso( eps, young, poisson )
-        Id := Tensor[ Op, [dim,dim] ]( function = x => x[0] == x[1] )
-        return young / ( 1 + poisson ) * ( eps + poisson / ( 1 - 2 * poisson ) * trace( eps ) * Id )
         
     def hooke_iso( E, nu )
-        e := Tensor[ Op, [dim,dim] ]( function = x => symbol("e_{$(x)}") )
+        e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
         s := sigma_hooke_iso( e, E, nu )
         # -> sigma.diff( epsilon )
         H := Tensor[ Op, [dim,dim,dim,dim] ]( function = x => 0 )
@@ -386,6 +383,10 @@ class Formulation[dim]
                 H[ ind_s +++ ind_e ] = val_s.diff(val_e)
         return H
 
+def sigma_hooke_iso( eps, young, poisson )
+    dim := eps.nb_rows
+    Id := Mat[ Op, Gen[dim,dim] ]( function = x => x[0] == x[1] )
+    return young / ( 1 + poisson ) * ( eps + poisson / ( 1 - 2 * poisson ) * trace( eps ) * Id )
 
 #~
   Example of formulation

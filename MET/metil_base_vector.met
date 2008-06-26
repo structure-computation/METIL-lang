@@ -322,7 +322,7 @@ def range( end ) return range( end.type(0), end, 1 )
 
 #~ ~#
 def max( r ) when r.is_a_Range_vector pertinence 10
-    return r.begin + r.size * r.increment
+    return r.begin + ( r.size - 1 ) * r.increment
 #~ ~#
 def min( v ) when v.is_a_Range_vector pertinence 10
     return r.begin

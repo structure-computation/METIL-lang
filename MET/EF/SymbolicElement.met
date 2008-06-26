@@ -11,6 +11,8 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     var_inter := Vec[ Op, nvi ]()
     name_elem := ""
     
+    assume_const_jac := false
+    
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
@@ -30,13 +32,26 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         
     def interpolation( val_on_nodes ) return pe.interpolation( var_inter, val_on_nodes )
     def get_pos                       return pe.interpolation( var_inter, pos_nodes )
-    def get_jac_mat                   return pe.jac_mat( var_inter, pos_nodes )
-    def get_jac                       return pe.jac( var_inter, pos_nodes )
     def get_normal                    return pe.normal( var_inter, pos_nodes )
     def get_measure                   return pe.measure( var_inter, pos_nodes )
-    def get_inv_jac_mat               return pe.inv_jac_mat( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
+    def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
+    
+    def get_jac_mat
+        if assume_const_jac
+            return pe.jac_mat( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
+        return pe.jac_mat( var_inter, pos_nodes )
+        
+    def get_jac
+        if assume_const_jac
+            return pe.jac( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
+        return pe.jac( var_inter, pos_nodes )
+        
+    def get_inv_jac_mat
+        if assume_const_jac
+            return pe.inv_jac_mat( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
+        return pe.inv_jac_mat( var_inter, pos_nodes )
     
     #
     def get_order_interpolation
@@ -195,7 +210,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     def grad_sym( tens ) when tens.tensor_order == 1
         assert( tens.sizes.size==1, "grad_sym works only with tensor_order==1 as input." )
         tmp := self.grad( tens )
-        res := Tensor[ Op, stat_vec([tens.sizes[0],tens.sizes[0]]) ]( function = x => 0 )
+        res := Mat[ Op, Sym[Int32(tens.sizes[0])] ]()
         for ind, val in res
             val = ( tmp[ ind[0], ind[1] ] + tmp[ ind[1], ind[0] ] ) / 2
         return res

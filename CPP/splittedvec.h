@@ -196,11 +196,15 @@ public:
     void clear() { for( Item *i = &first_item; i; i=i->next ) i->size = 0; }
 
     ///
-    int find( const T &val ) {
+    int find( const T &val ) const {
         for(unsigned i=0;i<size();++i)
             if ( operator[]( i ) == val )
                 return i;
         return -1;
+    }
+    ///
+    bool has( const T &val ) const {
+        return find(val) >= 0;
     }
     
     ///

@@ -10,11 +10,16 @@
 #include "OpWithSeqGenerator.h"
 #include <iostream>
 
-void CodeWriterAlt::init( const char *s, Int32 si ) {
+void CodeWriterAlt::init( const char *s, Int32 si, const char *t, Int32 ti ) {
     if ( si )
         basic_type = strdupp0( s, si );
     else
         basic_type = NULL;
+        
+    if ( ti )
+        basic_simd = strdupp0( t, ti );
+    else
+        basic_simd = strdup( basic_type );
     
     //
     op_to_write.init();
@@ -81,13 +86,11 @@ void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &o
     ordering.push_back( seq );
 }
 
-std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spaces ) {
-    if ( op_to_write.size() + nb_to_write.size() == 0 )
-        return "";
-    
-    //
+OpWithSeq *CodeWriterAlt::make_seq() {
+    OpWithSeq::clear_number_set();
     OpWithSeq *seq = new OpWithSeq( OpWithSeq::SEQ );
     ++Op::current_op;
+    
     for(unsigned i=0;i<op_to_write.size();++i) {
         seq->add_child( 
             new OpWithSeq( 
@@ -97,35 +100,62 @@ std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spac
             )
         );
     }
+    
     for(unsigned i=0;i<nb_to_write.size();++i) {
         seq->add_child( 
             new OpWithSeq( 
                 nb_to_write[i].method.v,
                 nb_to_write[i].name,
-                new OpWithSeq( nb_to_write[i].n )
+                OpWithSeq::new_number( nb_to_write[i].n )
             )
         );
     }
     
     //
-    //     std::cout << *seq << std::endl;
     simplifications( seq );
-    //     std::cout << *seq << std::endl;
+    
+    //
+    return seq;
+}
+
+std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spaces ) {
+    if ( op_to_write.size() + nb_to_write.size() == 0 )
+        return "";
+    
+    //
+    OpWithSeq *seq = make_seq();
     
     //
     std::vector<OpWithSeq *> ordering;
     make_OpWithSeq_simple_ordering( seq, ordering );
     
     //
-    OpWithSeqGenerator g( nb_spaces, basic_type );
+    ++OpWithSeq::current_id;
+    update_nb_simd_terms_rec( seq );
+    
+    //
+    OpWithSeqGenerator g( nb_spaces, basic_type, basic_simd );
     for(unsigned i=0;i<ordering.size();++i)
         g.write_instr( ordering[i] );
-    g.os << " /* " << g.num_instr << " instructions */";
+    g.os << " /* " << g.nb_ops << " instructions */";
     
     //
     delete seq;
     return g.os.str();
 }
+
+std::string CodeWriterAlt::to_graphviz( Thread *th, const void *tok ) {
+    std::ostringstream ss;
+    OpWithSeq *seq = make_seq();
+    //
+    ++OpWithSeq::current_id;
+    update_cost_access_rec( seq );
+    //
+    ++OpWithSeq::current_id;
+    seq->graphviz_rec( ss );
+    return ss.str();
+}
+
 
 void destroy( Thread *th, const void *tok, CodeWriterAlt &c ) {
     for(unsigned i=0;i<c.op_to_write.size();++i) {
@@ -142,6 +172,8 @@ void destroy( Thread *th, const void *tok, CodeWriterAlt &c ) {
     c.nb_to_write.destroy();
     if ( c.basic_type )
         free( c.basic_type );
+    if ( c.basic_simd )
+        free( c.basic_simd );
 }
     
 

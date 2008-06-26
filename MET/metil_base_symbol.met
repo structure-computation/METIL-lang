@@ -6,18 +6,27 @@ Pi := 2 * asin( Float64( 1 ) )
 def symbol( cpp_name, tex_name = cpp_name )
     return symbol( String(cpp_name), String(tex_name) )
     
-## 
-    display symbolic graph of variable v
-##
-def display_graphviz( self )
+#~ 
+    display symbolic graph of variable v with dependencies written in red
+~#
+def display_graphviz( self, lst )
     f := File("res.dot","w")
-    f << "digraph popoterie {\n"
-    f << self.graphviz_string()
-    f << "}\n"
+    f <<< "digraph popoterie {"
+    l := VarArgs()
+    for i in lst
+        l.push_unnamed( i )
+    f << self.graphviz_string( l )
+    f <<< "}"
     f.close()
     
     system( "dot -Tps res.dot > res.eps; evince res.eps" )
 
+#~ 
+    display symbolic graph of variable v
+~#
+def display_graphviz( self )
+    self.display_graphviz( [] )
+    
 #~
 ~#
 def graphviz_string( self ) when self.tensor_order == 1
@@ -29,25 +38,31 @@ def graphviz_string( self ) when self.tensor_order == 1
 ## 
     make a .tex file and display corresponding .eps
 ##
-def launch_and_display_tex_with_str( str, filename="res" )
+def launch_and_display_tex_with_str( str, filename="tmp" )
     f := File("$filename.tex","w")
-    f << "\\documentclass[landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
-    f << str << "\n"
-    f << "\\end{document}\n"
+    f <<<<
+        \documentclass{article}
+        \usepackage[latin1]{inputenc}
+        %\usepackage{graphicx}
+        \usepackage{amsmath}
+        \begin{document}
+        \pagestyle{empty}
+        $str
+        \end{document}
     f.close()
 
-    display_command := join( ( "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
-    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
+    display_command := join( ( "evince", "kpdf", "xpdf", "gv", "acroread" ).map( _0 + " $filename.pdf" ), " || " )
+    if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " +
             "&& evince $filename.eps 2> /dev/null" ) #  && ( $display_command )
         stderr << "erroneous symbol in the formula.\n"
 
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="res" )
+def display_tex( self, filename="tmp" )
     launch_and_display_tex_with_str( "$\displaystyle" + self.tex_string() + "$", filename )
     
-def display_few_eqns(V, filename="res") when V.is_a_vector
+def display_few_eqns(V, filename="tmp") when V.is_a_vector
     t:=V.size
     f:= File("$filename.tex","w")
     f<<"\\documentclass[a3paper,landscape,9pt]{report}\n\\usepackage[latin1]{inputenc}\n\\usepackage{geometry}\n\\geometry{hmargin=2.0cm,vmargin=1.5cm}\n\\usepackage{graphicx}\n\\usepackage{amsmath}\n\\begin{document}\n\\pagestyle{empty}\n"
@@ -113,7 +128,7 @@ def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vec
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="res" ) when self.tensor_order == 1
+def display_tex( self, filename="tmp" ) when self.tensor_order == 1
     str := StringStream()
     str <<< "$\displaystyle\\left[\\begin{array}{c}"
     for i in self.values
@@ -124,7 +139,7 @@ def display_tex( self, filename="res" ) when self.tensor_order == 1
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="res" ) when self.tensor_order == 2
+def display_tex( self, filename="tmp" ) when self.tensor_order == 2
     str := StringStream()
     str <<< "$\displaystyle\\left[\\begin{array}{$("c"*self.nb_cols)}"
     for r in 0 .. self.nb_rows
@@ -296,14 +311,14 @@ class CodeWriter
 class CodeWriterAlt
     cw ~= CodeWriterAlt_
     
-    def init( T = "double" ) when T.is_a_String
-        cw.init( T )
+    def init( T = "double", S = "SimdVec<$T>" ) when T.is_a_String
+        cw.init( T, S )
         
     def destroy
         cw.destroy()
     
     def add( str, expr, method=init ) pertinence 10
-        cw.add_expr( String(str), Op(expr), method )
+        cw.add_expr( String(str), Op(expr).a_posteriori_simplification(), method )
         return self
     
     def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
@@ -318,7 +333,19 @@ class CodeWriterAlt
         return self
     
     def to_string( nb_spaces = 4 )
-        return cw.to_string( nb_spaces )
+        return cw.to_string( Int32( nb_spaces ) )
+    
+    def graphviz_string()
+        return cw.to_graphviz()
+
+    def display_graphviz( f = ".res" )
+        o := File("$f.dot","w")
+        o <<< "digraph toto {"
+        o <<< graphviz_string()
+        o <<< "}"
+        o.close()
+        
+        system( "dot -Tps $f.dot > $f.eps; evince $f.eps" )
 
 
 # return true if cond is known_at_compile_time and is true

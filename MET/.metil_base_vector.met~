@@ -691,7 +691,7 @@ class VecOp
         
     def get_T
         if va.size == 1
-            return type_promote( va[0].T, @op )
+            return type_promote( partial_instanciation va[0].T, @op )
         return type_promote( partial_instanciation va[0].T, partial_instanciation va[1].T, @op )
         
     def reassign( v ) when v.is_a_VecOp pertinence 2
