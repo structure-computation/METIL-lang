@@ -416,7 +416,7 @@ void Lexer::remove_cr() {
     // then, we remove \n in a+\nb, a\n+b and so on...
     for(Lexem *t = first_of_type[ Lexem::CR + 16 ]; t; t=t->sibling) {
         if ( t->num >= -1 ) {
-            if ( need_rarg(t->prev) and t->prev->children[0]==NULL and t->prev->type!=STRING___if___NUM and t->prev->type!=STRING___else___NUM ) {
+            if ( need_rarg(t->prev) and t->prev->children[0]==NULL and t->prev->type!=STRING___if___NUM and t->prev->type!=STRING___else___NUM and t->prev->type!=STRING___try___NUM ) {
                 t->num = -2;
                 t->prev->next = t->next;
                 if ( t->next ) t->next->prev = t->prev;

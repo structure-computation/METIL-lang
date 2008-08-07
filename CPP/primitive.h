@@ -649,7 +649,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << Int64( self ); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss.setf(std::ios::fixed); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name).A("Int32") );
     }
     

@@ -1165,6 +1165,11 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
             select( i ) = get_back()
         size_--
         
+    def erase_unordered( item )
+        i := index_of_first_item_equal_to( item )
+        assert( i >= 0, "not found" )
+        remove_unordered( i )
+        
     def append( vec )
         for v in vec
             push_back( v )

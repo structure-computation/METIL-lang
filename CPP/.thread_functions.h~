@@ -1017,11 +1017,11 @@ template<int compile_mode,int want_continue> const void *exec_tok_break_or_conti
 }
 
 template<int compile_mode> const void *exec_tok_try(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::Try *tok,Variable * &sp) {
-    OldScope *os = (OldScope *)th->info_stack.get_room_for( sizeof(OldScope) );
-    os->last_named_variable = th->last_named_variable_in_current_scope;
-    os->variable_sp = sp;
-    os->prev = th->old_scope;
-    th->old_scope = os;
+//     OldScope *os = (OldScope *)th->info_stack.get_room_for( sizeof(OldScope) );
+//     os->last_named_variable = th->last_named_variable_in_current_scope;
+//     os->variable_sp = sp;
+//     os->prev = th->old_scope;
+//     th->old_scope = os;
     return tok->next();
 }
 template<int compile_mode> const void *exec_tok_catch(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::Catch *tok,Variable * &sp) {
@@ -1040,15 +1040,15 @@ template<int compile_mode> const void *exec_tok_end_catch_block(const N<compile_
     return tok->next();
 }
 template<int compile_mode> const void *exec_tok_end_try_exception_block(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::End_try_exception_block *tok,Variable * &sp) {
-    // del scope
-    const void *tok_del;
-    while ( sp > th->old_scope->variable_sp )
-        if ( ( tok_del = rm_last_var_in_sp( th, tok, tok, sp ) ) != NULL )
-            return tok_del;
-    // old scope becomes current scope
-    th->last_named_variable_in_current_scope = th->old_scope->last_named_variable;
-    th->old_scope = th->old_scope->prev;
-    th->info_stack.pop_contiguous( sizeof(OldScope) );
+//     // del scope
+//     const void *tok_del;
+//     while ( sp > th->old_scope->variable_sp )
+//         if ( ( tok_del = rm_last_var_in_sp( th, tok, tok, sp ) ) != NULL )
+//             return tok_del;
+//     // old scope becomes current scope
+//     th->last_named_variable_in_current_scope = th->old_scope->last_named_variable;
+//     th->old_scope = th->old_scope->prev;
+//     th->info_stack.pop_contiguous( sizeof(OldScope) );
     return tok->next();
 }
 
@@ -1062,7 +1062,7 @@ template<int compile_mode,int want_while> const void *exec_tok_if_or_while(const
             // case unknown
             if ( cond_var->type == global_data.Op ) {
                 if ( reinterpret_cast<Ex *>( cond_var->data )->known_at_compile_time() ) {
-                    cond = reinterpret_cast<Ex *>( cond_var->data )->value() != 0;
+                    cond = not reinterpret_cast<Ex *>( cond_var->data )->value().is_zero();
                 } else {
                     th->add_error( "TODO: if or while with symbolic conditions unknown at compile time", tok );
                     make_copy( th->variables_to_del_at_next_end_block.new_elem(), cond_var ); --sp;

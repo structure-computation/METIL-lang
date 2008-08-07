@@ -236,10 +236,13 @@ def sub( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000
     return ( a.ptr - b.ptr ) // Int32( size_of(partial_instanciation a.T) / 8 )
 
 ## ##
-def inferior( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr < b.ptr
-def superior( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr > b.ptr
+def equal         ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr == b.ptr
+def inferior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr <  b.ptr
+def superior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >  b.ptr
 def inferior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr <= b.ptr
 def superior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >= b.ptr
+def not_equal     ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr != b.ptr
+    
     
 def reinterpret_cast( T, p )
     return T( UntypedPtr( p ) )

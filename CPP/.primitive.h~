@@ -451,7 +451,7 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     primitive_classes.push_back( PrimitiveClass( "CodeWriterAlt_", "CodeWriterAlt" ).avoid_reassign_using_mem_copy() );
     
     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriterAlt_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6);" ).M("CodeWriterAlt_") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6,\"S\",1);" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ),*reinterpret_cast<const char **>(b->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(b->data) + 1 ));" ).A("any").A("any").M("CodeWriterAlt_").set_pertinence(1e5).
              set_supplementary_cond( "args[0]->type == global_data.String" ) );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriterAlt_").M("CodeWriterAlt_",/*modify*/"true") );
@@ -649,7 +649,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << Int64( self ); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; ss.setf(std::ios::scientific); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name).A("Int32") );
     }
     

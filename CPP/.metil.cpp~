@@ -64,7 +64,7 @@ void signal_mgr(int sig) {
 
 int main(int argc,char **argv) {
     #ifndef WITHOUT_SIGNAL
-        // signal( SIGINT , signal_mgr );
+        signal( SIGINT , signal_mgr );
         signal( SIGSEGV, signal_mgr );
         signal( SIGUSR1, signal_mgr );
     #endif
@@ -206,6 +206,8 @@ int main(int argc,char **argv) {
     #ifdef HAVE_MPI
         metil_mpi_finalize();
     #endif // HAVE_MPI
+    
+    std::cout << main_thread->nb_accessible_variables() << std::endl;
     
     return main_thread->return_value;
 }

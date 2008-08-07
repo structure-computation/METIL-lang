@@ -953,7 +953,7 @@ void DotSarToDotTok::push_tok_try( const Lexem *l ) {
     unsigned *offset_to_next_inst = bin.binary_write<unsigned>( 0 );
     
     // block
-    const Lexem *b = child_if_block( l->children[1] );
+    const Lexem *b = child_if_block( l->children[0] );
     StackPrev *old_stack_prev = stack_prev; stack_prev = new StackPrev; // looking in parent scopes is forbidden
     // 
     push_block( b );

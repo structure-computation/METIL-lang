@@ -207,5 +207,7 @@ int main(int argc,char **argv) {
         metil_mpi_finalize();
     #endif // HAVE_MPI
     
+    //     std::cout << main_thread->nb_accessible_variables() << std::endl;
+    
     return main_thread->return_value;
 }
