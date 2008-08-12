@@ -202,7 +202,7 @@ class Ptr(T)
     def init()                                           pass
     def init( val ) when is_of_type_UntypedPtr(val)      ptr.init( val )
     def init( val ) when type_of(val)==Null              ptr.init( 0 )
-    def init( val )                                      assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
+    def init( val )                                      assert( val.is_Untyped or inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
     def reassign( val ) when is_of_type_UntypedPtr(val)  ptr = val
     def reassign( val ) when type_of(val)==Null          ptr = 0
     def reassign( val )                                  assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($(val.T) != $T)" ); ptr = UntypedPtr( val )
@@ -241,6 +241,7 @@ def inferior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  retur
 def superior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >  b.ptr
 def inferior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr <= b.ptr
 def superior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >= b.ptr
+def not_equal     ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr != b.ptr
     
     
 def reinterpret_cast( T, p )
@@ -315,6 +316,17 @@ def type_promote( a, b, op ) when a.is_Null and is_of_type_UntypedPtr( b )
 def type_promote( a, b, op ) when b.is_Null and is_of_type_UntypedPtr( a )
     return NULL
 
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+#~ hum... ~#
+class SpinLock
+    val := 0
+    def acquire
+        # hum...
+        while val
+            pass
+        val = 1
+    def release
+        val = 0
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -515,7 +527,7 @@ import "metil_base_map.met"
 import "metil_base_polynomial.met"
 import "metil_base_complex.met"
 import "metil_base_big_unsigned.met"
-import "metil_base_serialization.met"
+# import "metil_base_serialization.met"
 import "metil_base_mpi.met"
 # import "lazy_mat.met"
 

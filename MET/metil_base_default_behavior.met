@@ -271,7 +271,7 @@ def select( obje, b )
 def size_of( a ) when __is_a_Property__(a)  toto := a; return size_of(toto)
 
 def get_byte_size( self )
-    return size_of( partial_instanciation self ) // 8
+    return ( size_of( partial_instanciation self ) + 7 ) // 8
     
 def get_byte_size_if_in_vec( self )
     return ( size_of_if_in_vec( partial_instanciation self ) + 7 ) // 8
