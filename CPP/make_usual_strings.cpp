@@ -48,6 +48,8 @@ OpInfo operators[] = {
     { ";"          , "__comma_dot__"         , Need2args  },
     
     { "import"     , "__import__"            , Needrarg   },
+    { "include"    , "__include__"           , Needrarg   },
+    { "exec"       , "__exec__"              , Needrarg   },
     
     { "inherits"   , "__inherits__"          , Need2args  },
     { "pertinence" , "__pertinence__"        , Need2args  },

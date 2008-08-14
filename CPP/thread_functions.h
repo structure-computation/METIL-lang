@@ -1539,6 +1539,55 @@ template<int compile_mode> const void *exec_tok_import(const N<compile_mode> &n_
     return tok->next();
 }
 
+template<int compile_mode> const void *exec_tok_exec(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::Exec *tok,Variable * &sp) {
+    Variable *str_v = sp - 1;
+    if ( str_v->type == global_data.Error )
+        return tok->next();
+        
+    if ( str_v->type != global_data.String ) {
+        std::cout << "TODO -> exec not a string" << std::endl;
+    }
+    //
+    char *p = *reinterpret_cast<char **>( str_v->data );
+    unsigned si = *reinterpret_cast<Int32 *>( reinterpret_cast<char **>( str_v->data ) + 1 );
+    
+    char *line = (char *)malloc( si + 2 );
+    line[ 0 ] = 0;
+    memcpy( line + 1, p, si );
+    line[ si + 1 ] = 0;
+    //     std::cout << si << std::endl;
+    //     std::cout << "-----------------" << std::endl;
+    //     std::cout << line + 1 << std::endl;
+    //     std::cout << "-----------------" << std::endl;
+    
+    //
+    SourceFile *sourcefile = global_data.get_sourcefile_from_line( line, th->error_list, &th->interpreter_behavior );
+    
+    //
+    const void *tok_del;
+    if ( sourcefile and sourcefile->tok_header() and sourcefile->tok_header()->tok_data() ) {
+        if ( th->currently_in_main_scope() )
+            th->main_scope->imported_sf.push_back( sourcefile );
+            
+        sourcefile->add_property_names( th->main_scope );
+        
+        OldPC *pc = th->old_pc_list.new_elem();
+        pc->sourcefile = th->current_sourcefile;
+        pc->tok = tok;
+        pc->next_tok = tok->next();
+        //
+        th->set_current_sourcefile( sourcefile );
+        const void *new_tok = sourcefile->tok_header()->tok_data();
+        // del str
+        if ( ( tok_del = rm_last_var_in_sp( th, tok, new_tok, sp ) ) != NULL )
+            return tok_del;
+        return new_tok;
+    }
+    // del str
+    if ( ( tok_del = rm_last_var_in_sp( th, tok, tok->next(), sp ) ) != NULL )
+        return tok_del;
+    return tok->next();
+}
 
 template<int compile_mode,int want_or> const void *exec_tok_and_or_or(const N<compile_mode> &n__compile_mode,Thread *th,const Tok::And_or_or *tok,Variable * &sp,const N<want_or> &n__want_or) {
     Variable *c = sp - 1;

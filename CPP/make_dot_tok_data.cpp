@@ -1175,8 +1175,13 @@ void DotSarToDotTok::push_tok( const Lexem *l, bool expect_result ) {
             push_type_and_offsets( l, Tok::SELF, 1 ); // type
             break;
         case STRING___import___NUM:
+        case STRING___include___NUM:
             push_tok( l->children[0], true );
             push_type_and_offsets( l, Tok::IMPORT, -1 ); // type
+            break;
+        case STRING___exec___NUM:
+            push_tok( l->children[0], true );
+            push_type_and_offsets( l, Tok::EXEC, -1 ); // type
             break;
         case STRING___throw___NUM:
             if ( expect_result ) error_list->add("a throw does not return anything.",l->s,provenance);

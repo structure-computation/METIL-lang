@@ -7,7 +7,9 @@
 <language name="Metil++" version="1.22" kateversion="2.1" section="Scripts" extensions="*.met" mimetype="text/x-metil" casesensitive="1" author="Hugo LECLERC" license="">
   <highlighting>
     <list name="prep">
-      <item> import </item>
+        <item> import </item>
+        <item> include </item>
+        <item> exec </item>
     </list>
     <list name="statements">
       <item> with_base_size_and_alignement </item>

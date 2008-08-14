@@ -48,6 +48,7 @@ OpInfo operators[] = {
     { ";"          , "__comma_dot__"         , Need2args  },
     
     { "import"     , "__import__"            , Needrarg   },
+    { "include"    , "__include__"           , Needrarg   },
     
     { "inherits"   , "__inherits__"          , Need2args  },
     { "pertinence" , "__pertinence__"        , Need2args  },
@@ -143,7 +144,7 @@ OpInfo operators[] = {
     { "~"          , "not_bitwise"           , Needrarg   },
     { "'"          , "trans"                 , Needlarg   },
     
-    { "(*)"        , "tensorial_product"     , Need2args  },
+    { "***"        , "tensorial_product"     , Need2args  },
         
     { "--"         , "post_dec"              , Needlarg   },
     { "++"         , "post_inc"              , Needlarg   },
