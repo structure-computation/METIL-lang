@@ -227,6 +227,7 @@ def type_promote( a, b, op ) when b.is_a_BigUnsigned and a.is_a_number       per
 def type_promote( a, b, op ) when a.is_a_BigUnsigned and b.is_a_BigUnsigned  pertinence 11
     return BigUnsigned[ type_promote( partial_instanciation a.T, partial_instanciation b.T, op ), max(@a.base,@b.base) ]
 
+#~ greatest common divisor ~#
 def gcd( a_, b_ )
     if b_.is_a_BigUnsigned and b_.val == 1 and b_.ada.size == 0
         return 0
@@ -237,3 +238,7 @@ def gcd( a_, b_ )
         b = a % b
         a = old
     return a
+
+#~ lowest common multiple ~#
+def lcm( a, b )
+    return a * b // gcd( a, b )

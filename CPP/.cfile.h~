@@ -11,6 +11,7 @@ struct CFile {
     }
     
     int write( const void *p, Int32 si ) {
+        std::cout << si << std::endl;
         return fwrite( (const char *)p, si, 1, f );
     }
     int read( void *p, Int32 si ) {
@@ -70,6 +71,7 @@ struct CFile {
         fseek( f, 0, SEEK_END );
         Int32 res = tell() - t;
         fseek( f, t, SEEK_SET );
+        return res;
     }
     
     bool pipe;

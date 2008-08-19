@@ -202,9 +202,11 @@ class Ptr(T)
     def init()                                           pass
     def init( val ) when is_of_type_UntypedPtr(val)      ptr.init( val )
     def init( val ) when type_of(val)==Null              ptr.init( 0 )
+    def init( val ) when val.is_a_Ptr and val.T==T       ptr.init( val.ptr )
     def init( val )                                      assert( val.is_Untyped or inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
     def reassign( val ) when is_of_type_UntypedPtr(val)  ptr = val
     def reassign( val ) when type_of(val)==Null          ptr = 0
+    def reassign( val ) when val.is_a_Ptr and val.T==T   ptr = val.ptr
     def reassign( val )                                  assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($(val.T) != $T)" ); ptr = UntypedPtr( val )
     def select( n )                                      return __get_data_in_dyn_vec__( ptr, partial_instanciation T, Int32(n) )
     def free                                             ptr.free()
@@ -352,7 +354,7 @@ class String
             data_ = data
     def init( c_str )                          pertinence -2
         init( size = strlen( UntypedPtr( c_str ) ), data = c_str )
-    def reassign( s ) when s.is_a_String                    destroy(); init(s)
+    def reassign( s ) when s.is_a_String                       destroy(); init(s)
     def destroy                                                if reserved_  data_.free()
     def write_to_stream( stream )                              stream.write( data_, size_ )
     def conversion_to( val ) when type_of(val)==Bool           val.init( size_ )

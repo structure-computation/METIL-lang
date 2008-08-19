@@ -718,7 +718,7 @@ def quadratic_expansion( expressions, variables )
     res := Vec[QuadraticExpansionItem[Op]]()
     cpt := 0
     for c in 0 .. expressions.size
-        qe := &res.push_back()
+        qe := res.push_back()
         qe->m.resize( variables.size )
         qe->v.resize( variables.size )
         #

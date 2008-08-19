@@ -1019,7 +1019,7 @@ class MatVecList[ ST = SizeType ] inherits MatAncestor
     def get_nb_rows                       return data[0].size
     def get_sizes                         return [get_nb_rows(),get_nb_cols()]
     def select( i, j )                    return data[j][i]
-    def push_back(v)                      data.push_back(v)
+    def push_back(v)                      return data.push_back(v)
     def select(i) when i.tensor_order<=0  return data[i]
     def __for__(block)                    data.__for__(block)
     def get_last_item                     return data.last_item

@@ -382,7 +382,7 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
         data.init( size = structure.nb_values, default_value = default_value )
         storage.init()
     
-    def init( nb_rows = Structure::default_nb_rows, nb_cols = nb_rows, function = ( v => 0 ) ) pertinence 1
+    def init( nb_rows = Structure::default_nb_rows, nb_cols = Structure::default_nb_cols or nb_rows, function = ( v => 0 ) ) pertinence 1
         structure.init( nb_rows, nb_cols )
         data.init( size = structure.nb_values )
         for i in 0 .. nb_rows

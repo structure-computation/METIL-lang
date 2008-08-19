@@ -773,7 +773,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "sub", "init_arithmetic( ret, -a );", /*ret*/signed_correspondance(primitive_classes[i]) ).A(primitive_classes[i].met_name) );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].met_name != "Bool" ) {
-            primitive_functions.push_back( PrimitiveFunction( "mod", "init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "mod", "if ( not b ) th->display_stack(tok); init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
             primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
         }
     }
@@ -868,8 +868,8 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "type_of", "return get_def_from_type( th, tok, sp, ret, a->type );", /*ret*/"Def" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "size_of", "ret = a->type->data_size_in_bits;", /*ret*/"Int32" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "size_of_if_in_vec", "ret = a->type->size_of_in_in_vec();", /*ret*/"Int32" ).A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "needed_alignement", "ret = a->type->needed_alignement;", /*ret*/"Int32" ).A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "needed_alignement_in_bytes", "ret = ( a->type->needed_alignement + 7 ) / 8;", /*ret*/"Int32" ).A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "__needed_alignement_in_bits__", "ret = a->type->needed_alignement;", /*ret*/"Int32" ).A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "__needed_alignement_in_bytes__", "ret = ( a->type->needed_alignement + 7 ) / 8;", /*ret*/"Int32" ).A("any") );
     
     primitive_functions.push_back( PrimitiveFunction( "has___for___method", "ret = bool( a->type->find_var( NULL, STRING___for___NUM ) );", /*ret*/"Bool" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "rm_spaces_at_beg_of_lines", "std::string s=rm_spaces_at_beg_of_lines( a, b ); assign_string(th,tok,return_var,&s[0],s.size());",
