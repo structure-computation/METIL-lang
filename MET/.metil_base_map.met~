@@ -102,8 +102,6 @@ class Pair[ T0, T1 ]
     second := T1()
     def init( a, b )
         first.init( a )
-        info b.type
-        info T1
         second.init( b )
     def init( a ) when a.tensor_order == 1
         first.init( a[0] )

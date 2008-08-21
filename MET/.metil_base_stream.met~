@@ -154,6 +154,8 @@ def split( str, separators = [" ","\n","\t","\r"] )  return Split( str, separato
 ## ##
 class AssertionError
     msg := StringStream()
+    def init( str )
+        msg.init( str )
     def write_to_stream( stream )
         stream << msg.str
 
@@ -239,6 +241,7 @@ class File( write_allowed=false, read_allowed=false )
     def read_Untyped
         r := f.read()
         r.reserved_ = 0
+        info r.size
         return r.data_
 
 def shift_left(stream,a) when stream.is_stream

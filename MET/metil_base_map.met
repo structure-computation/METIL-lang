@@ -13,7 +13,7 @@ class Map[ K, V, default_value = V() ]
                 return values[i]
         # creation of a new pair
         keys.push_back( key )
-        return values.push_back( default_value )
+        return @values.push_back( default_value )
         
     def select( varargs )
         t := partial_instanciation K
