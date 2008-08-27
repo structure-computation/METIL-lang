@@ -567,7 +567,12 @@ void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classe
     primitive_classes.push_back( PrimitiveClass( "DisplayWindow_", "DisplayWindowPtr" ) );
     
     primitive_functions.push_back( PrimitiveFunction( "init", "th->display_window_creator->make_new_window( &self, a );" ).M("DisplayWindow_").A(/*nb dim*/"Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__();" ) );
+    primitive_functions.push_back( PrimitiveFunction( "set_paint_function", "self->set_paint_function( a );" ).M("DisplayWindow_").A("UntypedPtr") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__( th );" ) );
+    
+    primitive_functions.push_back( PrimitiveFunction( "get_QT_LIBRARIES"  , "std::string ss(QT_LIBRARIES  ); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
+    primitive_functions.push_back( PrimitiveFunction( "get_QT_INCLUDE_DIR", "std::string ss(QT_INCLUDE_DIR); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
     // primitive_functions.push_back( PrimitiveFunction( "destroy", "self->deleteLater();" ).M("DisplayWindow_") );
 }
 

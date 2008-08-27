@@ -40,6 +40,8 @@ bool DlLoader::init( const char *lib_name, int size_lib_name ) {
 bool DlLoader::init( const char *lib_name ) {
 //     return true;
     #ifdef HAVE_LIBDL
+        std::cout << lib_name << std::endl;
+        std::cout << strlen( lib_name ) << std::endl;
         lib = dlopen( lib_name, RTLD_LAZY );
     #else
         lib = LoadLibrary( lib_name );
@@ -49,7 +51,7 @@ bool DlLoader::init( const char *lib_name ) {
 
 
 void DlLoader::destroy() {
-    std::cout << lib << std::endl;
+//     std::cout << lib << std::endl;
 //     #ifdef HAVE_LIBDL
 //         if ( lib ) dlclose( lib );
 //     #else

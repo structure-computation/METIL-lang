@@ -36,10 +36,10 @@ CONFIGURE_FILE( metil_qt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config
 MESSAGE( ${QT4_FOUND} )
 SET( DISPLAYWINDOWMOCCPP  )
 IF(QT4_FOUND)
-    SET( DISPLAYWINDOWMOCCPP DisplayWindow.moc.cpp )
-    QT4_GENERATE_MOC( DisplayWindow.h ${DISPLAYWINDOWMOCCPP} )
+    SET( DISPLAYWINDOWMOCCPP ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp )
+    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindow.h ${DISPLAYWINDOWMOCCPP} )
 ENDIF(QT4_FOUND)
-
+MESSAGE(${QT_DEFINITIONS})
 
 # ieee754 + BigEndian
 INCLUDE( TestBigEndian )
@@ -124,7 +124,6 @@ ADD_LIBRARY( metil_thread STATIC
     transientdata.cpp
     md5.cpp
     DisplayWindow.cpp
-    # DisplayWindow.moc.cpp
     ${DISPLAYWINDOWMOCCPP}
 )
 ADD_DEPENDENCIES( metil_thread ${ARITHMETIC_OPERATION_OUT} )

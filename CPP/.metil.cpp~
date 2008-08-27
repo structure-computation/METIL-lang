@@ -49,10 +49,10 @@ int display_stack() { // for gdb
 #ifdef QT4_FOUND
 struct MetilQtThread : public QThread {
     MetilQtThread() {
+        connect( this, SIGNAL(finished()), qApp, SLOT(quit()) );
     }
     void run() {
         thread_loop( main_thread );
-        qApp->quit();
     }
 };
 #endif // QT4_FOUND
@@ -212,7 +212,7 @@ int main(int argc,char **argv) {
         main_thread->display_window_creator = new DisplayWindowCreator;
         
         MetilQtThread mqt;
-        mqt.start();
+        QTimer::singleShot( 0, &mqt, SLOT(start()) );
         
         qapp.exec();
     #else

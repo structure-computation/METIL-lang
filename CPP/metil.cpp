@@ -16,6 +16,7 @@ extern "C" {
 #ifdef QT4_FOUND
     #include <QtGui/QApplication>
     #include <QtCore/QThread>
+    #include <QtCore/QTimer>
 #endif // QT4_FOUND
 
 
@@ -212,7 +213,7 @@ int main(int argc,char **argv) {
         main_thread->display_window_creator = new DisplayWindowCreator;
         
         MetilQtThread mqt;
-        mqt.start();
+        QTimer::singleShot( 0, &mqt, SLOT(start()) );
         
         qapp.exec();
     #else
