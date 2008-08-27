@@ -216,7 +216,7 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
             case TYPE_CHAR_string: {
                 const char *old_str = s;
                 while ( *(++s) and (*s != '"' or (s[-1] == '\\' and s[-2] != '\\')) ) {
-                    if ( s[0] == '$' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
+                    if ( s[0] == '$' and s[-1] != '$' and s[-1] != '\\' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
                         read_dollar( old_str + 1 );
                         old_str = --s;
                     }

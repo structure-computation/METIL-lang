@@ -19,6 +19,7 @@
 #include "system.h"
 #include "cfile.h"
 #include "mutex.h"
+#include "DisplayWindow.h"
 #include "functionnal.h"
 #include "md5.h"
 #include "metil_interactive.h"
@@ -70,6 +71,7 @@ Thread::Thread( Scope *main_scope_, ErrorList *error_list_, Thread *parent_, uns
     current_def_trial = NULL;
     current_self = NULL;
     compile_mode = false;
+    profile_mode = false;
     max_recursive_depth = 500;
     
 //     display_stack_file.open("ticks");
@@ -534,16 +536,15 @@ template<int compile_mode,int profile_mode> bool thread_loop_( Thread *th, const
     return true;
 }
 
-bool thread_loop( Thread *th, bool compile_mode, bool profile_mode ) {
-    th->compile_mode = compile_mode;
-    if ( compile_mode ) {
-        if ( profile_mode )
+bool thread_loop( Thread *th ) {
+    if ( th->compile_mode ) {
+        if ( th->profile_mode )
             return thread_loop_( th, N<1>(), N<1>() );
         else
             return thread_loop_( th, N<1>(), N<0>() );
     }
     else {
-        if ( profile_mode )
+        if ( th->profile_mode )
             return thread_loop_( th, N<0>(), N<1>() );
         else
             return thread_loop_( th, N<0>(), N<0>() );

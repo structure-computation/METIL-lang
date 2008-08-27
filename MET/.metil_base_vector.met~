@@ -1919,8 +1919,8 @@ class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
                     vs->values[i] = v
                     return none
                 if vs->indices[i] > ind
-                    vs->indices.new_elem_at_position( i ) = ind
-                    vs->values.new_elem_at_position( i ) = v
+                    @vs->indices.new_elem_at_position( i ) = ind
+                    @vs->values .new_elem_at_position( i ) = v
                     return none
             vs->indices.push_back( ind )
             vs->values.push_back( v )

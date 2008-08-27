@@ -28,6 +28,19 @@ IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
     ADD_DEFINITIONS( -I${MPI_INCLUDE_PATH} )
 ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 
+
+# Qt4 library
+FIND_PACKAGE(Qt4)
+INCLUDE(${QT_USE_FILE})
+CONFIGURE_FILE( metil_qt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config.h )
+MESSAGE( ${QT4_FOUND} )
+SET( DISPLAYWINDOWMOCCPP  )
+IF(QT4_FOUND)
+    SET( DISPLAYWINDOWMOCCPP DisplayWindow.moc.cpp )
+    QT4_GENERATE_MOC( DisplayWindow.h ${DISPLAYWINDOWMOCCPP} )
+ENDIF(QT4_FOUND)
+
+
 # ieee754 + BigEndian
 INCLUDE( TestBigEndian )
 TEST_BIG_ENDIAN( WORDS_BIGENDIAN )
@@ -110,6 +123,8 @@ ADD_LIBRARY( metil_thread STATIC
     metil_interactive.cpp
     transientdata.cpp
     md5.cpp
+    DisplayWindow.cpp
+    ${DISPLAYWINDOWMOCCPP}
 )
 ADD_DEPENDENCIES( metil_thread ${ARITHMETIC_OPERATION_OUT} )
 
@@ -121,12 +136,12 @@ ADD_LIBRARY( metil_mpi_wrap_no STATIC mpi_wrap_no.c )
 
 # main executable
 ADD_EXECUTABLE( metil metil.cpp )
-TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ) # -ltermcap 
+TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${QT_LIBRARIES} ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ) # -ltermcap 
 
 # main mpi executable
 IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
     ADD_EXECUTABLE( metil_mpi metil.cpp )
-    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ${MPI_LIBRARY} -llam ) #  -ltermcap
+    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${QT_LIBRARIES} ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ${MPI_LIBRARY} -llam ) #  -ltermcap
 ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 MESSAGE( ${MPI_LIBRARY} )
 

@@ -33,7 +33,7 @@ void write_cases_for_thread_loop( const char *file_name, const vector<TokDef> &t
     }
 }
 
-void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFunction *> > &name_of_primitive_functions, map<string,PrimitiveClass *> &sar_name_to_class ) {
+void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFunction *> > &name_of_primitive_functions, map<string,PrimitiveClass *> &met_name_to_class ) {
     // exec functions
     for(map<string,vector<PrimitiveFunction *> >::const_iterator iter=name_of_primitive_functions.begin();iter!=name_of_primitive_functions.end();++iter) {
         const std::string &name = iter->first;
@@ -59,11 +59,11 @@ void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFuncti
                     else if ( pf->args[num_arg].type=="Bool" )
                         ftc << "    Bool " << an << "( args[" << num_arg << "]->data, 1 << 7-args[" << num_arg << "]->get_bit_offset() );\n";
                     else
-                        ftc << "    " << sar_name_to_class[pf->args[num_arg].type]->cpp_name << " &" << an << " = *reinterpret_cast<" << sar_name_to_class[pf->args[num_arg].type]->cpp_name << " *>( args[" << num_arg << "]->data );\n";
+                        ftc << "    " << met_name_to_class[pf->args[num_arg].type]->cpp_name << " &" << an << " = *reinterpret_cast<" << met_name_to_class[pf->args[num_arg].type]->cpp_name << " *>( args[" << num_arg << "]->data );\n";
                 }
                 // self 
                 if ( class_name.size() ) {
-                    std::string cpp_name = sar_name_to_class[class_name]->cpp_name;
+                    std::string cpp_name = met_name_to_class[class_name]->cpp_name;
                     if ( class_name=="Bool" )
                         ftc << "    Bool self( self_var->data, 1 << 7-self_var->get_bit_offset() );\n";
                     else
@@ -82,7 +82,7 @@ void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFuncti
                     if ( pf->ret != "manual" ) {
                         ftc << "    char *ret_data;\n";
                         ftc << "    if ( return_var ) {\n";
-                        ftc << "        const unsigned size_ret = GetSizeInBytesForLonelyVariableOf<" << sar_name_to_class[pf->ret]->cpp_name << ">::res;\n";
+                        ftc << "        const unsigned size_ret = GetSizeInBytesForLonelyVariableOf<" << met_name_to_class[pf->ret]->cpp_name << ">::res;\n";
                         ftc << "        ret_data = (char *)malloc( size_ret + sizeof(TransientData) + sizeof(int) );\n";
                         ftc << "        return_var->data = ret_data;\n";
                         ftc << "        return_var->type = global_data." << pf->ret << ";\n";
@@ -98,14 +98,14 @@ void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFuncti
                         ftc << "        *return_var->cpt_use = 0;\n";
                         ftc << "    }\n";
                         ftc << "    else {\n";
-                        ftc << "        char tmp[ GetSizeInBytesForLonelyVariableOf<" << sar_name_to_class[pf->ret]->cpp_name << ">::res ];\n";
+                        ftc << "        char tmp[ GetSizeInBytesForLonelyVariableOf<" << met_name_to_class[pf->ret]->cpp_name << ">::res ];\n";
                         ftc << "        ret_data = tmp;\n";
                         ftc << "    }\n";
                         // cpp return variable
                         if ( pf->ret=="Bool" )
                             ftc << "    Bool ret( ret_data, 1 << 7 );\n";
                         else
-                            ftc << "    " << sar_name_to_class[pf->ret]->cpp_name << " &ret = *reinterpret_cast<" << sar_name_to_class[pf->ret]->cpp_name << " *>( ret_data );\n";
+                            ftc << "    " << met_name_to_class[pf->ret]->cpp_name << " &ret = *reinterpret_cast<" << met_name_to_class[pf->ret]->cpp_name << " *>( ret_data );\n";
                     }
                 }
                 else {
@@ -260,12 +260,12 @@ void write_function_decl( ostream &ftc, const vector<TokDef> &tok_defs, unsigned
     ftc << "*/\n";
 }
 
-void write_register_primitive_classes( ostream &ftc, const vector<PrimitiveClass> &primitive_classes, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &sar_name_to_class ) {
+void write_register_primitive_classes( ostream &ftc, const vector<PrimitiveClass> &primitive_classes, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &met_name_to_class ) {
     unsigned cpt_prim = 0;
     for(vector<PrimitiveClass>::const_iterator iter=primitive_classes.begin();iter!=primitive_classes.end();++iter,++cpt_prim) {
         unsigned nb_methods = 0;
         for(unsigned i=0;i<primitive_functions.size();++i)
-            nb_methods += ( primitive_functions[i].method_of == iter->sar_name );
+            nb_methods += ( primitive_functions[i].method_of == iter->met_name );
         ftc << "    // ----------------------------- CLASS -----------------------------\n";
         // DefinitionData
         ftc << "    dd = DefinitionData::make_new(0,Tok::Definition::CLASS + Tok::Definition::STATIC );\n";
@@ -275,23 +275,23 @@ void write_register_primitive_classes( ostream &ftc, const vector<PrimitiveClass
         ftc << "    dd->try_block = NULL;\n";
         ftc << "    dd->block = NULL;\n";
         ftc << "    dd->sourcefile = NULL;\n";
-        ftc << "    dd->name = Nstring(\"" << iter->sar_name << "\");\n";
+        ftc << "    dd->name = Nstring(\"" << iter->met_name << "\");\n";
         ftc << "    dd->pertinence = FLOAT64_MAX_VAL;\n";
         ftc << "    dd->min_nb_args = 0;\n";
         ftc << "    dd->nb_args = 0;\n";
         ftc << "    dd->next_with_same_name = NULL;\n\n";
         // type init
-        ftc << "    global_data." << iter->sar_name << " = types->new_elem();\n";
-        ftc << "    *dd->type_cache.new_elem() = global_data." << iter->sar_name << ";\n";
-        ftc << "    global_data." << iter->sar_name << "->init( " << nb_methods + iter->attributes.size() << " );\n";
-        ftc << "    global_data." << iter->sar_name << "->init_md5_attributes_control_sum( " << cpt_prim << " );\n";
-        ftc << "    global_data." << iter->sar_name << "->def_data = dd;\n";
-        ftc << "    global_data." << iter->sar_name << "->name = dd->name;\n";
-        ftc << "    global_data." << iter->sar_name << "->data_size_in_bits = GetSizeInBitsOf<" << iter->cpp_name << ">::res;\n";
-        ftc << "    global_data." << iter->sar_name << "->needed_alignement = NeededAlignementOf<" << iter->cpp_name << ">::res;\n";
-        ftc << "    global_data." << iter->sar_name << "->nb_sub_objects = 0;\n";
-        ftc << "    global_data." << iter->sar_name << "->reassign_using_mem_copy = " << iter->reassign_using_mem_copy << ";\n";
-        ftc << "    global_data.primitive_classes[" << cpt_prim << "] = global_data." << iter->sar_name << ";\n\n";
+        ftc << "    global_data." << iter->met_name << " = types->new_elem();\n";
+        ftc << "    *dd->type_cache.new_elem() = global_data." << iter->met_name << ";\n";
+        ftc << "    global_data." << iter->met_name << "->init( " << nb_methods + iter->attributes.size() << " );\n";
+        ftc << "    global_data." << iter->met_name << "->init_md5_attributes_control_sum( " << cpt_prim << " );\n";
+        ftc << "    global_data." << iter->met_name << "->def_data = dd;\n";
+        ftc << "    global_data." << iter->met_name << "->name = dd->name;\n";
+        ftc << "    global_data." << iter->met_name << "->data_size_in_bits = GetSizeInBitsOf<" << iter->cpp_name << ">::res;\n";
+        ftc << "    global_data." << iter->met_name << "->needed_alignement = NeededAlignementOf<" << iter->cpp_name << ">::res;\n";
+        ftc << "    global_data." << iter->met_name << "->nb_sub_objects = 0;\n";
+        ftc << "    global_data." << iter->met_name << "->reassign_using_mem_copy = " << iter->reassign_using_mem_copy << ";\n";
+        ftc << "    global_data.primitive_classes[" << cpt_prim << "] = global_data." << iter->met_name << ";\n\n";
         
         // register Definition
         ftc << "    def_v = current_variable_sp++; def_v->init( global_data.Def, Variable::CONST | Variable::IS_PRIMARY_DEF );\n";
@@ -300,17 +300,17 @@ void write_register_primitive_classes( ostream &ftc, const vector<PrimitiveClass
         ftc << "    main_scope->register_var( def_v, dd->name );\n\n";
     }
 }
-void write_register_primitive_classes_attr( ostream &ftc, const vector<PrimitiveClass> &primitive_classes, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &sar_name_to_class ) {
+void write_register_primitive_classes_attr( ostream &ftc, const vector<PrimitiveClass> &primitive_classes, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &met_name_to_class ) {
     // attributes
     for(vector<PrimitiveClass>::const_iterator iter=primitive_classes.begin();iter!=primitive_classes.end();++iter) {
-        ftc << "    tmp_type = global_data." << iter->sar_name << ";\n";
+        ftc << "    tmp_type = global_data." << iter->met_name << ";\n";
         for(unsigned i=0;i<iter->attributes.size();++i) {
             ftc << "    t_def_v = tmp_type->variables + tmp_type->nb_variables++;\n";
             ftc << "    t_def_v->num_attribute = -1;\n";
             ftc << "    t_def_v->num_in_transient_data = -1;\n";
             ftc << "    t_def_v->v.init( global_data." << iter->attributes[i].type << ", Variable::CONST | Variable::STATIC );\n";
             if ( iter->attributes[i].type=="Bool" ) ftc << "    Bool( t_def_v->v.data, 1 << 7 ) = " << iter->attributes[i].value << ";\n";
-            else ftc << "    *reinterpret_cast<" << sar_name_to_class[iter->attributes[i].type]->cpp_name << " *>( t_def_v->v.data ) = " << iter->attributes[i].value << ";\n";
+            else ftc << "    *reinterpret_cast<" << met_name_to_class[iter->attributes[i].type]->cpp_name << " *>( t_def_v->v.data ) = " << iter->attributes[i].value << ";\n";
             ftc << "    tmp_type->register_var( t_def_v, Nstring(\"" << iter->attributes[i].name << "\") );\n";
         }
     }
@@ -374,18 +374,19 @@ void write_direct_conv_to_bool( std::ostream &ftc, const vector<PrimitiveClass> 
     ftc << "int direct_conv_to_bool( Variable *v ) {\n";
     ftc << "    if ( v->type == global_data.Bool ) return bool( Bool( v->data, 1 << 7-v->get_bit_offset() ) );\n";
     for(unsigned i=0;i<primitive_classes.size();++i)
-        if ( primitive_classes[i].sar_name!="Bool" and 
-             primitive_classes[i].sar_name!="Def" and 
-             primitive_classes[i].sar_name!="Property" and
-             primitive_classes[i].sar_name!="Error" and
-             primitive_classes[i].sar_name!="Void" and
-             primitive_classes[i].sar_name!="Lambda" and
-             primitive_classes[i].sar_name!="CompiledFunctionSet_" and
-             primitive_classes[i].sar_name!="Op" and
-             primitive_classes[i].sar_name!="Pthread" and
-             primitive_classes[i].sar_name!="Semaphore" and
-             primitive_classes[i].sar_name!="BlockOfTok" )
-            ftc << "    if ( v->type == global_data." << primitive_classes[i].sar_name << " ) return bool( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) );\n";
+        if ( primitive_classes[i].met_name!="Bool" and 
+             primitive_classes[i].met_name!="Def" and 
+             primitive_classes[i].met_name!="Property" and
+             primitive_classes[i].met_name!="Error" and
+             primitive_classes[i].met_name!="Void" and
+             primitive_classes[i].met_name!="Lambda" and
+             primitive_classes[i].met_name!="CompiledFunctionSet_" and
+             primitive_classes[i].met_name!="Op" and
+             primitive_classes[i].met_name!="Pthread" and
+             primitive_classes[i].met_name!="Semaphore" and
+             primitive_classes[i].met_name!="DisplayWindow_" and
+             primitive_classes[i].met_name!="BlockOfTok" )
+            ftc << "    if ( v->type == global_data." << primitive_classes[i].met_name << " ) return bool( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) );\n";
     ftc << "    return -1;\n";
     ftc << "}\n";
 }
@@ -393,19 +394,19 @@ void write_direct_conv_to_bool( std::ostream &ftc, const vector<PrimitiveClass> 
 void write_direct_conv_to_Float64( std::ostream &ftc, const vector<PrimitiveClass> &primitive_classes ) {
     ftc << "inline bool direct_conv_to_Float64( Variable *v, Float64 &res ) {\n";
     for(unsigned i=0;i<primitive_classes.size();++i)
-        if ( primitive_classes[i].sar_name!="Def" and
-             primitive_classes[i].sar_name!="Property" and
-             primitive_classes[i].sar_name!="Error" and
-             primitive_classes[i].sar_name!="Void" and
-             primitive_classes[i].sar_name!="Lambda" and
-             primitive_classes[i].sar_name!="CompiledFunctionSet_" and
-             primitive_classes[i].sar_name!="UntypedPtr" and
-             primitive_classes[i].sar_name!="CFile" and
-             primitive_classes[i].sar_name!="Op" and
-             primitive_classes[i].sar_name!="Pthread" and
-             primitive_classes[i].sar_name!="Semaphore" and
-             primitive_classes[i].sar_name!="BlockOfTok" )
-            ftc << "    if ( v->type == global_data." << primitive_classes[i].sar_name << " ) { res = Float64( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) ); return true; }\n";
+        if ( primitive_classes[i].met_name!="Def" and
+             primitive_classes[i].met_name!="Property" and
+             primitive_classes[i].met_name!="Error" and
+             primitive_classes[i].met_name!="Void" and
+             primitive_classes[i].met_name!="Lambda" and
+             primitive_classes[i].met_name!="CompiledFunctionSet_" and
+             primitive_classes[i].met_name!="UntypedPtr" and
+             primitive_classes[i].met_name!="CFile" and
+             primitive_classes[i].met_name!="Op" and
+             primitive_classes[i].met_name!="Pthread" and
+             primitive_classes[i].met_name!="Semaphore" and
+             primitive_classes[i].met_name!="BlockOfTok" )
+            ftc << "    if ( v->type == global_data." << primitive_classes[i].met_name << " ) { res = Float64( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) ); return true; }\n";
     ftc << "    return false;\n";
     ftc << "}\n";
 }
@@ -429,22 +430,22 @@ void write_create_functionnal( std::ostream &ftc ) {
 //             const char *lst[] = {"zero","one","two"};
 //             for(int n=0;n<3;++n) {
 //                 // op
-//                 ftc << "    global_data." << pc->sar_name << "->" << lst[n] << "_op = Op::new_variable_op( global_data." << pc->sar_name << " );\n";
-//                 ftc << "    def_v = current_variable_sp++; def_v->init( global_data." << pc->sar_name << ", Variable::CONST ); def_v->transient_data->op = global_data." << pc->sar_name << "->" << lst[n] << "_op;\n";
+//                 ftc << "    global_data." << pc->met_name << "->" << lst[n] << "_op = Op::new_variable_op( global_data." << pc->met_name << " );\n";
+//                 ftc << "    def_v = current_variable_sp++; def_v->init( global_data." << pc->met_name << ", Variable::CONST ); def_v->transient_data->op = global_data." << pc->met_name << "->" << lst[n] << "_op;\n";
 //                 
 //                 // variables
-//                 ftc << "    global_data." << pc->sar_name << "->" << lst[n] << "_var = global_data." << pc->sar_name << "->" << lst[n] << "_op->variable_data();\n";
-//                 ftc << "    global_data." << pc->sar_name << "->" << lst[n] << "_var->init( global_data." << pc->sar_name << ", Variable::CONST );\n";
+//                 ftc << "    global_data." << pc->met_name << "->" << lst[n] << "_var = global_data." << pc->met_name << "->" << lst[n] << "_op->variable_data();\n";
+//                 ftc << "    global_data." << pc->met_name << "->" << lst[n] << "_var->init( global_data." << pc->met_name << ", Variable::CONST );\n";
 //                 
-//                 if ( pc->sar_name=="Rationnal" ) ftc << "    reinterpret_cast<" << pc->cpp_name << " *>(global_data." << pc->sar_name << "->" << lst[n] << "_var->data )->init(" << n << ");\n";
-//                 else if ( pc->sar_name=="Bool" ) ftc << "    Bool( global_data." << pc->sar_name << "->" << lst[n] << "_var->data, 1 << 7 ) = " << n << ";\n";
-//                 else ftc << "    *reinterpret_cast<" << pc->cpp_name << " *>(global_data." << pc->sar_name << "->" << lst[n] << "_var->data ) = " << n << ";\n";
+//                 if ( pc->met_name=="Rationnal" ) ftc << "    reinterpret_cast<" << pc->cpp_name << " *>(global_data." << pc->met_name << "->" << lst[n] << "_var->data )->init(" << n << ");\n";
+//                 else if ( pc->met_name=="Bool" ) ftc << "    Bool( global_data." << pc->met_name << "->" << lst[n] << "_var->data, 1 << 7 ) = " << n << ";\n";
+//                 else ftc << "    *reinterpret_cast<" << pc->cpp_name << " *>(global_data." << pc->met_name << "->" << lst[n] << "_var->data ) = " << n << ";\n";
 //             }
 //         }
 //     }
 // }
 
-// void write_primitive_code_for_op( ostream &ftc, const PrimitiveFunction &pc, map<string,PrimitiveClass *> &sar_name_to_class ) {
+// void write_primitive_code_for_op( ostream &ftc, const PrimitiveFunction &pc, map<string,PrimitiveClass *> &met_name_to_class ) {
 //     if ( pc.ret.size() == 0 )
 //         return;
 //     for(unsigned i=0;i<pc.args.size();++i)
@@ -454,9 +455,9 @@ void write_create_functionnal( std::ostream &ftc ) {
 //     ftc << "}\n";
 // }
 
-// void write_primitive_code_for_op( ostream &ftc, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &sar_name_to_class ) {
+// void write_primitive_code_for_op( ostream &ftc, const vector<PrimitiveFunction> &primitive_functions, map<string,PrimitiveClass *> &met_name_to_class ) {
 //     for(unsigned i=0;i<primitive_functions.size();++i) {
-//         write_primitive_code_for_op( ftc, primitive_functions[i], sar_name_to_class );
+//         write_primitive_code_for_op( ftc, primitive_functions[i], met_name_to_class );
 //     }
 // }
 
@@ -467,14 +468,14 @@ void write_generated_tok_methods_cpp( const char *file_name, const vector<TokDef
     map<string,vector<PrimitiveFunction *> > name_of_primitive_functions;
     for(unsigned i=0;i<primitive_functions.size();++i)
         name_of_primitive_functions[ primitive_functions[i].name ].push_back( &primitive_functions[i] );
-    map<string,PrimitiveClass *> sar_name_to_class;
+    map<string,PrimitiveClass *> met_name_to_class;
     for(unsigned i=0;i<primitive_classes.size();++i)
-        sar_name_to_class[ primitive_classes[i].sar_name ] = &primitive_classes[i];
+        met_name_to_class[ primitive_classes[i].met_name ] = &primitive_classes[i];
     
     ftc << "\n";
     
     // primitive exec and try code
-    write_primitive_code( ftc, name_of_primitive_functions, sar_name_to_class );
+    write_primitive_code( ftc, name_of_primitive_functions, met_name_to_class );
     
     // register_primitives
     ftc << "void Thread::primitive_init() {\n";
@@ -483,11 +484,11 @@ void write_generated_tok_methods_cpp( const char *file_name, const vector<TokDef
     ftc << "    Variable *def_v;\n\n";
     ftc << "    TypeVariable *t_def_v;\n\n";
     ftc << "    Type *tmp_type;\n\n";
-    write_register_primitive_classes( ftc, primitive_classes, primitive_functions, sar_name_to_class );
+    write_register_primitive_classes( ftc, primitive_classes, primitive_functions, met_name_to_class );
     write_register_primitive_functions( ftc, name_of_primitive_functions );
     write_create_functionnal( ftc );
     // write_create_zero_one_buff( ftc, primitive_classes );
-    write_register_primitive_classes_attr( ftc, primitive_classes, primitive_functions, sar_name_to_class );
+    write_register_primitive_classes_attr( ftc, primitive_classes, primitive_functions, met_name_to_class );
     ftc << "}\n";
     
     // thread loop
@@ -504,7 +505,7 @@ void write_generated_globaldata_attributes_h( const char *file_name, const vecto
     // primitive_classes, global_data.Float64, ...
     fgp << "    Type *primitive_classes[" << primitive_classes.size() << "];\n";
     for(vector<PrimitiveClass>::const_iterator iter=primitive_classes.begin();iter!=primitive_classes.end();++iter)
-        fgp << "    Type *" << iter->sar_name << ";\n";
+        fgp << "    Type *" << iter->met_name << ";\n";
 }
 
 int main(int argc, char **argv) {

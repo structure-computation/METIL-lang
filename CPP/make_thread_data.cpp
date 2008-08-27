@@ -384,6 +384,7 @@ void write_direct_conv_to_bool( std::ostream &ftc, const vector<PrimitiveClass> 
              primitive_classes[i].met_name!="Op" and
              primitive_classes[i].met_name!="Pthread" and
              primitive_classes[i].met_name!="Semaphore" and
+             primitive_classes[i].met_name!="DisplayWindow_" and
              primitive_classes[i].met_name!="BlockOfTok" )
             ftc << "    if ( v->type == global_data." << primitive_classes[i].met_name << " ) return bool( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) );\n";
     ftc << "    return -1;\n";
@@ -404,6 +405,7 @@ void write_direct_conv_to_Float64( std::ostream &ftc, const vector<PrimitiveClas
              primitive_classes[i].met_name!="Op" and
              primitive_classes[i].met_name!="Pthread" and
              primitive_classes[i].met_name!="Semaphore" and
+             primitive_classes[i].met_name!="DisplayWindow_" and
              primitive_classes[i].met_name!="BlockOfTok" )
             ftc << "    if ( v->type == global_data." << primitive_classes[i].met_name << " ) { res = Float64( *reinterpret_cast<const " << primitive_classes[i].cpp_name << " *>(v->data) ); return true; }\n";
     ftc << "    return false;\n";

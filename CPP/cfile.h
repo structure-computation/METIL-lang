@@ -28,6 +28,10 @@ struct CFile {
         return res;
     }
     
+    void read_ascii( Int32 &a ) { fscanf( f, "%i", &a ); }
+    void read_ascii( Float32 &a ) { fscanf( f, "%f", &a ); }
+    void read_ascii( Float64 &a ) { fscanf( f, "%lf", &a ); }
+    
     void close() {
         if ( f and f != stdout and f != stderr and f != stdin ) {
             if ( pipe ) pclose( f );

@@ -174,7 +174,7 @@ inline void get_primitives_File( std::vector<PrimitiveClass> &primitive_classes,
     
     primitive_functions.push_back( PrimitiveFunction( "last_modification_time_or_zero_of_file_named", "ret = last_modification_time_or_zero_of_file_named( a );", /*ret*/"Int64" ).A("any").set_supplementary_cond("args[0]->type == global_data.String") );
     
-    primitive_functions.push_back( PrimitiveFunction( "get_next_line_", "get_next_line_( th, tok, a, return_var );", /*ret*/"manual" ).A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "get_next_line_", "get_next_line_( th, tok, a, b, return_var );", /*ret*/"manual" ).A("CFile").A("Int32") );
 }
 
 inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -563,6 +563,14 @@ void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std
 //     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = a;" ).M("Type").A("Type") );
 // }
 
+void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
+    primitive_classes.push_back( PrimitiveClass( "DisplayWindow_", "DisplayWindowPtr" ) );
+    
+    primitive_functions.push_back( PrimitiveFunction( "init", "th->display_window_creator->make_new_window( &self, a );" ).M("DisplayWindow_").A(/*nb dim*/"Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__();" ) );
+    // primitive_functions.push_back( PrimitiveFunction( "destroy", "self->deleteLater();" ).M("DisplayWindow_") );
+}
+
 // -----------------------------------------------------------------------------------------------------------------------
 inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
     //
@@ -604,6 +612,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     get_primitives_CompiledFunctionSet( primitive_classes, primitive_functions );
     get_primitives_DlLoader( primitive_classes, primitive_functions );
     get_primitives_Pthread( primitive_classes, primitive_functions );
+    get_primitives_DisplayWindow( primitive_classes, primitive_functions );
     
     // need destroy
     
@@ -733,6 +742,12 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( &a );" ).A("Def").M("Def",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( &a );" ).A("BlockOfTok").M("BlockOfTok",/*modify*/"true") );
     
+    //
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Int32").A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Float32").A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Float64").A("CFile") );
+    
+    
     // +, -, / ...
     const char *arithmetic_operations[] = {"add","sub","mul",NULL};
     for( const char **a=arithmetic_operations; *a; ++a )
@@ -773,7 +788,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "sub", "init_arithmetic( ret, -a );", /*ret*/signed_correspondance(primitive_classes[i]) ).A(primitive_classes[i].met_name) );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].met_name != "Bool" ) {
-            primitive_functions.push_back( PrimitiveFunction( "mod", "init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "mod", "if ( not b ) th->display_stack(tok); init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
             primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
         }
     }

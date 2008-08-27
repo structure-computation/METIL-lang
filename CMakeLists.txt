@@ -1,6 +1,8 @@
 # project name
 PROJECT( metil )
 
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
 # test
 # SET( CTEST_COMMAND "/usr/local/bin/ctest -D Experimental" )
 # SET (DROP_SITE "localhost")

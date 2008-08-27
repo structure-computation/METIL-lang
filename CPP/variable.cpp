@@ -723,9 +723,11 @@ void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *retur
     assign_string( th, tok, return_var, &res[0], res.size() );
 }
 
-void get_next_line_( Thread *th, const void *tok, CFile &a, Variable *return_var ) {
+void get_next_line_( Thread *th, const void *tok, CFile &a, Int32 b, Variable *return_var ) {
     std::string res;
-    while ( true ) {
+    if ( b < 0 )
+        b = std::numeric_limits< Int32 >::max();
+    for( ; b>=0; --b ) {
         char c = getc( a.f );
         if ( feof( a.f ) or c=='\n' )
             break;

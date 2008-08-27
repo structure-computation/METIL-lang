@@ -7,9 +7,17 @@
 #include "globaldata.h"
 #include "autorestore.h"
 #include "lexer.h"
+#include "metil_qt_config.h"
+#include "DisplayWindow.h"
 extern "C" {
     #include "mpi_wrap.h"
 }
+
+#ifdef QT4_FOUND
+    #include <QtGui/QApplication>
+    #include <QtCore/QThread>
+#endif // QT4_FOUND
+
 
 #include <iostream>
 #ifndef WITHOUT_SIGNAL
@@ -38,6 +46,17 @@ int display_stack() { // for gdb
     return 0;
 }
 
+#ifdef QT4_FOUND
+struct MetilQtThread : public QThread {
+    MetilQtThread() {
+        connect( this, SIGNAL(finished()), qApp, SLOT(quit()) );
+    }
+    void run() {
+        thread_loop( main_thread );
+    }
+};
+#endif // QT4_FOUND
+
 #ifndef WITHOUT_SIGNAL
 void signal_mgr(int sig) {
     switch ( sig ) {
@@ -62,6 +81,7 @@ void signal_mgr(int sig) {
 }
 #endif
 
+
 int main(int argc,char **argv) {
     #ifndef WITHOUT_SIGNAL
         signal( SIGINT , signal_mgr );
@@ -78,8 +98,7 @@ int main(int argc,char **argv) {
     metil_mpi_init( argc, argv );
     
     // argument parsing
-    const char *file_to_compile = NULL, *output_file = NULL;
-    bool want_prof = false;
+    const char *file_to_compile = NULL, *output_file = NULL, *file_to_interpret = NULL;
     for(int i=1;i<argc;++i) {
         // options with only one '-'
         if ( argv[i][0]=='-' and argv[i][1]!='-' ) {
@@ -121,7 +140,7 @@ int main(int argc,char **argv) {
         }
         // prof
         else if ( strcmp(argv[i],"--prof")==0 ) {
-            want_prof = true;
+            main_thread->profile_mode = true;
         }
         // disp_tok_data
         else if ( strcmp(argv[i],"--disp_tok_data")==0 ) {
@@ -158,26 +177,8 @@ int main(int argc,char **argv) {
                 main_thread->error_list->add( "In compilation mode, arguments that should be passed as parameters of executable (like '"+std::string(argv[i])+"' in this example) are not accepted." );
                 return 1;
             }
-            if ( want_prof )
-                main_thread->interpreter_behavior.prof_entries.filename = "callgrind.out." + std::string(argv[i]);
-                
+            file_to_interpret = argv[i];
             main_thread->argc = argc - i; main_thread->argv = argv + i;
-            //
-            SourceFile *base_sar_init_sf = global_data.get_sourcefile( "metil_base_init.met", "/", main_thread->error_list, &main_thread->interpreter_behavior );
-            SourceFile *sf               = global_data.get_sourcefile( argv[i]              , ".", main_thread->error_list, &main_thread->interpreter_behavior );
-            SourceFile *base_sar_dest_sf = global_data.get_sourcefile( "metil_base_dest.met", "/", main_thread->error_list, &main_thread->interpreter_behavior );
-           
-            if ( base_sar_dest_sf and sf and base_sar_init_sf ) {
-                main_thread->push_prev_file_to_read( base_sar_dest_sf );
-                main_thread->push_prev_file_to_read( sf               );
-                main_thread->push_prev_file_to_read( base_sar_init_sf );
-            }
-            
-            thread_loop( main_thread, false, want_prof );
-            
-            if ( want_prof )
-                main_thread->interpreter_behavior.prof_entries.make_output();
-            return main_thread->return_value;
         }
     }
     
@@ -189,25 +190,43 @@ int main(int argc,char **argv) {
     // else -> command line mode
     if ( output_file ) { main_thread->error_list->add( "Specifing an output file without anything to compile is weird." ); return 7; }
     
+    //
+    if ( main_thread->profile_mode )
+        main_thread->interpreter_behavior.prof_entries.filename = "callgrind.out." + std::string( file_to_interpret ? file_to_interpret : "interp" );
+        
+    //
+    SourceFile *base_sar_init_sf = global_data.get_sourcefile( "metil_base_init.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
+    SourceFile *sf               = global_data.get_sourcefile( file_to_interpret ? file_to_interpret : "metil_base_interprer.met", ".", main_thread->error_list, &main_thread->interpreter_behavior );
+    SourceFile *base_sar_dest_sf = global_data.get_sourcefile( "metil_base_dest.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     
-    // command line mode
-    SourceFile *base_sar_init_sf = global_data.get_sourcefile( "metil_base_init.met"     , "/", main_thread->error_list, &main_thread->interpreter_behavior );
-    SourceFile *sf               = global_data.get_sourcefile( "metil_base_interprer.met", "/", main_thread->error_list, &main_thread->interpreter_behavior );
-    SourceFile *base_sar_dest_sf = global_data.get_sourcefile( "metil_base_dest.met"     , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     if ( base_sar_dest_sf and sf and base_sar_init_sf ) {
         main_thread->push_prev_file_to_read( base_sar_dest_sf );
         main_thread->push_prev_file_to_read( sf               );
         main_thread->push_prev_file_to_read( base_sar_init_sf );
     }
-    thread_loop( main_thread );
-    if ( main_thread->error_list->data.size() )
-        main_thread->return_value = 1;
     
+    #ifdef QT4_FOUND
+        QApplication qapp( argc, argv );
+        qapp.setQuitOnLastWindowClosed( false );
+        
+        main_thread->display_window_creator = new DisplayWindowCreator;
+        
+        MetilQtThread mqt;
+        mqt.start();
+        
+        qapp.exec();
+    #else
+        main_thread->display_window_creator = new DisplayWindowCreator;
+        
+        thread_loop( main_thread );
+    #endif
+    
+    if ( main_thread->profile_mode )
+        main_thread->interpreter_behavior.prof_entries.make_output();
+        
     #ifdef HAVE_MPI
         metil_mpi_finalize();
     #endif // HAVE_MPI
-    
-    //     std::cout << main_thread->nb_accessible_variables() << std::endl;
-    
     return main_thread->return_value;
 }
+

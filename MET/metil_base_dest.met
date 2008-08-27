@@ -1,3 +1,4 @@
+__wait_for_display_windows__()
 
 catch object_associated_with_exception
     TERM := getenv("TERM")

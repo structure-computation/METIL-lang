@@ -153,7 +153,7 @@ void getcwd( Thread *th, const void *tok, Variable *ret );
 void get_os_type_( Thread *th, const void *tok, Variable *return_var );
 void get_cpu_type_( Thread *th, const void *tok, Variable *return_var );
 void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *return_var );
-void get_next_line_( Thread *th, const void *tok, struct CFile &a, Variable *return_var );
+void get_next_line_( Thread *th, const void *tok, struct CFile &a, Int32 b, Variable *return_var );
 
 void exec_ccode_function( void *f_ );
 void exec_ccode_function( void *f_, Variable *a );
