@@ -1,0 +1,6 @@
+#ifndef METIL_QT_CONFIG_H
+#define METIL_QT_CONFIG_H
+
+#cmakedefine QT4_FOUND @QT4_FOUND@
+
+#endif // METIL_QT_CONFIG_H
