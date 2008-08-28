@@ -2,71 +2,24 @@
 #define DISPLAY_WINDOW_H
 
 #include "metil_qt_config.h"
-
 #ifdef QT4_FOUND
+
 #include <QtGui/QMainWindow>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutex>
-
-/** */
-class DisplayWidget : public QWidget {
-public:
-    typedef void PaintFunction( QWidget *, int, QPaintEvent * );
-
-    DisplayWidget( int nb_dim, QWidget *parent );
-    void paintEvent( QPaintEvent * );
-    
-    PaintFunction *paint_function;
-    int nb_dim_;
-};
-
 
 /** */
 class DisplayWindow : public QMainWindow {
     Q_OBJECT
 public:
-    DisplayWindow( int nb_dim, void *paint_function );
+    DisplayWindow();
+    void add_paint_function( void *paint_function, void *data );
+    void rm_paint_functions();
+    void update_disp_widget();
 protected:
-    DisplayWidget *disp_widget;
+    void keyPressEvent( QKeyEvent *event );
+
+    class DisplayWidget *disp_widget;
 };
 
-
-/** */
-class DisplayWindowCreator : public QObject {
-    Q_OBJECT
-public:
-    DisplayWindowCreator();
-    void make_new_window( DisplayWindow **dw, int nb_dim, void *paint_function );
-    void wait_for_display_windows();
-signals:
-    void _make_new_window( DisplayWindow **dw, int nb_dim, void *paint_function );
-    void end_of_the_beans();
-public slots:
-    void __make_new_window( DisplayWindow **dw, int nb_dim, void *paint_function );
-    void lastWindowClosed();
-private:
-    QMutex mutex;
-    QWaitCondition last_window_closed;
-    bool at_least_one_window_was_created;
-};
-
-void __wait_for_display_windows__( struct Thread *th );
-
-#else // QT4_FOUND
-
-class DisplayWindow {
-public:
-};
-
-class DisplayWindowCreator {
-public:
-    void make_new_window( DisplayWindow **dw, int nb_dim ) { *dw = NULL; }
-}
-
-void __wait_for_display_windows__( Thread *th ) {}
-
-#endif
-
-typedef DisplayWindow *DisplayWindowPtr;
+#endif // QT4_FOUND
 
 #endif // DISPLAY_WINDOW_H

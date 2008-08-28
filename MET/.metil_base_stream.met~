@@ -262,6 +262,12 @@ def shift_right(stream,a) when stream.is_stream
 def read_from_stream( self, stream ) when is_of_type_Int32( self ) and stream.is_a_File
     self.__read_from_stream__( stream.f )
 
+def read_from_stream( self, stream ) when is_of_type_Float32( self ) and stream.is_a_File
+    self.__read_from_stream__( stream.f )
+
+def read_from_stream( self, stream ) when is_of_type_Float64( self ) and stream.is_a_File
+    self.__read_from_stream__( stream.f )
+
 stdout ~= File[true ,false]; stdout.f.init( 0 ); stdout.options.init() # standard output stream
 stderr ~= File[true ,false]; stderr.f.init( 1 ); stderr.options.init() # standard output error stream
 stdin  ~= File[false,true ]; stdin .f.init( 2 ); stdin .options.init() # standard input stream
@@ -306,7 +312,9 @@ def write_to_stream( self, stream ) when has___for___method( self ) pertinence -
 
 # things like stream >> vec
 def read_from_stream( self, stream ) when has___for___method( self ) pertinence -1
-    for i in self stream >> i
+    for i in self
+        stream >> i
+        info i
 
 # stream << VarArgs
 def write_to_stream( self, stream ) when is_of_type_VarArgs(self) pertinence -0.5

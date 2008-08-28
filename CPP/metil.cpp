@@ -8,10 +8,11 @@
 #include "autorestore.h"
 #include "lexer.h"
 #include "metil_qt_config.h"
-#include "DisplayWindow.h"
+#include "DisplayWindowCreator.h"
 extern "C" {
     #include "mpi_wrap.h"
 }
+#include <locale.h>
 
 #ifdef QT4_FOUND
     #include <QtGui/QApplication>
@@ -53,6 +54,7 @@ struct MetilQtThread : public QThread {
         connect( this, SIGNAL(finished()), qApp, SLOT(quit()) );
     }
     void run() {
+        setlocale( LC_NUMERIC, "C" );
         thread_loop( main_thread );
     }
 };

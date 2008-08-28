@@ -19,7 +19,7 @@
 #include "system.h"
 #include "cfile.h"
 #include "mutex.h"
-#include "DisplayWindow.h"
+#include "DisplayWindowCreator.h"
 #include "functionnal.h"
 #include "md5.h"
 #include "metil_interactive.h"
@@ -29,6 +29,7 @@
 #include "lambda.h"
 #include "label.h"
 #include "compiledfunctionset.h"
+#include "metil_sys_dir.h"
 #include <assert.h>
 #ifdef __APPLE__
   void *memalign( int align, int size ) { return malloc( size ); }

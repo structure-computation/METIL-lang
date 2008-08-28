@@ -30,6 +30,7 @@ OpInfo operators[] = {
     { "break_n"    , "__break_n__"           , Needrarg   },
     { "pass"       , "__pass__"              , 0          },
     { "self"       , "__self__"              , 0          },
+    { "this"       , "__this__"              , 0          },
     { "try"        , "__try__"               , Needrarg   },
     { "catch"      , "__catch__"             , Needrrargs },
     { "interact"   , "__interact__"          , 0          },

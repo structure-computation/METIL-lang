@@ -33,10 +33,11 @@ ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 FIND_PACKAGE(Qt4)
 INCLUDE(${QT_USE_FILE})
 CONFIGURE_FILE( metil_qt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config.h )
-SET( DISPLAYWINDOWMOCCPP  )
+SET( MOC_CPP_FILES  )
 IF(QT4_FOUND)
-    SET( DISPLAYWINDOWMOCCPP ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp )
-    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindow.h ${DISPLAYWINDOWMOCCPP} )
+    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindow.h  ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp )
+    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindowCreator.h  ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindowCreator.moc.cpp )
+    SET( MOC_CPP_FILES ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindowCreator.moc.cpp )
 ENDIF(QT4_FOUND)
 
 # ieee754 + BigEndian
@@ -98,6 +99,7 @@ ADD_LIBRARY( metil_thread STATIC
 
     mutex.cpp
     dlloader.cpp
+    cfile.cpp
     symbolic/ex.cpp
     symbolic/quadratic_expansion.cpp
     symbolic/polynomial_expansion.cpp
@@ -121,8 +123,10 @@ ADD_LIBRARY( metil_thread STATIC
     metil_interactive.cpp
     transientdata.cpp
     md5.cpp
+    DisplayWindowCreator.cpp
     DisplayWindow.cpp
-    ${DISPLAYWINDOWMOCCPP}
+    DisplayWidget.cpp
+    ${MOC_CPP_FILES}
 )
 ADD_DEPENDENCIES( metil_thread ${ARITHMETIC_OPERATION_OUT} )
 
@@ -150,3 +154,5 @@ IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
     INSTALL( TARGETS metil_mpi RUNTIME DESTINATION bin ) #   LIBRARY DESTINATION lib #   ARCHIVE DESTINATION lib
 ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 
+INSTALL( FILES DisplayWidget.h DESTINATION ${CMAKE_METIL_INSTALL_PREFIX} )
+INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config.h DESTINATION ${CMAKE_METIL_INSTALL_PREFIX} )

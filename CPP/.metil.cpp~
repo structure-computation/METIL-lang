@@ -8,14 +8,16 @@
 #include "autorestore.h"
 #include "lexer.h"
 #include "metil_qt_config.h"
-#include "DisplayWindow.h"
+#include "DisplayWindowCreator.h"
 extern "C" {
     #include "mpi_wrap.h"
 }
+#include <QtCore/QLocale>
 
 #ifdef QT4_FOUND
     #include <QtGui/QApplication>
     #include <QtCore/QThread>
+    #include <QtCore/QTimer>
 #endif // QT4_FOUND
 
 
@@ -52,6 +54,7 @@ struct MetilQtThread : public QThread {
         connect( this, SIGNAL(finished()), qApp, SLOT(quit()) );
     }
     void run() {
+        QLocale::setDefault( QLocale(QLocale::English, QLocale::UnitedStates) );
         thread_loop( main_thread );
     }
 };

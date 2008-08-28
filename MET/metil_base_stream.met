@@ -312,7 +312,8 @@ def write_to_stream( self, stream ) when has___for___method( self ) pertinence -
 
 # things like stream >> vec
 def read_from_stream( self, stream ) when has___for___method( self ) pertinence -1
-    for i in self stream >> i
+    for i in self
+        stream >> i
 
 # stream << VarArgs
 def write_to_stream( self, stream ) when is_of_type_VarArgs(self) pertinence -0.5

@@ -15,8 +15,8 @@ const unsigned MayNeedrarg = 8;
 const unsigned Needrrargs = 16;
 
 struct OpInfo {
-    char *met_name;
-    char *cpp_name;
+    const char *met_name;
+    const char *cpp_name;
     unsigned behavior;
 };
 
