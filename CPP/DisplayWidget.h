@@ -13,20 +13,30 @@
 class DisplayWidget : public QWidget {
 public:
     typedef void PaintFunction( QPainter &, DisplayWidget *, void *, QPaintEvent * );
+    typedef void BoundingBoxFunction( DisplayWidget *, void *, double &, double &, double &, double & );
+    
+    struct DispFun {
+        PaintFunction       *paint_function;
+        BoundingBoxFunction *bounding_box_function;
+        void                *data;
+    };
 
     DisplayWidget( QWidget *parent );
     
-    QVector<QPair<PaintFunction *,void *> > paint_functions;
+    QVector<DispFun> paint_functions;
     int nb_dim;
     double zoom;
     double x_screen_off, y_screen_off;
-    
+    bool anti_aliasing;
+    double shrink;
+    bool zoom_should_be_updated;
 protected:
-    void paintEvent       ( QPaintEvent *event );
-    void wheelEvent       ( QWheelEvent *event );
-    void mousePressEvent  ( QMouseEvent *event );
-    void mouseMoveEvent   ( QMouseEvent *event );
-    void mouseReleaseEvent( QMouseEvent *event );
+    void paintEvent       ( QPaintEvent  *event );
+    void wheelEvent       ( QWheelEvent  *event );
+    void mousePressEvent  ( QMouseEvent  *event );
+    void mouseMoveEvent   ( QMouseEvent  *event );
+    void mouseReleaseEvent( QMouseEvent  *event );
+    void resizeEvent      ( QResizeEvent *event );
     
     int x_during_last_mouse_event;
     int y_during_last_mouse_event;
