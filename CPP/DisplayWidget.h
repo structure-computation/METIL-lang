@@ -5,31 +5,13 @@
 #ifdef QT4_FOUND
 
 #include <QtGui/QWidget>
-#include <QtGui/QPainter>
-#include <QtCore/QVector>
-#include <QtCore/QPair>
- 
+  
 /** */
 class DisplayWidget : public QWidget {
 public:
-    typedef void PaintFunction( QPainter &, DisplayWidget *, void *, QPaintEvent * );
-    typedef void BoundingBoxFunction( DisplayWidget *, void *, double &, double &, double &, double & );
+    DisplayWidget( QWidget *parent, struct DisplayPainter *display_painter );
     
-    struct DispFun {
-        PaintFunction       *paint_function;
-        BoundingBoxFunction *bounding_box_function;
-        void                *data;
-    };
-
-    DisplayWidget( QWidget *parent );
-    
-    QVector<DispFun> paint_functions;
-    int nb_dim;
-    double zoom;
-    double x_screen_off, y_screen_off;
-    bool anti_aliasing;
-    double shrink;
-    bool zoom_should_be_updated;
+    struct DisplayPainter *display_painter;
 protected:
     void paintEvent       ( QPaintEvent  *event );
     void wheelEvent       ( QWheelEvent  *event );

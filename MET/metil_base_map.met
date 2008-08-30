@@ -20,6 +20,12 @@ class Map[ K, V, default_value = V() ]
         call( t.init, varargs )
         return select( t )
     
+    def contains( key )
+        for cpt in 0 .. keys.size
+            if keys[cpt] == key
+                return true
+        return false
+    
     def remove( key )
         for cpt in 0 .. keys.size
             if keys[cpt] == key

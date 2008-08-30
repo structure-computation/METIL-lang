@@ -148,7 +148,6 @@ def xor_boolean(a)
     pouet += 666
 
 # ------------- properties -------------
-def get_this                           ( self ) return &self
 def get_type                           ( self ) return type_of( self )
 def get_tensor_order                   ( self ) return -1 # by default -> a scalar
 def get_sizes( self ) when self.tensor_order <= 0
