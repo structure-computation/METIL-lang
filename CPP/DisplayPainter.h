@@ -27,6 +27,8 @@ struct DisplayPainter {
     
     
     DisplayPainter(); ///
+    void load_settings( class QSettings *settings );
+    void save_settings( class QSettings *settings );
     
     void add_paint_function( void *paint_function, void *bounding_box_function, void *data );
     void rm_paint_functions();
@@ -38,7 +40,8 @@ struct DisplayPainter {
     double get_scale_r( double w, double h ) const;
     void zoom( double fact, double x, double y, double w, double h );
     void pan( double dx, double dy, double w, double h );
-
+    void set_min_max( double mi, double ma );
+    double scaled_val( double val ) const { return mi + val / ( ma - mi + ( ma == mi ) ) * ( ma != mi ); }
     
     double xm() const { return 0.5 * ( x0 + x1 ); }
     double ym() const { return 0.5 * ( y0 + y1 ); }
@@ -46,7 +49,7 @@ struct DisplayPainter {
     
     QVector<DispFun> paint_functions;
     int nb_dim;
-    double x0, y0, x1, y1, shrink;
+    double x0, y0, x1, y1, shrink, mi, ma;
     bool anti_aliasing, borders, zoom_should_be_updated;
     SimpleGradient color_bar_gradient;
 };

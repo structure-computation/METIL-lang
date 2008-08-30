@@ -3,6 +3,8 @@
 
 #include <QtGui/QApplication>
 #include <QtCore/QDebug>
+#include <QtCore/QSettings>
+
 #include "DisplayWindowCreator.h"
 #include "DisplayWindow.h"
 #include "DisplayWidget.h"
@@ -16,8 +18,10 @@ DisplayWindowCreator::DisplayWindowCreator() {
     connect( this, SIGNAL(sig_save_as           ( int, QString, int , int     )), this, SLOT(save_as           ( int, QString, int , int     )) );
     connect( this, SIGNAL(sig_set_anti_aliasing ( int, bool                   )), this, SLOT(set_anti_aliasing ( int, bool                   )) );
     connect( this, SIGNAL(sig_set_shrink        ( int, double                 )), this, SLOT(set_shrink        ( int, double                 )) );
+    connect( this, SIGNAL(sig_set_min_max       ( int, double, double         )), this, SLOT(set_min_max       ( int, double, double         )) );
 
     at_least_one_window_was_created = false;
+    _settings = NULL;
 }
 
 void DisplayWindowCreator::call_add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data ) {
@@ -46,11 +50,17 @@ void DisplayWindowCreator::call_set_shrink( int num_display_window, double val )
     emit sig_set_shrink( num_display_window, val );
 }
 
+void DisplayWindowCreator::call_set_min_max( int num_display_window, double mi, double ma ) {
+    emit sig_set_min_max( num_display_window, mi, ma );
+}
+
 
 
 
 
 void DisplayWindowCreator::add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data ) {
+    if ( not displays.contains( num_display_window ) )
+        displays[ num_display_window ].painter.load_settings( get_settings() );
     displays[ num_display_window ].painter.add_paint_function( paint_function, bounding_box_function, data );
 }
 
@@ -65,16 +75,26 @@ void DisplayWindowCreator::save_as( int num_display_window, QString qs, int w, i
 }
 
 void DisplayWindowCreator::set_anti_aliasing( int num_display_window, bool val ) {
+    if ( not displays.contains( num_display_window ) )
+        displays[ num_display_window ].painter.load_settings( get_settings() );
     displays[ num_display_window ].painter.set_anti_aliasing( val );
 }
 
 void DisplayWindowCreator::set_shrink( int num_display_window, double val ) {
+    if ( not displays.contains( num_display_window ) )
+        displays[ num_display_window ].painter.load_settings( get_settings() );
     displays[ num_display_window ].painter.set_shrink( val );
 }
 
-DisplayWindow *new_disp_win_if_nec( DisplayWindowCreator::Display &d ) {
+void DisplayWindowCreator::set_min_max( int num_display_window, double mi, double ma ) {
+    if ( not displays.contains( num_display_window ) )
+        displays[ num_display_window ].painter.load_settings( get_settings() );
+    displays[ num_display_window ].painter.set_min_max( mi, ma );
+}
+
+DisplayWindow *DisplayWindowCreator::new_disp_win_if_nec( Display &d ) {
     if ( not d.window ) {
-        d.window = new DisplayWindow( &d.painter );
+        d.window = new DisplayWindow( &d.painter, get_settings() );
         d.window->show();
     }
     return d.window;
@@ -95,10 +115,17 @@ void DisplayWindowCreator::wait_for_display_windows() {
     }
 }
 
+QSettings *DisplayWindowCreator::get_settings() {
+    if ( not _settings )
+        _settings = new QSettings( "LMT", "DisplayWindowCreator" );
+    return _settings;
+}
+
 void DisplayWindowCreator::lastWindowClosed() {
     at_least_one_window_was_created = false;
     last_window_closed.wakeAll();
 }
+    
 
 // --------------------------------------------------------------------------------------------------------------------------
 void __wait_for_display_windows__( Thread *th ) {

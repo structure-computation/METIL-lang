@@ -571,7 +571,7 @@ void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classe
     primitive_functions.push_back( PrimitiveFunction( "__update_display_windows__"                 , "th->display_window_creator->call_update_disp_widget( a       );" ).A(/*id*/"Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__set_anti_aliasing_display_windows__"      , "th->display_window_creator->call_set_anti_aliasing ( a, b    );" ).A(/*id*/"Int32").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__set_shrink_display_windows__"             , "th->display_window_creator->call_set_shrink        ( a, b    );" ).A(/*id*/"Int32").A("Float64") );
-    primitive_functions.push_back( PrimitiveFunction( "__save_as_display_windows__"                , "th->display_window_creator->call_save_as           ( a, *(const char **)b->data, *(Int32 *)((const char **)b->data+1) );" ).A(/*id*/"Int32").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "__save_as_display_windows__"                , "th->display_window_creator->call_save_as           ( a, *(const char **)b->data, *(Int32 *)((const char **)b->data+1), c, d );" ).A(/*id*/"Int32").A("any").A("Int32").A("Int32") );
 
     primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__( th );" ) );
     

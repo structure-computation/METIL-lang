@@ -9,6 +9,8 @@
 #include <QtGui/QPainter>
 #include <QtCore/QTimer>
 #include <QtCore/QDebug>
+#include <QtCore/QSettings>
+#include <QtCore/QFile>
 
 #include "DisplayWindow.h"
 #include "DisplayWidget.h"
@@ -16,9 +18,26 @@
 
 // --------------------------------------------------------------------------------------------------------------------------
 
-DisplayWindow::DisplayWindow( DisplayPainter *display_painter ) {
+DisplayWindow::DisplayWindow( DisplayPainter *display_painter, QSettings *settings ) {
     disp_widget = new DisplayWidget( this, display_painter );
     setCentralWidget( disp_widget );
+    load_settings( settings );
+}
+
+void DisplayWindow::load_settings( QSettings *settings ) {
+    settings->beginGroup("DisplayWindow");
+     resize( settings->value( "size", QSize( 400, 400 ) ).toSize() );
+     img_prefix = settings->value( "img_prefix", "img_" ).toString();
+     img_suffix = settings->value( "img_suffix", ".pdf" ).toString();
+    settings->endGroup();
+}
+
+void DisplayWindow::save_settings( QSettings *settings ) {
+    settings->beginGroup("DisplayWindow");
+     settings->setValue( "size", size() );
+     settings->setValue( "img_prefix", img_prefix );
+     settings->setValue( "img_suffix", img_suffix );
+    settings->endGroup();
 }
     
 void DisplayWindow::keyPressEvent( QKeyEvent *event ) {
@@ -33,6 +52,20 @@ void DisplayWindow::keyPressEvent( QKeyEvent *event ) {
     } else if ( event->key() == Qt::Key_F ) {
         disp_widget->display_painter->zoom_should_be_updated = true;
         QTimer::singleShot( 0, disp_widget, SLOT(update()) );
+    } else if ( event->key() == Qt::Key_S ) {
+        if ( event->modifiers() & Qt::ControlModifier ) { // save prefs
+            QSettings settings( "LMT", "DisplayWindowCreator" );
+            save_settings( &settings );
+            disp_widget->display_painter->save_settings( &settings );
+        } else { // save img
+            QString filename;
+            for(unsigned i=0;;++i) {
+                filename = img_prefix + QString::number( i ) + img_suffix;
+                if ( not QFile::exists( filename ) )
+                    break;
+            }
+            disp_widget->display_painter->save_as( filename, disp_widget->width(), disp_widget->height() );
+        }
     } else if ( event->key() == Qt::Key_P ) {
         QPrinter printer;
         QPrintDialog printDialog( &printer, NULL );
@@ -51,6 +84,8 @@ void DisplayWindow::keyPressEvent( QKeyEvent *event ) {
             "<tr><td> <em>F            </em> </td><td></td> fit in window </tr>" \
             "<tr><td> <em>H            </em> </td><td></td> help </tr>" \
             "<tr><td> <em>P            </em> </td><td></td> print </tr>" \
+            "<tr><td> <em>S            </em> </td><td></td> save current image </tr>" \
+            "<tr><td> <em>ctrl-S       </em> </td><td></td> save current image </tr>" \
             "<tr><td> <em>wheel        </em> </td><td></td> zoom </tr>" \
             "<tr><td> <em>shift-wheel  </em> </td><td></td> surface shrink ratio </tr>" \
             "<tr><td> <em>middle button</em> </td><td></td> pan </tr>" \

@@ -8,6 +8,8 @@
 #include <QtGui/QPainter>
 #include <QtGui/QMessageBox>
 #include <QtSvg/QSvgGenerator>
+#include <QtCore/QSettings>
+
 #include "DisplayPainter.h"
 #include <iostream>
 
@@ -23,14 +25,17 @@ void DisplayPainter::SimpleGradient::append( double p, double r, double g, doubl
 }
 QColor DisplayPainter::SimpleGradient::color_at( double p ) {
     p = std::min( 1.0, std::max( 0.0, p ) );
-    for( int i=0; i < data.size(); ++i )
-        if ( data[i+1].p >= p )
+    for( int i=0; i < data.size(); ++i ) {
+        if ( data[i+1].p >= p ) {
+            double d = data[i+1].p - data[i].p; d += not d;
             return QColor( 
-                data[i].r + ( p - data[i].p ) / ( data[i+1].p - data[i].p ) * ( data[i+1].r - data[i].r ),
-                data[i].g + ( p - data[i].p ) / ( data[i+1].p - data[i].p ) * ( data[i+1].g - data[i].g ),
-                data[i].b + ( p - data[i].p ) / ( data[i+1].p - data[i].p ) * ( data[i+1].b - data[i].b ),
-                data[i].a + ( p - data[i].p ) / ( data[i+1].p - data[i].p ) * ( data[i+1].a - data[i].a )
+                255 * ( data[i].r + ( p - data[i].p ) / d * ( data[i+1].r - data[i].r ) ),
+                255 * ( data[i].g + ( p - data[i].p ) / d * ( data[i+1].g - data[i].g ) ),
+                255 * ( data[i].b + ( p - data[i].p ) / d * ( data[i+1].b - data[i].b ) ),
+                255 * ( data[i].a + ( p - data[i].p ) / d * ( data[i+1].a - data[i].a ) )
             );
+        }
+    }
     return QColor( 0, 0, 0 );
 }
 
@@ -38,15 +43,31 @@ QColor DisplayPainter::SimpleGradient::color_at( double p ) {
 DisplayPainter::DisplayPainter() {
     x0 = 0; y0 = 0;
     x1 = 1; y1 = 1;
-    anti_aliasing          = false;
-    borders                = false;
+    anti_aliasing          = 0;
+    borders                = 0;
     shrink                 = 1;
-    zoom_should_be_updated = false;
+    zoom_should_be_updated = 0;
     
-    color_bar_gradient.append( 0.0, 0.0, 0.0, 0.0 );
-    color_bar_gradient.append( 0.3, 0.0, 0.0, 0.5 );
-    color_bar_gradient.append( 0.6, 0.3, 0.3, 0.7 );
+    color_bar_gradient.append( 0.0, 0.0, 0.0, 1.0 );
+    color_bar_gradient.append( 0.3, 0.0, 1.0, 0.0 );
+    color_bar_gradient.append( 0.6, 1.0, 0.0, 0.0 );
     color_bar_gradient.append( 1.0, 1.0, 1.0, 1.0 );
+}
+
+void DisplayPainter::load_settings( QSettings *settings ) {
+    settings->beginGroup("DisplayPainter");
+     anti_aliasing = settings->value( "anti_aliasing", false ).toBool();
+     borders       = settings->value( "borders"      , false ).toBool();
+     shrink        = settings->value( "shrink"       , 1 ).toDouble();
+    settings->endGroup();
+}
+
+void DisplayPainter::save_settings( QSettings *settings ) {
+    settings->beginGroup("DisplayPainter");
+     settings->setValue( "anti_aliasing", anti_aliasing );
+     settings->setValue( "borders"      , borders       );
+     settings->setValue( "shrink"       , shrink        );
+    settings->endGroup();
 }
 
 void DisplayPainter::add_paint_function( void *paint_function, void *bounding_box_function, void *data ) {
@@ -125,6 +146,9 @@ void DisplayPainter::pan( double dx, double dy, double w, double h ) {
     x1 += dx; y1 += dy;
 }
 
+void DisplayPainter::set_min_max( double mi_, double ma_ ) {
+    mi = mi_; ma = ma_;
+}
 
 void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     // hints
