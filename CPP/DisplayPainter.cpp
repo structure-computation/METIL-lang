@@ -152,8 +152,8 @@ void DisplayPainter::save_as( const QString &filename, int w, int h ) {
     if ( filename.endsWith( ".pdf" ) ) {
         QPrinter printer;
         // printer.setPageSize( QPrinter::Custom );
-        // printer.setPageSize( QPrinterPageSize( disp_widget->width(), disp_widget->height() ) );
-        // printer.setPageMargins   ( 0, 0, 0, 0, QPrinter::DevicePixel );
+        printer.setPaperSize     ( QSizeF( w, h ), QPrinter::DevicePixel );
+        printer.setPageMargins   ( 0, 0, 0, 0, QPrinter::DevicePixel );
         printer.setOutputFileName( filename );
         //
         QPainter painter( &printer );
