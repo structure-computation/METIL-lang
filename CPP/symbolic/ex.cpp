@@ -98,6 +98,12 @@ std::string Ex::tex_repr() const {
     op->tex_repr( ss );
     return ss.str();
 }
+    
+std::string Ex::ser_repr() const {
+    std::ostringstream ss;
+    op->ser_repr( ss );
+    return ss.str();
+}
 
 Ex::T Ex::value() const {
     assert( op->type == Op::NUMBER );

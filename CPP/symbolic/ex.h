@@ -47,6 +47,7 @@ struct Ex {
     std::string graphviz_repr( Thread *th, const void *tok, const VarArgs &a ) const;
     std::string cpp_repr() const;
     std::string tex_repr() const;
+    std::string ser_repr() const; // for serialization
     T value() const;
     
     unsigned node_count() const;

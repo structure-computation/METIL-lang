@@ -153,7 +153,7 @@ void getcwd( Thread *th, const void *tok, Variable *ret );
 void get_os_type_( Thread *th, const void *tok, Variable *return_var );
 void get_cpu_type_( Thread *th, const void *tok, Variable *return_var );
 void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *return_var );
-void get_next_line_( Thread *th, const void *tok, struct CFile &a, Variable *return_var );
+void get_next_line_( Thread *th, const void *tok, struct CFile &a, Int32 b, Variable *return_var );
 
 void exec_ccode_function( void *f_ );
 void exec_ccode_function( void *f_, Variable *a );
@@ -168,6 +168,20 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k, Variable *l );
+
+void exec_ccode_function( void *f_ );
+void exec_ccode_function( void *f_, UntypedPtr *a );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g, UntypedPtr *h );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g, UntypedPtr *h, UntypedPtr *i );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g, UntypedPtr *h, UntypedPtr *i, UntypedPtr *j );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g, UntypedPtr *h, UntypedPtr *i, UntypedPtr *j, UntypedPtr *k );
+void exec_ccode_function( void *f_, UntypedPtr *a, UntypedPtr *b, UntypedPtr *c, UntypedPtr *d, UntypedPtr *e, UntypedPtr *f, UntypedPtr *g, UntypedPtr *h, UntypedPtr *i, UntypedPtr *j, UntypedPtr *k, UntypedPtr *l );
 
 void exec_asm( void *th, void *code );
 

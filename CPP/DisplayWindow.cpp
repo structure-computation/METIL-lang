@@ -45,15 +45,19 @@ void DisplayWindow::keyPressEvent( QKeyEvent *event ) {
         close();
     } else if ( event->key() == Qt::Key_A ) {
         disp_widget->display_painter->anti_aliasing = not disp_widget->display_painter->anti_aliasing;
-        QTimer::singleShot( 0, disp_widget, SLOT(update()) );
+        disp_widget->add_vanishing_text( "Anti-aliasing " + QString( disp_widget->display_painter->anti_aliasing ? "on" : "off" ) );
+        // QTimer::singleShot( 0, disp_widget, SLOT(update()) );
     } else if ( event->key() == Qt::Key_B ) {
         disp_widget->display_painter->borders = not disp_widget->display_painter->borders;
-        QTimer::singleShot( 0, disp_widget, SLOT(update()) );
+        disp_widget->add_vanishing_text( "Borders " + QString( disp_widget->display_painter->borders ? "on" : "off" ) );
+        // QTimer::singleShot( 0, disp_widget, SLOT(update()) );
     } else if ( event->key() == Qt::Key_F ) {
         disp_widget->display_painter->zoom_should_be_updated = true;
-        QTimer::singleShot( 0, disp_widget, SLOT(update()) );
+        disp_widget->add_vanishing_text( "Fit" );
+        // QTimer::singleShot( 0, disp_widget, SLOT(update()) );
     } else if ( event->key() == Qt::Key_S ) {
         if ( event->modifiers() & Qt::ControlModifier ) { // save prefs
+            disp_widget->add_vanishing_text( "Save settings" );
             QSettings settings( "LMT", "DisplayWindowCreator" );
             save_settings( &settings );
             disp_widget->display_painter->save_settings( &settings );
@@ -64,7 +68,15 @@ void DisplayWindow::keyPressEvent( QKeyEvent *event ) {
                 if ( not QFile::exists( filename ) )
                     break;
             }
+            disp_widget->add_vanishing_text( "Save Image '" + filename + "'" );
+            
+            //
+            QString old_color_mode = disp_widget->display_painter->cur_color_mode;
+            if ( img_suffix == ".pdf" )
+                disp_widget->display_painter->change_color_mode( "print" );
             disp_widget->display_painter->save_as( filename, disp_widget->width(), disp_widget->height() );
+            if ( img_suffix == ".pdf" )
+                disp_widget->display_painter->change_color_mode( old_color_mode );
         }
     } else if ( event->key() == Qt::Key_P ) {
         QPrinter printer;

@@ -912,6 +912,12 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
             select( cpt ).init( function( cpt ) )
             cpt++
     
+    def init( function, size = static_size ) # vector with function(index)
+        assert( size == static_size, "size == static_size" )
+        cpt := 0; while cpt < static_size
+            select( cpt ).init( function( cpt ) )
+            cpt++
+    
     def init( size, default_value ) pertinence 1 # vector with specified size and reservation, initialised with default_value
         assert( size == static_size, "can't change the size of a static sized vector (you want $size be we have $static_size)" )
         init( default_value = default_value )

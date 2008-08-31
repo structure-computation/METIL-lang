@@ -361,6 +361,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(th,tok,a); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "cpp_string"     , "if (return_var) {std::string s=self.cpp_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     primitive_functions.push_back( PrimitiveFunction( "tex_string"     , "if (return_var) {std::string s=self.tex_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "ser_string"     , "if (return_var) {std::string s=self.ser_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     
     primitive_functions.push_back( PrimitiveFunction( "value", "if (self.known_at_compile_time()) init_arithmetic( ret, self.value() ); else { init_arithmetic( ret, 0 ); th->add_error(\"method value works only with expressions which do not depend on any symbol.\",tok); }",
         /*ret*/"Rationnal" ). M("Op") );
@@ -524,14 +525,23 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any").A("any") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a );" ).A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b );" ).A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

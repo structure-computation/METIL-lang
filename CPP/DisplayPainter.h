@@ -25,6 +25,13 @@ struct DisplayPainter {
         QVector<Stop> data;
     };
     
+    struct ColorSet {
+        ColorSet() : fg_color(0,0,0), bg_color(255,255,255), bg_color_0(255,255,255), bg_color_1(255,255,255) {}
+        QColor fg_color;
+        QColor bg_color;
+        QColor bg_color_0;
+        QColor bg_color_1;
+    };
     
     DisplayPainter(); ///
     void load_settings( class QSettings *settings );
@@ -35,6 +42,7 @@ struct DisplayPainter {
     void set_anti_aliasing( bool val );
     void set_shrink( double val );
     void save_as( const QString &filename, int w, int h );
+    void change_color_mode( QString cm );
     
     void paint( class QPainter &painter, int w = 0, int h = 0 ); ///
     double get_scale_r( double w, double h ) const;
@@ -52,6 +60,9 @@ struct DisplayPainter {
     double x0, y0, x1, y1, shrink, mi, ma;
     bool anti_aliasing, borders, zoom_should_be_updated;
     SimpleGradient color_bar_gradient;
+    QMap<QString,ColorSet> color_sets;
+    QString cur_color_mode;
+    ColorSet cur_color_set;
 };
 
 #endif // QT4_FOUND

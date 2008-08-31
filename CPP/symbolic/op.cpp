@@ -469,6 +469,29 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
 void Op::tex_repr( std::ostream &os ) const {
     tex_repr_rec( os, this, 0 );
 }
+    
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void ser_repr_rec( std::ostream &os, const Op *op ) {
+    if ( op->op_id == op->current_op )
+        return;
+    op->op_id = op->current_op;
+    //
+    if ( op->type == Op::NUMBER )
+        os << 'N' << op->number_data()->val;
+    else if ( op->type == Op::SYMBOL )
+        os << 'S' << strlen( op->symbol_data()->cpp_name_str ) << '_' << op->symbol_data()->cpp_name_str;
+    else {
+        std::string s( Nstring(op->type) );
+        os << 'O' << s.size() << '_' << s;
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i)
+            ser_repr_rec( os, op->func_data()->children[i] );
+    }
+}
+
+void Op::ser_repr( std::ostream &os ) const {
+    ++Op::current_op;
+    ser_repr_rec( os, this );
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 bool Op::depends_on_rec( const Op *a ) const {
