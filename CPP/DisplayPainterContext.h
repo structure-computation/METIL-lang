@@ -42,17 +42,29 @@ struct DisplayPainterContext {
     };
     
     ///
-    void init_bb();
-    ///
-    void add_to_bb( const Point &p );
-    ///
-    void update_bb();
+    DisplayPainterContext( int w, int h, double x0, double y0, double x1, double y1 ) : img( w, h ), x0(x0), y0(y0), x1(x1), y1(y1), w(w), h(h) {
+        xm = 0.5 * ( x0 + x1 );
+        ym = 0.5 * ( y0 + y1 );
+        w_div_2 = w / 2.0;
+        h_div_2 = h / 2.0;
+        //
+        double scale_x = w / ( x1 - x0 );
+        double scale_y = h / ( y1 - y0 );
+        scale_r = std::min( scale_x, scale_y );
+        inv_scale_r = 1.0 / scale_r;
+    }
+    
+    double img_x( double world_x ) { return w_div_2 + ( world_x - xm ) * scale_r; }
+    double img_y( double world_y ) { return h_div_2 + ( world_y - ym ) * scale_r; }
+    
+    double world_x( double img_x ) { return xm + ( img_x - w_div_2 ) * inv_scale_r; }
+    double world_y( double img_y ) { return ym + ( img_y - h_div_2 ) * inv_scale_r; }
     
     ///
     BackgroundImg img;
     /// "minimum" box -> what we want to see
-    double x0, y0, x1, y1;
-    double pan_x, pan_y, zoom;
+    double x0, y0, x1, y1, xm, ym, w, h;
+    double w_div_2, h_div_2, scale_r, inv_scale_r;
 };
 
 #endif // DISPLAY_PAINTER_CONTEXT_H

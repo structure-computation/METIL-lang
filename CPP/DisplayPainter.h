@@ -11,9 +11,9 @@
 
 /** */
 struct DisplayPainter {
-    typedef void MakeTexFunction( DisplayPainter_NS::BackgroundImg &img, DisplayPainter *, void * );
-    typedef void PaintFunction( class QPainter &, DisplayPainter_NS::BackgroundImg &img, DisplayPainter *, void * );
-    typedef void BoundingBoxFunction( DisplayPainter *, void *, double &, double &, double &, double & );
+    typedef void MakeTexFunction( DisplayPainterContext &dc, DisplayPainter *, void * );
+    typedef void PaintFunction( class QPainter &, DisplayPainterContext &dc, DisplayPainter *, void * );
+    typedef void BoundingBoxFunction( DisplayPainter *, void * );
     
     struct DispFun {
         MakeTexFunction     *make_tex_function;
@@ -60,14 +60,12 @@ struct DisplayPainter {
     double xm() const { return 0.5 * ( x0 + x1 ); }
     double ym() const { return 0.5 * ( y0 + y1 ); }
     
-    double real_x0( double w, double h ) const { return xm() - 0.5 * w / get_scale_r(w,h); }
-    double real_y0( double w, double h ) const { return ym() - 0.5 * h / get_scale_r(w,h); }
-    double real_x1( double w, double h ) const { return xm() + 0.5 * w / get_scale_r(w,h); }
-    double real_y1( double w, double h ) const { return ym() + 0.5 * h / get_scale_r(w,h); }
-    
+    void init_bb();
+    void add_to_bb( double x, double y );
     
     QVector<DispFun> paint_functions;
     int nb_dim;
+    double x0, y0, x1, y1;
     double shrink, mi, ma;
     bool anti_aliasing, borders, zoom_should_be_updated;
     SimpleGradient color_bar_gradient;

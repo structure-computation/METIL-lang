@@ -223,6 +223,19 @@ void DisplayPainter::set_min_max( double mi_, double ma_ ) {
 }
 
 
+void DisplayPainter::init_bb() {
+    x0 = std::numeric_limits<double>::max();
+    y0 = std::numeric_limits<double>::max();
+    x1 = std::numeric_limits<double>::min();
+    y1 = std::numeric_limits<double>::min();
+}
+
+void DisplayPainter::add_to_bb( double x, double y ) {
+    x0 = std::min( x0, x );
+    y0 = std::min( y0, y );
+    x1 = std::max( x1, x );
+    y1 = std::max( y1, y );
+}
 
 void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     // hints
@@ -230,14 +243,14 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     if ( not w ) w = x1 - x0;
     if ( not h ) h = x1 - x0;
     
-    ///
-    DisplayPainterContext dc( w, h, x0, y0, x1, y1 );
-    
     // recompute x0, ... ?
     if ( zoom_should_be_updated ) {
-        dc.init_bb();
+        init_bb();
         for(int i=0;i<paint_functions.size();++i)
-            paint_functions[i].bounding_box_function( this, paint_functions[i].data, x0, y0, x1, y1 );
+            paint_functions[i].bounding_box_function( this, paint_functions[i].data );
+        double dx = x1 - x0, dy = y1 - y0, xm = 0.5 * ( x0 + x1 ), ym = 0.5 * ( y0 + y1 );
+        x0 = xm - dx * 0.6; y0 = ym - dy * 0.6;
+        x1 = xm + dx * 0.6; y1 = ym + dy * 0.6;
         zoom_should_be_updated = false;
     }
     
@@ -250,16 +263,15 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     painter.drawRect( 0, 0, w, h );
     
     // transf
-    DisplayPainterContext    
+    DisplayPainterContext dc( w, h, x0, y0, x1, y1 );
     
     // data -> texture
-    DisplayPainter_NS::BackgroundImg img( w, h, img_to_world );
     for(int i=0;i<paint_functions.size();++i)
-        paint_functions[i].make_tex_function( img, this, paint_functions[i].data );
+        paint_functions[i].make_tex_function( dc, this, paint_functions[i].data );
     QImage qimg( w, h, QImage::Format_ARGB32 );
-    for(unsigned j=0;j<h;++j) {
-        for(unsigned i=0;i<w;++i) {
-            QColor col = color_bar_gradient.color_at( img(i,j).c, img(i,j).l, img(i,j).a );
+    for(int j=0;j<h;++j) {
+        for(int i=0;i<w;++i) {
+            QColor col = color_bar_gradient.color_at( dc.img(i,j).c, dc.img(i,j).l, dc.img(i,j).a );
             qimg.setPixel( i, j, col.rgba() );
         }
     }
@@ -267,7 +279,7 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     // data -> vectorial painter data
     painter.setBrush( qimg );
     for(int i=0;i<paint_functions.size();++i)
-        paint_functions[i].paint_function( painter, img, this, paint_functions[i].data );
+        paint_functions[i].paint_function( painter, dc, this, paint_functions[i].data );
 }
 
 
