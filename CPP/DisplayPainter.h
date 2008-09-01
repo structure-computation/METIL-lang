@@ -7,50 +7,12 @@
 #include <QtCore/QVector>
 #include <QtGui/QColor>
 
-struct DisplayPainter {
-    struct DisplayPainterBackgroundImg {
-        struct Pix {
-            Pix( double c = 0, double l = 1, double a = 1, double z = 0 ) : c(c), l(l), a(a), z(z) {}
-            double c; // field value
-            double l; // luminosity
-            double a; // alpha chanel
-            double z; // z
-        };
-        
-        DisplayPainterBackgroundImg( int w, int h, double orig_x0, double orig_y0, double orig_x1, double orig_y1 ) : w(w), h(h) {
-            double scale_x = w / ( orig_x1 - orig_x0 );
-            double scale_y = h / ( orig_y1 - orig_y0 );
-            if ( scale_x > scale_y ) {
-                x0 = 0.5 * ( orig_x0 + orig_x1 ) - ( orig_x1 - orig_x0 ) * scale_x / scale_y;
-                x1 = 0.5 * ( orig_x0 + orig_x1 ) + ( orig_x1 - orig_x0 ) * scale_x / scale_y;
-                y0 = orig_y0;
-                y1 = orig_y1;
-            } else {
-                x0 = orig_x0;
-                x1 = orig_x1;
-                y0 = 0.5 * ( orig_y0 + orig_y1 ) - ( orig_y1 - orig_y0 ) * scale_y / scale_x;
-                y1 = 0.5 * ( orig_y0 + orig_y1 ) + ( orig_y1 - orig_y0 ) * scale_y / scale_x;
-            }
-            sh = ( h - 1 ) * w;
-            iw = w;
-            data = new Pix[ w * h ];
-        }
-        ~DisplayPainterBackgroundImg() { delete [] data; }
-        Pix &operator()( int x, int y ) { return data[ sh - y * iw + x ]; }
-        
-        double local_x( double x ) const { return ( x - x0 ) * w / ( x1 - x0 ); }
-        double local_y( double y ) const { return ( y - y0 ) * h / ( y1 - y0 ); }
-        
-        double local_x_sat( double x ) const { return std::max( 0.0, std::min( w - 1, local_x( x ) ) ); }
-        double local_y_sat( double y ) const { return std::max( 0.0, std::min( h - 1, local_y( y ) ) ); }
-        
-        double w, h, x0, y0, x1, y1;
-        int sh, iw;
-        Pix *data;
-    };
+#include "DisplayPainterContext.h"
 
-    typedef void MakeTexFunction( DisplayPainterBackgroundImg &img, DisplayPainter *, void * );
-    typedef void PaintFunction( class QPainter &, DisplayPainter *, void * );
+/** */
+struct DisplayPainter {
+    typedef void MakeTexFunction( DisplayPainter_NS::BackgroundImg &img, DisplayPainter *, void * );
+    typedef void PaintFunction( class QPainter &, DisplayPainter_NS::BackgroundImg &img, DisplayPainter *, void * );
     typedef void BoundingBoxFunction( DisplayPainter *, void *, double &, double &, double &, double & );
     
     struct DispFun {
@@ -106,7 +68,6 @@ struct DisplayPainter {
     
     QVector<DispFun> paint_functions;
     int nb_dim;
-    double x0, y0, x1, y1; // "minimum" box -> what we want to see
     double shrink, mi, ma;
     bool anti_aliasing, borders, zoom_should_be_updated;
     SimpleGradient color_bar_gradient;

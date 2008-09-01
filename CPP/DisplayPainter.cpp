@@ -230,12 +230,12 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     if ( not w ) w = x1 - x0;
     if ( not h ) h = x1 - x0;
     
+    ///
+    DisplayPainterContext dc( w, h, x0, y0, x1, y1 );
+    
     // recompute x0, ... ?
     if ( zoom_should_be_updated ) {
-        x0 = std::numeric_limits<double>::max();
-        y0 = std::numeric_limits<double>::max();
-        x1 = std::numeric_limits<double>::min();
-        y1 = std::numeric_limits<double>::min();
+        dc.init_bb();
         for(int i=0;i<paint_functions.size();++i)
             paint_functions[i].bounding_box_function( this, paint_functions[i].data, x0, y0, x1, y1 );
         zoom_should_be_updated = false;
@@ -249,8 +249,11 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     painter.setPen  ( Qt::NoPen   );
     painter.drawRect( 0, 0, w, h );
     
+    // transf
+    DisplayPainterContext    
+    
     // data -> texture
-    DisplayPainterBackgroundImg img( w, h, x0, y0, x1, y1 );
+    DisplayPainter_NS::BackgroundImg img( w, h, img_to_world );
     for(int i=0;i<paint_functions.size();++i)
         paint_functions[i].make_tex_function( img, this, paint_functions[i].data );
     QImage qimg( w, h, QImage::Format_ARGB32 );
@@ -261,16 +264,10 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
         }
     }
     
-    // data
-    painter.translate(  0.5 * w         ,  0.5 * h          );
-    painter.scale    (  get_scale_r(w,h), -get_scale_r(w,h) );
-    painter.translate( -xm()            , -ym()             );
-    
-    QBrush brush( qimg );
-    brush.setMatrix( painter.worldMatrix().inverted() );
-    painter.setBrush( brush );
+    // data -> vectorial painter data
+    painter.setBrush( qimg );
     for(int i=0;i<paint_functions.size();++i)
-        paint_functions[i].paint_function( painter, this, paint_functions[i].data );
+        paint_functions[i].paint_function( painter, img, this, paint_functions[i].data );
 }
 
 
