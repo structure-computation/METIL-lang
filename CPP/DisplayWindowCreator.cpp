@@ -12,20 +12,20 @@
 
 DisplayWindowCreator::DisplayWindowCreator() {
     connect( qApp, SIGNAL(lastWindowClosed()), this, SLOT(lastWindowClosed()) );
-    connect( this, SIGNAL(sig_add_paint_function( int, void *, void *, void * )), this, SLOT(add_paint_function( int, void *, void *, void * )) );
-    connect( this, SIGNAL(sig_rm_paint_functions( int                         )), this, SLOT(rm_paint_functions( int                         )) );
-    connect( this, SIGNAL(sig_update_disp_widget( int                         )), this, SLOT(update_disp_widget( int                         )) );
-    connect( this, SIGNAL(sig_save_as           ( int, QString, int , int     )), this, SLOT(save_as           ( int, QString, int , int     )) );
-    connect( this, SIGNAL(sig_set_anti_aliasing ( int, bool                   )), this, SLOT(set_anti_aliasing ( int, bool                   )) );
-    connect( this, SIGNAL(sig_set_shrink        ( int, double                 )), this, SLOT(set_shrink        ( int, double                 )) );
-    connect( this, SIGNAL(sig_set_min_max       ( int, double, double         )), this, SLOT(set_min_max       ( int, double, double         )) );
+    connect( this, SIGNAL(sig_add_paint_function( int, void *, void *, void *, void * )), this, SLOT(add_paint_function( int, void *, void *, void *, void * )) );
+    connect( this, SIGNAL(sig_rm_paint_functions( int                                 )), this, SLOT(rm_paint_functions( int                                 )) );
+    connect( this, SIGNAL(sig_update_disp_widget( int                                 )), this, SLOT(update_disp_widget( int                                 )) );
+    connect( this, SIGNAL(sig_save_as           ( int, QString, int , int             )), this, SLOT(save_as           ( int, QString, int , int             )) );
+    connect( this, SIGNAL(sig_set_anti_aliasing ( int, bool                           )), this, SLOT(set_anti_aliasing ( int, bool                           )) );
+    connect( this, SIGNAL(sig_set_shrink        ( int, double                         )), this, SLOT(set_shrink        ( int, double                         )) );
+    connect( this, SIGNAL(sig_set_min_max       ( int, double, double                 )), this, SLOT(set_min_max       ( int, double, double                 )) );
 
     at_least_one_window_was_created = false;
     _settings = NULL;
 }
 
-void DisplayWindowCreator::call_add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data ) {
-    emit sig_add_paint_function( num_display_window, paint_function, bounding_box_function, data );
+void DisplayWindowCreator::call_add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data ) {
+    emit sig_add_paint_function( num_display_window, make_tex_function, paint_function, bounding_box_function, data );
 }
 
 void DisplayWindowCreator::call_rm_paint_functions( int num_display_window ) {
@@ -58,10 +58,10 @@ void DisplayWindowCreator::call_set_min_max( int num_display_window, double mi, 
 
 
 
-void DisplayWindowCreator::add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data ) {
+void DisplayWindowCreator::add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data ) {
     if ( not displays.contains( num_display_window ) )
         displays[ num_display_window ].painter.load_settings( get_settings() );
-    displays[ num_display_window ].painter.add_paint_function( paint_function, bounding_box_function, data );
+    displays[ num_display_window ].painter.add_paint_function( make_tex_function, paint_function, bounding_box_function, data );
 }
 
 void DisplayWindowCreator::rm_paint_functions( int num_display_window ) {

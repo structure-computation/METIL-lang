@@ -22,7 +22,7 @@ public:
     };
     
     DisplayWindowCreator();
-    void call_add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data );
+    void call_add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data );
     void call_save_as           ( int num_display_window, const char *s, int si, int w, int h );
     void call_update_disp_widget( int num_display_window );
     
@@ -34,7 +34,7 @@ public:
     void wait_for_display_windows();
     class QSettings *get_settings();
 signals:
-    void sig_add_paint_function( int, void *, void *, void * );
+    void sig_add_paint_function( int, void *, void *, void *, void * );
     void sig_save_as           ( int, QString, int, int      );
     void sig_update_disp_widget( int                         );
     void sig_rm_paint_functions( int                         );
@@ -42,7 +42,7 @@ signals:
     void sig_set_shrink        ( int, double                 );
     void sig_set_min_max       ( int, double, double         );
 public slots: // must be called in main_thread
-    void add_paint_function( int num_display_window, void *paint_function, void *bounding_box_function, void *data );
+    void add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data );
     void rm_paint_functions( int num_display_window );
     void update_disp_widget( int num_display_window );
     void save_as           ( int num_display_window, QString f, int w, int h );

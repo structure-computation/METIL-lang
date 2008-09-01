@@ -575,8 +575,8 @@ void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std
 
 void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
     
-    primitive_functions.push_back( PrimitiveFunction( "__add_paint_function_to_display_window__"   , "th->display_window_creator->call_add_paint_function( a, b, c, d );" ).
-            A(/*id*/"Int32").A(/*paint_function*/"UntypedPtr").A(/*bb_function*/"UntypedPtr").A(/*data*/"UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "__add_paint_function_to_display_window__"   , "th->display_window_creator->call_add_paint_function( a, b, c, d, e );" ).
+            A(/*id*/"Int32").A(/*make_tex_function*/"UntypedPtr").A(/*paint_function*/"UntypedPtr").A(/*bb_function*/"UntypedPtr").A(/*data*/"UntypedPtr") );
     primitive_functions.push_back( PrimitiveFunction( "__rm_paint_functions_from_display_windows__", "th->display_window_creator->call_rm_paint_functions( a       );" ).A(/*id*/"Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__update_display_windows__"                 , "th->display_window_creator->call_update_disp_widget( a       );" ).A(/*id*/"Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__set_anti_aliasing_display_windows__"      , "th->display_window_creator->call_set_anti_aliasing ( a, b    );" ).A(/*id*/"Int32").A("Int32") );

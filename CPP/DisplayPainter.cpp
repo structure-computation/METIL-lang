@@ -40,6 +40,21 @@ QColor DisplayPainter::SimpleGradient::color_at( double p ) {
     return QColor( 0, 0, 0 );
 }
 
+QColor DisplayPainter::SimpleGradient::color_at( double p, double lum, double alpha ) {
+    p   = std::min( 1.0, std::max( 0.0, p ) );
+    for( int i=0; i < data.size(); ++i ) {
+        if ( data[i+1].p >= p ) {
+            double d = data[i+1].p - data[i].p; d += not d;
+            return QColor( 
+                255 * lum   * ( data[i].r + ( p - data[i].p ) / d * ( data[i+1].r - data[i].r ) ),
+                255 * lum   * ( data[i].g + ( p - data[i].p ) / d * ( data[i+1].g - data[i].g ) ),
+                255 * lum   * ( data[i].b + ( p - data[i].p ) / d * ( data[i+1].b - data[i].b ) ),
+                255 * alpha * ( data[i].a + ( p - data[i].p ) / d * ( data[i+1].a - data[i].a ) )
+            );
+        }
+    }
+    return QColor( 0, 0, 0 );
+}
 
 DisplayPainter::DisplayPainter() {
     x0 = 0; y0 = 0;
@@ -121,10 +136,11 @@ void DisplayPainter::save_settings( QSettings *settings ) {
     settings->endGroup();
 }
 
-void DisplayPainter::add_paint_function( void *paint_function, void *bounding_box_function, void *data ) {
+void DisplayPainter::add_paint_function( void *make_tex_function, void *paint_function, void *bounding_box_function, void *data ) {
     DispFun df;
-    df.paint_function        = reinterpret_cast<PaintFunction       *>(paint_function       );
-    df.bounding_box_function = reinterpret_cast<BoundingBoxFunction *>(bounding_box_function);
+    df.make_tex_function     = reinterpret_cast<MakeTexFunction     *>( make_tex_function     );
+    df.paint_function        = reinterpret_cast<PaintFunction       *>( paint_function        );
+    df.bounding_box_function = reinterpret_cast<BoundingBoxFunction *>( bounding_box_function );
     df.data                  = data;
 
     paint_functions.push_back( df );
@@ -206,6 +222,8 @@ void DisplayPainter::set_min_max( double mi_, double ma_ ) {
     mi = mi_; ma = ma_;
 }
 
+
+
 void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     // hints
     painter.setRenderHint( QPainter::Antialiasing, anti_aliasing );
@@ -231,13 +249,30 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
     painter.setPen  ( Qt::NoPen   );
     painter.drawRect( 0, 0, w, h );
     
+    // data -> texture
+    DisplayPainterBackgroundImg img( w, h, x0, y0, x1, y1 );
+    for(int i=0;i<paint_functions.size();++i)
+        paint_functions[i].make_tex_function( img, this, paint_functions[i].data );
+    QImage qimg( w, h, QImage::Format_ARGB32 );
+    for(unsigned j=0;j<h;++j) {
+        for(unsigned i=0;i<w;++i) {
+            QColor col = color_bar_gradient.color_at( img(i,j).c, img(i,j).l, img(i,j).a );
+            qimg.setPixel( i, j, col.rgba() );
+        }
+    }
+    
     // data
-    painter.setBrush( cur_color_set.fg_color );
     painter.translate(  0.5 * w         ,  0.5 * h          );
     painter.scale    (  get_scale_r(w,h), -get_scale_r(w,h) );
     painter.translate( -xm()            , -ym()             );
+    
+    QBrush brush( qimg );
+    brush.setMatrix( painter.worldMatrix().inverted() );
+    painter.setBrush( brush );
     for(int i=0;i<paint_functions.size();++i)
         paint_functions[i].paint_function( painter, this, paint_functions[i].data );
 }
+
+
 
 #endif // QT4_FOUND

@@ -525,14 +525,23 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any").A("any") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a );" ).A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b );" ).A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
