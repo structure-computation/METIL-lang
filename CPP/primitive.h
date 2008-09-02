@@ -577,14 +577,13 @@ void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classe
     
     primitive_functions.push_back( PrimitiveFunction( "__add_paint_function_to_display_window__"   , "th->display_window_creator->call_add_paint_function( a, b, c, d, e );" ).
             A(/*id*/"Int32").A(/*make_tex_function*/"UntypedPtr").A(/*paint_function*/"UntypedPtr").A(/*bb_function*/"UntypedPtr").A(/*data*/"UntypedPtr") );
-    primitive_functions.push_back( PrimitiveFunction( "__rm_paint_functions_from_display_windows__", "th->display_window_creator->call_rm_paint_functions( a       );" ).A(/*id*/"Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "__update_display_windows__"                 , "th->display_window_creator->call_update_disp_widget( a       );" ).A(/*id*/"Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "__set_anti_aliasing_display_windows__"      , "th->display_window_creator->call_set_anti_aliasing ( a, b    );" ).A(/*id*/"Int32").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "__set_shrink_display_windows__"             , "th->display_window_creator->call_set_shrink        ( a, b    );" ).A(/*id*/"Int32").A("Float64") );
-    primitive_functions.push_back( PrimitiveFunction( "__save_as_display_windows__"                , "th->display_window_creator->call_save_as           ( a, *(const char **)b->data, *(Int32 *)((const char **)b->data+1), c, d );" ).A(/*id*/"Int32").A("any").A("Int32").A("Int32") );
-    primitive_functions.push_back( PrimitiveFunction( "__set_min_max_display_windows__"            , "th->display_window_creator->call_set_min_max       ( a, b, c );" ).A(/*id*/"Int32").A("Float64").A("Float64") );
-
+    primitive_functions.push_back( PrimitiveFunction( "__rm_paint_functions_from_display_windows__", "th->display_window_creator->call_rm_paint_functions( a );" ).A(/*id*/"Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__update_display_windows__", "th->display_window_creator->call_update_disp_widget( a );" ).A(/*id*/"Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__save_as_display_windows__", "th->display_window_creator->call_save_as( a, *(const char **)b->data, *(Int32 *)((const char **)b->data+1), c, d );" ).A(/*id*/"Int32").A("any").A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__set_min_max_display_windows__", "th->display_window_creator->call_set_min_max( a, b, c );" ).A(/*id*/"Int32").A("Float64").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__( th );" ) );
+    
+    primitive_functions.push_back( PrimitiveFunction( "__set_val_display_windows__", "th->display_window_creator->call_set_val( a, b, c );" ).A(/*id*/"Int32").A("Int32").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "get_QT_LIBRARIES"   , "std::string ss(QT_LIBRARIES   ); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
     primitive_functions.push_back( PrimitiveFunction( "get_QT_INCLUDE_DIR" , "std::string ss(QT_INCLUDE_DIR ); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );

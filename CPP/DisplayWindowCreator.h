@@ -20,15 +20,19 @@ public:
         class DisplayWindow *window;
         DisplayPainter painter;
     };
+    enum {
+        ID_SHRINK       = 0,
+        ID_ANTIALIASING = 1,
+        ID_BORDERS      = 2,
+        ID_FIT          = 3
+    };
     
     DisplayWindowCreator();
     void call_add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data );
     void call_save_as           ( int num_display_window, const char *s, int si, int w, int h );
     void call_update_disp_widget( int num_display_window );
-    
     void call_rm_paint_functions( int num_display_window );
-    void call_set_anti_aliasing ( int num_display_window, bool   val );
-    void call_set_shrink        ( int num_display_window, double val );
+    void call_set_val           ( int num_display_window, int id_val, int val );
     void call_set_min_max       ( int num_display_window, double mi, double ma );
     
     void wait_for_display_windows();
@@ -38,16 +42,14 @@ signals:
     void sig_save_as           ( int, QString, int, int      );
     void sig_update_disp_widget( int                         );
     void sig_rm_paint_functions( int                         );
-    void sig_set_anti_aliasing ( int, bool                   );
-    void sig_set_shrink        ( int, double                 );
+    void sig_set_val           ( int, int, int               );
     void sig_set_min_max       ( int, double, double         );
 public slots: // must be called in main_thread
     void add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data );
-    void rm_paint_functions( int num_display_window );
-    void update_disp_widget( int num_display_window );
     void save_as           ( int num_display_window, QString f, int w, int h );
-    void set_anti_aliasing ( int num_display_window, bool   val );
-    void set_shrink        ( int num_display_window, double val );
+    void update_disp_widget( int num_display_window );
+    void rm_paint_functions( int num_display_window );
+    void set_val           ( int num_display_window, int id_val, int val );
     void set_min_max       ( int num_display_window, double mi, double ma );
     
     void lastWindowClosed();

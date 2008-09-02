@@ -151,14 +151,6 @@ void DisplayPainter::rm_paint_functions() {
     paint_functions.clear();
 }
 
-void DisplayPainter::set_anti_aliasing( bool val ) {
-    anti_aliasing = val;
-}
-
-void DisplayPainter::set_shrink( double val ) {
-    shrink = val;
-}
-    
 void DisplayPainter::change_color_mode( QString cm ) {
     cur_color_mode = cm;
     cur_color_set  = color_sets[ cm ];
@@ -166,7 +158,7 @@ void DisplayPainter::change_color_mode( QString cm ) {
 
 void DisplayPainter::save_as( const QString &filename, int w, int h ) {
     if ( filename.endsWith( ".pdf" ) ) {
-        QPrinter printer;
+        QPrinter printer( QPrinter::HighResolution );
         // printer.setPageSize( QPrinter::Custom );
         printer.setPaperSize     ( QSizeF( w, h ), QPrinter::DevicePixel );
         printer.setPageMargins   ( 0, 0, 0, 0, QPrinter::DevicePixel );
@@ -200,7 +192,7 @@ void DisplayPainter::save_as( const QString &filename, int w, int h ) {
 double DisplayPainter::get_scale_r( double w, double h ) const {
     double scale_x = w / ( x1 - x0 );
     double scale_y = h / ( y1 - y0 );
-    return std::min( scale_x, scale_y ) * 0.95;
+    return std::min( scale_x, scale_y );
 }
 
 void DisplayPainter::zoom( double fact, double x, double y, double w, double h ) {

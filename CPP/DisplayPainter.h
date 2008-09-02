@@ -45,8 +45,6 @@ struct DisplayPainter {
     
     void add_paint_function( void *make_tex_function, void *paint_function, void *bounding_box_function, void *data );
     void rm_paint_functions();
-    void set_anti_aliasing( bool val );
-    void set_shrink( double val );
     void save_as( const QString &filename, int w, int h );
     void change_color_mode( QString cm );
     

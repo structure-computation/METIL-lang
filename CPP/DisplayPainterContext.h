@@ -26,7 +26,18 @@ struct DisplayPainterContext {
     ///
     struct BackgroundImg {
         struct Pix {
-            Pix( double c = 0, double l = 1, double a = 0, double z = 0 ) : c(c), l(l), a(a), z(z) {}
+            Pix() : c(0), l(0), a(0), z(std::numeric_limits<double>::max()) {}
+            Pix( double c, double l = 1, double a = 1, double z = 0 ) : c(c), l(l), a(a), z(z) {}
+            void add( double c_, double l_ = 1, double a_ = 1, double z_ = 0 ) {
+                if ( z < z_ )
+                    return;
+                z = z_;
+                double na = std::min( a + a_, 1.0 );
+                na += na==0;
+                c = std::min( a * c + a_ * c_, 1.0 ) / na;
+                l = std::min( a * l + a_ * l_, 1.0 ) / na;
+                a = na;
+            }
             double c; // field value
             double l; // luminosity
             double a; // alpha chanel
@@ -55,10 +66,10 @@ struct DisplayPainterContext {
     }
     
     double img_x( double world_x ) { return w_div_2 + ( world_x - xm ) * scale_r; }
-    double img_y( double world_y ) { return h_div_2 + ( world_y - ym ) * scale_r; }
+    double img_y( double world_y ) { return h_div_2 + ( ym - world_y ) * scale_r; }
     
     double world_x( double img_x ) { return xm + ( img_x - w_div_2 ) * inv_scale_r; }
-    double world_y( double img_y ) { return ym + ( img_y - h_div_2 ) * inv_scale_r; }
+    double world_y( double img_y ) { return ym + ( h_div_2 - img_y ) * inv_scale_r; }
     
     ///
     BackgroundImg img;

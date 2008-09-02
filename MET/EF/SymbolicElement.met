@@ -11,7 +11,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     var_inter := Vec[ Op, nvi ]()
     name_elem := ""
     
-    assume_const_jac := false
+    assume_const_jac := 0
     
     #
     def std_pos_symbol_function( num_node, d )
@@ -230,6 +230,10 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     #
     def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
         vi := var_inter_for_pos( p, nb_iterations )
+        return var_inter_is_inside( vi, tolerance )
+        
+    #
+    def var_inter_is_inside( vi, tolerance = 0 )
         if TE::has_a_var_inter_is_inside_method
             return TE::var_inter_is_inside( vi, tolerance )
         # -> generic case (not optimized)
@@ -239,10 +243,6 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
             res *= heaviside( tolerance + var_inter - interval[0] )
             res *= heaviside( tolerance + interval[1] - var_inter )
         return res
-        
-    #
-    def var_inter_is_inside( vi, tolerance = 0 )
-        return TE::var_inter_is_inside( vi, tolerance )
         
     #
     def extrusion_with_normals( normals, alpha )
