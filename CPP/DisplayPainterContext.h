@@ -26,7 +26,7 @@ struct DisplayPainterContext {
     ///
     struct BackgroundImg {
         struct Pix {
-            Pix( double c = 0, double l = 1, double a = 1, double z = 0 ) : c(c), l(l), a(a), z(z) {}
+            Pix( double c = 0, double l = 1, double a = 0, double z = 0 ) : c(c), l(l), a(a), z(z) {}
             double c; // field value
             double l; // luminosity
             double a; // alpha chanel

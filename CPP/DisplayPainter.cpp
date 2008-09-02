@@ -275,9 +275,10 @@ void DisplayPainter::paint( QPainter &painter, int w, int h ) {
             qimg.setPixel( i, j, col.rgba() );
         }
     }
+    painter.drawImage( QRect(0,0,w,h), qimg );
     
     // data -> vectorial painter data
-    painter.setBrush( qimg );
+    painter.setBrush( Qt::NoBrush );
     for(int i=0;i<paint_functions.size();++i)
         paint_functions[i].paint_function( painter, dc, this, paint_functions[i].data );
 }
