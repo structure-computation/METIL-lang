@@ -183,6 +183,7 @@ struct BigRat {
             }
             return Float64(n) / Float64(d);
         }
+        // std::cout << Float64(num) << " " << Float64(den) << " " << Float64(num) / Float64(den) << std::endl;
         return Float64(num) / Float64(den);
     }
     operator Float96() const { return Float96(num) / Float96(den); }

@@ -674,11 +674,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; if (return_var) assign_string( th, tok, return_var, &ss.str()[0], ss.str().size() );", /*ret*/"manual" ).M("Rationnal") );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( integer_class( primitive_classes[i] ) or float_class( primitive_classes[i] ) or primitive_classes[i].met_name=="UntypedPtr" )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << Int64( self ); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss.setf(std::ios::fixed); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
-                    M(primitive_classes[i].met_name).A("Int32") );
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).M(primitive_classes[i].met_name).A("Int32") );
     }
     
     primitive_functions.push_back( PrimitiveFunction( "system"  , "ret = system_( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) );", /*ret*/"Int32" ).
