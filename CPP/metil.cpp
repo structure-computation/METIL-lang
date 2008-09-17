@@ -188,6 +188,7 @@ int main(int argc,char **argv) {
             }
             file_to_interpret = argv[i];
             main_thread->argc = argc - i; main_thread->argv = argv + i;
+            break;
         }
     }
     
