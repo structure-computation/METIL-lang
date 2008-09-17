@@ -28,6 +28,7 @@ extern "C" {
 
 void display_help(std::ostream &os) {
     os <<   "  -h or --help : I know you know how to use it.\n"
+            "  --no-qt ... : start without qt.\n"
             "  --doc file1.sar file2.sar ... : make documentation of files specified as arguments.\n"
             "  -c file1.sar : compile 'file1.sar' into an executable by default named 'file1'.\n"
             "  -o file1 : specify name of the resulting executable.\n"
@@ -102,6 +103,7 @@ int main(int argc,char **argv) {
     
     // argument parsing
     const char *file_to_compile = NULL, *output_file = NULL, *file_to_interpret = NULL;
+    bool with_qt = true;
     for(int i=1;i<argc;++i) {
         // options with only one '-'
         if ( argv[i][0]=='-' and argv[i][1]!='-' ) {
@@ -140,6 +142,10 @@ int main(int argc,char **argv) {
         else if ( strcmp(argv[i],"--help")==0 ) {
             display_help(std::cout);
             return 0;
+        }
+        // no qt
+        else if ( strcmp(argv[i],"--no-qt")==0 ) {
+            with_qt = false;
         }
         // prof
         else if ( strcmp(argv[i],"--prof")==0 ) {
@@ -209,19 +215,22 @@ int main(int argc,char **argv) {
     }
     
     #ifdef QT4_FOUND
-        QApplication qapp( argc, argv );
-        qapp.setQuitOnLastWindowClosed( false );
-        
-        main_thread->display_window_creator = new DisplayWindowCreator;
-        
-        MetilQtThread mqt;
-        QTimer::singleShot( 0, &mqt, SLOT(start()) );
-        
-        qapp.exec();
-    #else
-        main_thread->display_window_creator = new DisplayWindowCreator;
-        
-        thread_loop( main_thread );
+        if ( with_qt ) {
+            QApplication qapp( argc, argv );
+            qapp.setQuitOnLastWindowClosed( false );
+            
+            main_thread->display_window_creator = new DisplayWindowCreator;
+            
+            MetilQtThread mqt;
+            QTimer::singleShot( 0, &mqt, SLOT(start()) );
+            
+            qapp.exec();
+        } else {
+    #endif
+            main_thread->display_window_creator = NULL;
+            thread_loop( main_thread );
+    #ifdef QT4_FOUND
+        }
     #endif
     
     if ( main_thread->profile_mode )

@@ -131,7 +131,8 @@ void DisplayWindowCreator::lastWindowClosed() {
 
 // --------------------------------------------------------------------------------------------------------------------------
 void __wait_for_display_windows__( Thread *th ) {
-    th->display_window_creator->wait_for_display_windows();
+    if ( th->display_window_creator )
+        th->display_window_creator->wait_for_display_windows();
 }
 
 #endif // QT4_FOUND

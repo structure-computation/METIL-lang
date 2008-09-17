@@ -72,12 +72,17 @@ void __wait_for_display_windows__( struct Thread *th );
 
 class DisplayWindowCreator {
 public:
-    void call_add_paint_plugin( int num_display_window, char *filename, int size_filename ) {}
-    void call_clr_paint_plugin( int num_display_window ) {}
+    void call_add_paint_function( int num_display_window, void *make_tex_function, void *paint_function, void *bounding_box_function, void *data ) {}
+    void call_save_as           ( int num_display_window, const char *s, int si, int w, int h ) {}
+    void call_update_disp_widget( int num_display_window ) {}
+    void call_rm_paint_functions( int num_display_window ) {}
+    void call_set_val           ( int num_display_window, int id_val, int val ) {}
+    void call_set_min_max       ( int num_display_window, double mi, double ma ) {}
+    
+    void wait_for_display_windows() {}
 };
 
-inline void __wait_for_display_windows__( struct Thread *th ) {
-}
+inline void __wait_for_display_windows__( struct Thread *th ) { }
 
 #endif // QT4_FOUND
 
