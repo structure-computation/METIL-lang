@@ -477,6 +477,9 @@ void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "destroy", "self.destroy();" ).M("Lambda") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Lambda").A("Def") );
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Def").A("Lambda") );
 }
 
 void get_primitives_Label( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

@@ -12,6 +12,8 @@ class SymbolicElementAncestor
     virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 ) abstract
     virtual def projection_with_normals( normals, point, nb_iterations = 1 )          abstract
     virtual def get_shape_functions                                                   abstract
+    virtual def get_name                                                              abstract
+    virtual def get_nb_dim                                                            abstract
 
 #~
 ~#
@@ -26,6 +28,14 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     
     assume_const_jac := 0
     
+    #
+    virtual def get_name
+        return String( TE )
+    
+    #
+    virtual def get_nb_dim
+        return dim
+        
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"

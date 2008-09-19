@@ -862,7 +862,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     }
     primitive_functions.push_back( PrimitiveFunction( "and_bitwise", "ret = (a and b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
     primitive_functions.push_back( PrimitiveFunction( "or_bitwise" , "ret = (a or  b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
-    primitive_functions.push_back( PrimitiveFunction( "xor_bitwise", "ret = (a xor b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "xor_bitwise", "ret = (bool(a) xor bool(b));", /*ret*/"Bool" ).A("Bool").A("Bool") );
     
     // ~, ...
     const char *bnb_operations[] = {"not_bitwise",NULL};
