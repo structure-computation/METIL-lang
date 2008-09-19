@@ -206,6 +206,7 @@ class Ptr(T)
     def init( val )                                      assert( val.is_Untyped or inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
     def reassign( val ) when is_of_type_UntypedPtr(val)  ptr = val
     def reassign( val ) when type_of(val)==Null          ptr = 0
+    def reassign( val ) when val.is_a_Ptr and val.T==T   ptr = val.ptr
     def reassign( val )                                  assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($(val.T) != $T)" ); ptr = UntypedPtr( val )
     def select( n )                                      return __get_data_in_dyn_vec__( ptr, partial_instanciation T, Int32(n) )
     def free                                             ptr.free()

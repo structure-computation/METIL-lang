@@ -173,6 +173,16 @@ def diff( self, var ) when self.is_a_matrix
     return res
 
 
+# diff elements of lst using a ( return Vec[Op]( x => lst[x].diff(a) ) )
+def diff( lst, a ) when lst.tensor_order == 1 and a.type == Op
+    res := VarArgs()
+    src := VarArgs()
+    for l in lst
+        src.push_unnamed( l )
+    diff( src, a, res )
+    return Vec[Op]( res )
+
+
 
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
@@ -244,10 +254,17 @@ def asympt_dvp( self, with_regards_to, small_param, new_var order) when self.is_
         res[r]=self[r].asympt_dvp(with_regards_to, small_param, new_var, order)
     return res
         
+# return any( val.map( x => self.depends_on(x) ) )
 def depends_on( self, val ) when is_of_type_Op( self ) and val.tensor_order > 0
-    # return any( val.map( x => self.depends_on(x) ) )
     for v in val
         if self.depends_on( v )
+            return true
+    return false
+
+# return any( val.map( x => self.depends_on(x) ) )
+def depends_on( self, val ) when self.tensor_order > 0
+    for ind, v in indices_and_values_of( self )
+        if v.depends_on( val )
             return true
     return false
 

@@ -1,5 +1,6 @@
 ## generic init with named arguments ##
 def init( self, varargs ) when varargs.contains_only_named_variables_included_in_self_non_static_variables( self ) pertinence -2
+    init_using_default_values( self )
     init_using_varargs( self, varargs )
 
 ## generic init ##

@@ -367,6 +367,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
         /*ret*/"Rationnal" ). M("Op") );
 
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "diff", "diff( th, tok, a, b, c );" ).A("VarArgs").A("Op").A("VarArgs") );
     
     primitive_functions.push_back( PrimitiveFunction( "polynomial_expansion_", "polynomial_expansion( th, tok, a, b, c, d );" ).A("VarArgs").A("Op").A("Int32").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b, c );" ).A("VarArgs").A("VarArgs").A("VarArgs") );
@@ -859,6 +860,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             if ( integer_class(primitive_classes[i]) )
                 primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     }
+    primitive_functions.push_back( PrimitiveFunction( "and_bitwise", "ret = (a and b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "or_bitwise" , "ret = (a or  b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "xor_bitwise", "ret = (bool(a) xor bool(b));", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    
     // ~, ...
     const char *bnb_operations[] = {"not_bitwise",NULL};
     const char *bnb_operators[]  = {"~"          ,NULL};

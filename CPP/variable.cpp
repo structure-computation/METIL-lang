@@ -296,7 +296,7 @@ const void *varargs_contains_only_named_variables_included_in_self_non_static_va
 }
 
 const void *init_using_varargs( Thread *th, const void *tok, Variable *var_to_init, VarArgs &va, Variable * &sp ) {
-    Nstring name_proc = STRING_init_NUM;
+    Nstring name_proc = STRING_reassign_NUM;
     // nb_init_call and reassign_using_mem_copy
     unsigned nb_init_call = 0;
     for(unsigned i=0;i<va.nb_nargs();++i) {

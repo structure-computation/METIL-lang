@@ -38,6 +38,7 @@ def self_div( a, b )      a = a / b
 def self_div_int( a, b )  a = a // b
 def self_mod( a, b )      a = a % b
 
+def self_and( a, b )      a = and_bitwise( a, b )
 def self_or( a, b )       a = or_bitwise( a, b )
 
 def self_shift_right( a, b )      a = a >> b

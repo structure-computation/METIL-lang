@@ -1,8 +1,21 @@
 import "ParametricElement.met"
+#~
+~#
+class SymbolicElementAncestor
+    virtual def grad( expr )                                                          abstract
+    virtual def grad_sym( expr )                                                      abstract
+    virtual def div( expr )                                                           abstract
+    virtual def var_inter_for_pos( p, nb_iterations = 1 )                             abstract
+    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )                abstract
+    virtual def var_inter_is_inside( vi, tolerance = 0 )                              abstract        
+    virtual def extrusion_with_normals( normals, alpha )                              abstract
+    virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 ) abstract
+    virtual def projection_with_normals( normals, point, nb_iterations = 1 )          abstract
+    virtual def get_shape_functions                                                   abstract
 
 #~
 ~#
-class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
+class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAncestor
     static const pe       := ParametricElement[ TE, dim ]()
     static const nb_nodes := pe.nb_nodes
     static const nvi      := pe.nvi # nb interpolation variables
@@ -16,9 +29,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
-        if lmtpp
-            return symbol( "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}" )
-        return symbol( "pos[IND($num_node)][$d]", "P_{$num_node}^{$(letters[d])}" )
+        return symbol( "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}" )
         
     #
     def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function )
@@ -119,7 +130,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return integration( expr, false ) / integration( Op( 1 ), false )
     
     # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "nodal" ) when interpolation_type == "nodal"
+    def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "nodal", symm = false ) when interpolation_type == "nodal"
         if nb_dim.size == 0
             vec := Vec[ Op, nb_nodes ]()
             for i in 0 .. vec.size
@@ -127,10 +138,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
                 if name.type != String
                     s = name( i )
                 else
-                    if lmtpp
-                        s = symbol("$name_elem.node($i)->$name") # $name_elem.ind[$i].index
-                    else
-                        s = symbol("form.$name.val.template get_val<T>( IND($i) )","$name^{N$i}") # hum !!!
+                    s = symbol("$name_elem.node($i)->$name") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
             return pe.interpolation( var_inter, vec )
@@ -140,29 +148,55 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
             for i in 0 .. nb_nodes
                 for j in 0 .. d
                     s := Op()
-                    if lmtpp
-                        s = symbol("$name_elem.node($i)->$name[$j]","$name^{N$i}_{$j}") # $name_elem.ind[$i].index
-                    else
-                        s = symbol("form.$name.val.template get_val<V<T,$d> >( IND($i) )[$j]","$name^{N$i}_{$j}") # $name_elem.ind[$i].index
+                    s = symbol("$name_elem.node($i)->$name[$j]","$name^{N$i}_{$j}") # $name_elem.ind[$i].index
                     sym.push_back( s )
                     vec[i][j] = s
-            return Vec[Op,nb_dim[0]]( pe.interpolation( var_inter, vec ) )
+            return Vec[Op,d]( pe.interpolation( var_inter, vec ) )
+        if nb_dim.size == 2
+            TR := [ Mat[Op,Gen[nb_dim[0],nb_dim[1]]], Mat[Op,Sym[nb_dim[0]]] ][ symm ]
+            mat := Vec[ TR, nb_nodes ]()
+            for i in 0 .. nb_nodes
+                for j in 0 .. nb_dim[0]
+                    for k in 0 .. nb_dim[1]
+                        if symm and k > j
+                            continue
+                        s := Op()
+                        s = symbol("$name_elem.node($i)->$name($j,$k)","$name^{N$i}_{$j,$k}") # $name_elem.ind[$i].index
+                        sym.push_back( s )
+                        mat[i][j,k] = s
+                if symm
+                    for j in 0 .. nb_dim[0]
+                        for k in j+1 .. nb_dim[1]
+                            mat[i][j,k] = mat[i][k,j]
+            return TR( pe.interpolation( var_inter, mat ) )
         assert( 0, "TODO" )
     
     # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op]() ) when interpolation_type == "global"
+    def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type in [ "global", "elementary" ]
+        bn := [ "elem", "f" ][ interpolation_type == "global" ]
         if nb_dim.size == 0
-            s := symbol("form.$name.val","$name")
+            s := symbol("$bn.$name","$name")
             sym.push_back( s )
             return s
         if nb_dim.size == 1
             d := nb_dim[0]
             res := Vec[ Op, d ]()
             for j in 0 .. d
-                s := symbol("form.$name.val[$j]","$name_{$j}")
+                s := symbol("$bn.$name[$j]","$name_{$j}")
                 sym.push_back( s )
                 res[j] = s
             return res
+        if nb_dim.size == 2
+            TR := [ Mat[Op,Gen[nb_dim[0],nb_dim[1]]], Mat[Op,Sym[nb_dim[0]]] ][ symm ]
+            mat := TR()
+            for j in 0 .. nb_dim[0]
+                for k in 0 .. nb_dim[1]
+                    if symm and k > j
+                        continue
+                    s := symbol("$bn.$name($j,$k)","$name_{$j,$k}")
+                    sym.push_back( s )
+                    mat[j,k] = s
+            return mat
         assert( 0, "TODO" )
         
     # helper function -> give a new "field" based on "canonical" interpolation
@@ -194,7 +228,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         res.val = interpolation( val_on_nodes )
         
     #
-    def grad( tens )
+    virtual def grad( tens )
         assert( dim == nvi, "TODO : grad with nb_var_inter != dim ( $nvi != $dim )" )
         #
         inv_jac_  := get_inv_jac_mat()
@@ -207,7 +241,7 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return res
 
     #
-    def grad_sym( tens ) when tens.tensor_order == 1
+    virtual def grad_sym( tens ) when tens.tensor_order == 1
         assert( tens.sizes.size==1, "grad_sym works only with tensor_order==1 as input." )
         tmp := self.grad( tens )
         res := Mat[ Op, Sym[Int32(tens.sizes[0])] ]()
@@ -216,11 +250,11 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return res
 
     #
-    def div( tens ) when tens.tensor_order == 1
+    virtual def div( tens ) when tens.tensor_order == 1
         return sum( grad( tens ).diag )
     
     #
-    def var_inter_for_pos( p, nb_iterations = 1 )
+    virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
         n := dot( d, d )
         return Vec[ Op ](
@@ -228,12 +262,12 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         )
 
     #
-    def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
+    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
         vi := var_inter_for_pos( p, nb_iterations )
         return var_inter_is_inside( vi, tolerance )
         
     #
-    def var_inter_is_inside( vi, tolerance = 0 )
+    virtual def var_inter_is_inside( vi, tolerance = 0 )
         if TE::has_a_var_inter_is_inside_method
             return TE::var_inter_is_inside( vi, tolerance )
         # -> generic case (not optimized)
@@ -245,23 +279,23 @@ class SymbolicElement[ TE, dim = Int32( TE::points[0].size ), lmtpp = true ]
         return res
         
     #
-    def extrusion_with_normals( normals, alpha )
+    virtual def extrusion_with_normals( normals, alpha )
         return pos + alpha * interpolation( normals )
         
     # 
-    def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 )
+    virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 )
         alpha := symbol( "alpha" )
         proj := extrusion_with_normals( normals, alpha )
         d := point - proj
         return newton_raphson_minimize_iteration_rec( dot(d,d), var_inter +++ [ alpha ], nb_iterations, old_values = get_center_of_var_inter() +++ [ 0 ] )
     
     #
-    def projection_with_normals( normals, point, nb_iterations = 1 )
+    virtual def projection_with_normals( normals, point, nb_iterations = 1 )
         vi := var_inter_with_normals( normals, point, nb_iterations )
         return extrusion_with_normals( normals, 0 ).subs( var_inter, vi[ 0 .. var_inter.size ] )
     
     #
-    def get_shape_functions
+    virtual def get_shape_functions
         res := Vec[ Op, nb_nodes ]()
         for i in 0 .. nb_nodes
             val_on_nodes := Vec[ Op, nb_nodes ]( function = _0 == i )

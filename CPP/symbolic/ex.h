@@ -98,6 +98,9 @@ void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressio
 void quadratic_expansion( Thread *th, const void *tok, const SEX &expressions, const SEX &variables, SEX &res );
 void quadratic_expansion( Thread *th, const void *tok, const VarArgs &expressions, const VarArgs &vars, VarArgs &res );
 
+void diff( Thread *th, const void *tok, const VarArgs &expr, const Ex &d, VarArgs &res );
+
+
 // ------------------------------------------------------------------------------------------------------------------
 
 Ex operator+( const Ex &a, const Ex &b );

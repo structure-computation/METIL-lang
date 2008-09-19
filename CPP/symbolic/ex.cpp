@@ -182,7 +182,21 @@ struct SumSeq {
 Ex make_add_seq( SplittedVec<SumSeq,4,16,true> &items_c ) {
     if ( not items_c.size() )
         return 0;
-    //
+        
+    //     // only negative numbers ?
+    //     bool all_neg = true;
+    //     for(unsigned i=0;i<items_c.size();++i)
+    //         all_neg &= items_c[i].c.is_neg();
+    //     if ( all_neg ) {
+    //         for(unsigned i=0;i<items_c.size();++i)
+    //             items_c[i].c = abs( items_c[i].c );
+    //         Ex res = items_c[0].to_op();
+    //         for(unsigned i=1;i<items_c.size();++i)
+    //             res = res + items_c[i].to_op();
+    //         return - res;
+    //     }
+    
+    // else
     Ex res = items_c[0].to_op();
     for(unsigned i=1;i<items_c.size();++i)
         res = res + items_c[i].to_op();
@@ -190,17 +204,15 @@ Ex make_add_seq( SplittedVec<SumSeq,4,16,true> &items_c ) {
 }
 
 /// @see operator+
-void find_add_items_and_coeff_rec( const Op *a, SplittedVec<SumSeq,4,16,true> &items ) {
+void find_add_items_and_coeff_rec( const Op *a, SplittedVec<SumSeq,4,16,true> &items, Ex::T pre_mul = 1 ) {
     if ( a->type == STRING_add_NUM ) { // anything_but_a_number + anything_but_a_number
-        find_add_items_and_coeff_rec( a->func_data()->children[0], items );
-        find_add_items_and_coeff_rec( a->func_data()->children[1], items );
+        find_add_items_and_coeff_rec( a->func_data()->children[0], items, pre_mul );
+        find_add_items_and_coeff_rec( a->func_data()->children[1], items, pre_mul );
     } else if ( a->type == STRING_mul_NUM and a->func_data()->children[0]->type == Op::NUMBER ) { // 10 * a
-        SumSeq *s = items.new_elem();
-        s->c.init( a->func_data()->children[0]->number_data()->val );
-        s->op = a->func_data()->children[1];
+        find_add_items_and_coeff_rec( a->func_data()->children[1], items, pre_mul * a->func_data()->children[0]->number_data()->val );
     } else { // a
         SumSeq *s = items.new_elem();
-        s->c.init( 1 );
+        s->c.init( pre_mul );
         s->op = a;
     }
 }
@@ -212,6 +224,7 @@ void add_items_and_coeffs( const SplittedVec<SumSeq,4,16,true> &items_a, Splitte
                 items_b.push_back( items_a[i] );
                 break;
             } 
+            // std::cout << Ex(items_a[ i ].op) << " " << items_a[ i ].c << " " << Ex(items_b[ j ].op) << std::endl;
             if ( items_a[ i ].op == items_b[ j ].op ) {
                 items_b[ j ].c += items_a[ i ].c;
                 if ( not items_b[ j ].c )
@@ -878,12 +891,11 @@ void destroy_rec( Op *a ) {
 
 // ------------------------------------------------------------------------------------------------------------
 struct DiffRec {
-    DiffRec( Thread *th, const void *tok, const Ex &expr, const Ex &d ) : th(th), tok(tok), zero(0), one(1), expr(expr), d(d) {
-        d.op->additional_info = one.op->inc_ref();
-        d.op->op_id = ++Op::current_op;
-        //
-        diff_rec( expr.op );
+    DiffRec( Thread *th, const void *tok, const Ex &a ) : th(th), tok(tok), zero(0), one(1) {
+        a.op->additional_info = one.op->inc_ref();
+        a.op->op_id           = ++Op::current_op;
     }
+
     
     ~DiffRec() {
         //         ++Op::current_op;
@@ -946,12 +958,23 @@ struct DiffRec {
     
     Thread *th;
     const void *tok;
-    Ex zero, one, expr, d;
+    Ex zero, one;
 };
 
 Ex Ex::diff( Thread *th, const void *tok, const Ex &a ) const {
-    DiffRec dr( th, tok, *this, a );
+    DiffRec dr( th, tok, a );
+    dr.diff_rec( op );
     return op->additional_info;
+}
+
+void diff( Thread *th, const void *tok, const VarArgs &expr, const Ex &d, VarArgs &res ) {
+    DiffRec dr( th, tok, d );
+    for(unsigned i=0;i<expr.variables.size();++i) {
+        dr.diff_rec( reinterpret_cast<Ex *>(expr.variables[i].data)->op );
+        Variable *v = res.variables.new_elem();
+        v->init( global_data.Op, 0 );
+        reinterpret_cast<Ex *>(v->data)->op = reinterpret_cast<Ex *>(expr.variables[i].data)->op->additional_info->inc_ref();
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------

@@ -10,7 +10,7 @@ class NameElement
 class NodalElement inherits NameElement
     static def get_nb_nodes pertinence 2 return 1
     static def get_nvi      pertinence 2 return 0
-    static points   := []
+    static points   := [[]]
     static children := []
     static def interval_var_inter( vi )
         return [ [], [] ]

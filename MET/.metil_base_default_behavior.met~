@@ -38,6 +38,8 @@ def self_div( a, b )      a = a / b
 def self_div_int( a, b )  a = a // b
 def self_mod( a, b )      a = a % b
 
+def self_and( a, b )      a = a and b
+
 def self_or( a, b )       a = or_bitwise( a, b )
 
 def self_shift_right( a, b )      a = a >> b
@@ -468,3 +470,7 @@ class GetNamedArguments
 def get_named_arguments( self ) when is_of_type_VarArgs( self )
     return GetNamedArguments( self )
 
+# ------------------------------------------------------------------------------------
+def mkdir( directory )
+    return system( "mkdir $directory 2> /dev/null" )
+    
