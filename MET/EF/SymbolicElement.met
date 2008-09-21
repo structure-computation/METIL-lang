@@ -14,6 +14,7 @@ class SymbolicElementAncestor
     virtual def get_shape_functions                                                   abstract
     virtual def get_name                                                              abstract
     virtual def get_nb_dim                                                            abstract
+    virtual def children( nvi )                                                       abstract
 
 #~
 ~#
@@ -25,8 +26,15 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     pos_nodes := Vec[ Vec[ Op, dim ], nb_nodes ]()
     var_inter := Vec[ Op, nvi ]()
     name_elem := ""
+    _children := Vec[ Vec[ Ptr[ SymbolicElementAncestor ] ], nvi + 1 ]()
     
     assume_const_jac := 0
+    
+    #
+    def destroy
+        for i in 1 .. nvi + 1
+            for c in _children
+                delete c
     
     #
     virtual def get_name
@@ -35,6 +43,19 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     #
     virtual def get_nb_dim
         return dim
+        
+    #
+    virtual def children( sub_nvi )
+        if sub_nvi > nvi
+            return []
+        if _children[ sub_nvi ].size == 0
+            if sub_nvi
+                for num_child in 0 .. pe.nb_children( sub_nvi )
+                    ns := new SymbolicElement[ pe.type_child( sub_nvi, num_child ) ]( name_elem )
+                    _children[ sub_nvi ].push_back( ns )
+            else
+                _children[ 0 ] = [ this ]
+        return _children[ sub_nvi ]
         
     #
     def std_pos_symbol_function( num_node, d )
