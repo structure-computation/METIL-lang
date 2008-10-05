@@ -33,6 +33,14 @@ class Map[ K, V, default_value = V() ]
                 values.remove_unordered( cpt )
                 break
     
+    def get_size
+        return keys.size
+    
+    def __for__( block )
+        for k, v in keys, values
+            block(( k, v ))
+        
+    
     def write_to_stream( stream )
         for i in 0 .. keys.size
             stream << keys[i] << " => " <<< values[i]
@@ -61,7 +69,7 @@ class MapDef[ V, default_value = V() ]
 ##
     Simple set made by 1 vector
 ##
-class Set[ K ]
+class Set[ K, eq = equal ]
     property is_a_Set
     
     keys := Vec[ K ]()
@@ -73,14 +81,14 @@ class Set[ K ]
     
     def insert( key )
         for i in keys
-            if assumed( key == i )
+            if assumed( eq( key, i ) )
                 return i
         # creation of a new key
         return keys.push_back( key )
 
     def remove( key )
         for i in 0 .. keys.size
-            if assumed( key == keys[i] )    
+            if assumed( eq( key, keys[i] ) )    
                 keys.remove_unordered( i )
                 break
     
@@ -90,13 +98,16 @@ class Set[ K ]
     def conversion_to( b ) when b.type == Bool
         b.init( keys.size )
     
+    def select( i )
+        return keys[ i ]
+    
     def __for__( block )
         for i in keys
             block( i )
             
 def __in__( key, set_ ) when set_.is_a_Set
     for k in set_.keys
-        if assumed( key == k )
+        if assumed( set_.eq( key, k ) )
             return true
     return false
 

@@ -271,7 +271,6 @@ class MatAncestor
         V := Vec[ ST, static_nb_rows ]
         return partial_det( V( 0..nb_rows ), V( 0..nb_cols ) )
     def solve( vec )
-        # assert( 0, "Wrong procedure" )
         TR := type_promote( type_promote_list( vec.sub_types, [T], div ).map( partial_inst ), reassign )
         if structure.is_diag
             return Vec[ TR, static_nb_rows ]( get_diag() / vec )
@@ -302,10 +301,51 @@ class MatAncestor
                 vec_sol[ r ] -= vec_sol[ c ] * m[ r, c ]
             vec_sol[ r ] /= m[ r, r ]
         return vec_sol
+        
     def get_is_diag
         return Structure::is_diag
+        
     def get_is_sym
         return Structure::is_sym
+        
+    def get_is_sym_rt
+        if Structure::is_sym
+            return true
+        for i in 0 .. get_nb_rows()
+            for j in 0 .. i
+                if not assumed( select(i,j) == select(j,i) )
+                    return false
+        return true
+        
+    def get_is_diag_rt
+        if Structure::is_diag
+            return true
+        if Structure::is_sym
+            for i in 0 .. get_nb_rows()
+                for j in 0 .. i
+                    if not assumed( select(i,j) == select(j,i) )
+                        return false
+        else
+            info "1"
+            for i in 0 .. get_nb_rows()
+                for j in 0 .. i
+                    if not assumed( select(i,j) == 0 )
+                        return false
+                info "2"
+                for j in i+1 .. get_nb_cols()
+                    info select(i,j)
+                    if not assumed( select(i,j) == 0 )
+                        return false
+        info "3"
+        return true
+        
+    def get_is_herm_rt
+        for i in 0 .. get_nb_rows()
+            for j in 0 .. i
+                if not assumed( select(i,j) == select(j,i)' )
+                    return false
+        return true
+        
     def __for__( block ) pertinence 0
         for i in 0 .. get_nb_rows()
             for j in 0 .. get_nb_cols()
@@ -477,7 +517,6 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
 def get_det( self ) when self.tensor_order == 2
     assert( self.sizes[0]==self.sizes[1], "det for non square matrix" )
     s := self.sizes[0]
-    info s
     T := self.T
     if s==0
         return T(0)

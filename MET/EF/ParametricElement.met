@@ -85,7 +85,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                     ch_P := ce.interpolation( child_var_inter, ch.second )
                     f <<< "def var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter ) when sub_nvi==$n and num_child==$cpt"
                     f <<< "    return [$(join(ch_P,","))]"
-                    f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==0"
+                    f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
                     f <<< "    return $(@ch.first)"
             
             # normal
