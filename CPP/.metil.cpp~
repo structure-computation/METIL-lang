@@ -20,6 +20,7 @@ extern "C" {
     #include <QtCore/QTimer>
 #endif // QT4_FOUND
 
+#define WITHOUT_SIGNAL
 
 #include <iostream>
 #ifndef WITHOUT_SIGNAL
@@ -187,8 +188,8 @@ int main(int argc,char **argv) {
                 return 1;
             }
             file_to_interpret = argv[i];
-            std::cout << file_to_interpret << std::endl;
             main_thread->argc = argc - i; main_thread->argv = argv + i;
+            break;
         }
     }
     

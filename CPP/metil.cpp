@@ -20,6 +20,7 @@ extern "C" {
     #include <QtCore/QTimer>
 #endif // QT4_FOUND
 
+// #define WITHOUT_SIGNAL
 
 #include <iostream>
 #ifndef WITHOUT_SIGNAL
@@ -28,7 +29,7 @@ extern "C" {
 
 void display_help(std::ostream &os) {
     os <<   "  -h or --help : I know you know how to use it.\n"
-            "  --no-qt ... : start without qt.\n"
+            "  --qt ... : use qt.\n"
             "  --doc file1.sar file2.sar ... : make documentation of files specified as arguments.\n"
             "  -c file1.sar : compile 'file1.sar' into an executable by default named 'file1'.\n"
             "  -o file1 : specify name of the resulting executable.\n"
@@ -103,7 +104,7 @@ int main(int argc,char **argv) {
     
     // argument parsing
     const char *file_to_compile = NULL, *output_file = NULL, *file_to_interpret = NULL;
-    bool with_qt = true;
+    bool with_qt = false;
     for(int i=1;i<argc;++i) {
         // options with only one '-'
         if ( argv[i][0]=='-' and argv[i][1]!='-' ) {
@@ -144,8 +145,8 @@ int main(int argc,char **argv) {
             return 0;
         }
         // no qt
-        else if ( strcmp(argv[i],"--no-qt")==0 ) {
-            with_qt = false;
+        else if ( strcmp(argv[i],"--qt")==0 ) {
+            with_qt = true;
         }
         // prof
         else if ( strcmp(argv[i],"--prof")==0 ) {

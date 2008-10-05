@@ -215,6 +215,19 @@ def doubledot( a, b ) when a.tensor_order > 0 and b.tensor_order > 0
         res[ ind[ sel ] ] += a[ ind[ 0 .. a.tensor_order ] ] * val
     return res
 
+
+#~
+~#
+def tensorial_product( a, b )
+    T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
+    res := Tensor[ T, a.s +++ b.s ]()
+    for ind_a, val_a in a
+        for ind_b, val_b in b
+            res[ ind_a +++ ind_b ] = val_a * val_b
+    return res
+    
+
+
 # ---------------------------------------------------------------------------------------------------------------------------------
 
 ## tensor_perm( "ijk", "kij" ) -> 2 0 1 ##
