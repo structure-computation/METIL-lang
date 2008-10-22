@@ -326,17 +326,13 @@ class MatAncestor
                     if not assumed( select(i,j) == select(j,i) )
                         return false
         else
-            info "1"
             for i in 0 .. get_nb_rows()
                 for j in 0 .. i
                     if not assumed( select(i,j) == 0 )
                         return false
-                info "2"
                 for j in i+1 .. get_nb_cols()
-                    info select(i,j)
                     if not assumed( select(i,j) == 0 )
                         return false
-        info "3"
         return true
         
     def get_is_herm_rt
@@ -350,13 +346,25 @@ class MatAncestor
         for i in 0 .. get_nb_rows()
             for j in 0 .. get_nb_cols()
                 block( make_varargs( [i,j], select(i,j) ) )
-## ##
+
+#~ ~#
+class SimpleMatStructure
+    is_sym  := false
+    is_diag := false
+    
+#~ ~#
 class SubMatExtraction[ ST ] inherits MatAncestor
     m := InternalVariable() # 
     v1 := InternalVariable() # 
     v2 := InternalVariable() # 
+    structure := SimpleMatStructure()
     
-    def init( mat, vec1, vec2 ) m.init_using_var( mat ); v1.init_using_var( vec1 ); v2.init_using_var( vec2 )
+    def init( mat, vec1, vec2 )
+        m.init_using_var( mat )
+        v1.init_using_var( vec1 )
+        v2.init_using_var( vec2 )
+        structure.is_sym  = mat.structure.is_sym  and ( vec1 == vec2 )
+        structure.is_diag = mat.structure.is_diag and ( vec1 == vec2 )
     def reassign( mat ) when mat.tensor_order == 2
         for r in ST(0) .. nb_rows
             for c in ST(0) .. nb_cols
@@ -374,28 +382,6 @@ class SubMatExtraction[ ST ] inherits MatAncestor
         return m->static_nb_cols
     def get_Storage
         return m->Storage
-
-##class SubMatExtraction[ ST ]
-    static const tensor_order := 2
-    property is_a_matrix
-    
-    m := InternalVariable() # 
-    ind_r := Vec[ST]()
-    ind_c := Vec[ST]()
-    
-    def init( mat, pouet ) m.init_using_var( mat )
-    def reassign( mat ) when mat.tensor_order == 2
-        for ind, v in @m
-            v = mat[ ind[0], ind[1] ]
-    def reassign( val ) when val.tensor_order <= 0
-        for ind, v in @m
-            v = val
-    def get_sizes          return [ind_r.size, ind_c.size]
-    def get_nb_rows        return ind_r.size
-    def get_nb_cols        return ind_c.size
-    def get_sub_types      return m->sub_types
-    def select( r, c ) when r.tensor_order <= 0 and c.tensor_order <= 0
-        return m->select( inr_r[r], inr_r[c] )##
                 
 ## basic matrix, dense case ##
 class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == Dense inherits MatAncestor
