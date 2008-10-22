@@ -20,7 +20,7 @@ extern "C" {
     #include <QtCore/QTimer>
 #endif // QT4_FOUND
 
-#define WITHOUT_SIGNAL
+// #define WITHOUT_SIGNAL
 
 #include <iostream>
 #ifndef WITHOUT_SIGNAL
@@ -29,7 +29,7 @@ extern "C" {
 
 void display_help(std::ostream &os) {
     os <<   "  -h or --help : I know you know how to use it.\n"
-            "  --no-qt ... : start without qt.\n"
+            "  --qt ... : use qt.\n"
             "  --doc file1.sar file2.sar ... : make documentation of files specified as arguments.\n"
             "  -c file1.sar : compile 'file1.sar' into an executable by default named 'file1'.\n"
             "  -o file1 : specify name of the resulting executable.\n"
@@ -104,7 +104,7 @@ int main(int argc,char **argv) {
     
     // argument parsing
     const char *file_to_compile = NULL, *output_file = NULL, *file_to_interpret = NULL;
-    bool with_qt = true;
+    bool with_qt = false;
     for(int i=1;i<argc;++i) {
         // options with only one '-'
         if ( argv[i][0]=='-' and argv[i][1]!='-' ) {
@@ -145,8 +145,8 @@ int main(int argc,char **argv) {
             return 0;
         }
         // no qt
-        else if ( strcmp(argv[i],"--no-qt")==0 ) {
-            with_qt = false;
+        else if ( strcmp(argv[i],"--qt")==0 ) {
+            with_qt = true;
         }
         // prof
         else if ( strcmp(argv[i],"--prof")==0 ) {
@@ -206,29 +206,37 @@ int main(int argc,char **argv) {
         main_thread->interpreter_behavior.prof_entries.filename = "callgrind.out." + std::string( file_to_interpret ? file_to_interpret : "interp" );
         
     //
+    std::cout << __LINE__ << std::endl;
     SourceFile *base_sar_init_sf = global_data.get_sourcefile( "metil_base_init.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     SourceFile *sf               = global_data.get_sourcefile( file_to_interpret ? file_to_interpret : "metil_base_interprer.met", ".", main_thread->error_list, &main_thread->interpreter_behavior );
     SourceFile *base_sar_dest_sf = global_data.get_sourcefile( "metil_base_dest.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     
+    std::cout << __LINE__ << std::endl;
     if ( base_sar_dest_sf and sf and base_sar_init_sf ) {
         main_thread->push_prev_file_to_read( base_sar_dest_sf );
         main_thread->push_prev_file_to_read( sf               );
         main_thread->push_prev_file_to_read( base_sar_init_sf );
     }
     
+    std::cout << __LINE__ << std::endl;
     #ifdef QT4_FOUND
         if ( with_qt ) {
+            std::cout << __LINE__ << std::endl;
             QApplication qapp( argc, argv );
             qapp.setQuitOnLastWindowClosed( false );
+            std::cout << __LINE__ << std::endl;
             
             main_thread->display_window_creator = new DisplayWindowCreator;
+            std::cout << __LINE__ << std::endl;
             
             MetilQtThread mqt;
             QTimer::singleShot( 0, &mqt, SLOT(start()) );
+            std::cout << __LINE__ << std::endl;
             
             qapp.exec();
         } else {
     #endif
+            std::cout << __LINE__ << std::endl;
             main_thread->display_window_creator = NULL;
             thread_loop( main_thread );
     #ifdef QT4_FOUND
@@ -241,6 +249,7 @@ int main(int argc,char **argv) {
     #ifdef HAVE_MPI
         metil_mpi_finalize();
     #endif // HAVE_MPI
+    
     return main_thread->return_value;
 }
 
