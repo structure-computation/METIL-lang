@@ -33,7 +33,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     #
     def destroy
         for i in 1 .. nvi + 1
-            for c in _children
+            for c in _children[ i ]
                 delete c
     
     #
