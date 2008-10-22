@@ -1,5 +1,6 @@
 ## generic init with named arguments ##
 def init( self, varargs ) when varargs.contains_only_named_variables_included_in_self_non_static_variables( self ) pertinence -2
+    init_using_default_values( self )
     init_using_varargs( self, varargs )
 
 ## generic init ##
@@ -29,6 +30,7 @@ def reassign( self, __source_object__ ) when __is_a_Property__( __source_object_
     
 ## default conversion_to -> error message ##
 def conversion_to( self, b )
+    stack_info()
     assert( 0, "Unable to convert type '"+self.type+"' to type '"+b.type+"'" )
 
 ## default destroy -> do nothing ##
@@ -501,7 +503,7 @@ def __str_partial_instanciations__  s ~= String
 __str_partial_instanciations__()
 
 def stack_info( n = 200 )
-    for i in 3 .. min( n+4, __nb_stack_level__() )
+    for i in 2 .. min( n, __nb_stack_level__() )
         print __file_at_stack_level__(i), __line_at_stack_level__(i)
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
