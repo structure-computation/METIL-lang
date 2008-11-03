@@ -12,6 +12,8 @@
 #include "definitiondata.h"
 #include "thread.h"
 #include "type.h"
+#include <stdlib.h>
+#include <string.h>
 
 DefinitionData *DefinitionData::make_new(unsigned nb_args,unsigned attributes) {
     bool has_varargs = attributes & Tok::Definition::VARARGS;

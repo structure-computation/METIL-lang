@@ -13,6 +13,7 @@
 #include "lexemdefinition.h"
 #include "lexemnumber.h"
 #include <usual_strings.h>
+#include <string.h>
 #include "lexem.h"
 #include "errorlist.h"
 // #include "tok.h"

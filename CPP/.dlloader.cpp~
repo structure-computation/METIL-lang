@@ -82,16 +82,16 @@ const char *DlLoader::last_error() const {
 }
 
 void *DlLoader::find_symbol( const char *symbol_name ) const {
-//     return NULL;
     #ifdef HAVE_LIBDL
-        return dlsym( lib, symbol_name ); 
+        if ( lib )
+            return dlsym( lib, symbol_name ); 
+        return NULL;
     #else
         return (void *)GetProcAddress( static_cast<HMODULE>(lib), symbol_name );
     #endif
 }
 
 void *DlLoader::find_symbol( const char *symbol_name, int size_symbol_name ) const {
-//     return NULL;
     std::string s( symbol_name, symbol_name + size_symbol_name );
     return find_symbol( s.c_str() );
 }

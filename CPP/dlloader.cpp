@@ -13,6 +13,7 @@
 #include "dlloader.h"
 #include <metil_dl_config.h>
 #include <iostream>
+#include <stdlib.h>
 
 #ifdef HAVE_LIBDL
     #include <dlfcn.h>

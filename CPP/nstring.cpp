@@ -14,6 +14,7 @@
 #include "splittedvec.h"
 #include <usual_strings.h>
 #include <sstream>
+#include <string.h>
 
 struct NstringStr {
     const char *s;

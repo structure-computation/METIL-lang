@@ -105,6 +105,7 @@ namespace METIL_NS {
     inline bool is_integer( const Rationnal  &val ) { return val.den == Rationnal::BI(1); }
 
     template<class T> T abs( const T &val ) { return std::abs(val); }
+    inline int abs( int val ) { return ( val > 0 ? val : val ); }
     inline Rationnal abs( const Rationnal &val ) { Rationnal res = val; res.num.val = abs(res.num.val); return res; }
     inline Unsigned8  abs( const Unsigned8  &val ) { return val; }
     inline Unsigned16 abs( const Unsigned16 &val ) { return val; }
@@ -306,11 +307,12 @@ inline Rationnal pow_96( const Rationnal &a, const Rationnal &b ) {
         if ( b.num.val == 1 ) return a;
         //
         int e = b.num.val;
-        Rationnal tmp = a, cp_a = a;
+        Rationnal tmp = a;
         if ( e < 0 )  {
             std::swap( tmp.num, tmp.den );
             e = -e;
         }
+        Rationnal cp_a = tmp;
         while ( --e ) {
             tmp.num = tmp.num * cp_a.num;
             tmp.den = tmp.den * cp_a.den;
@@ -323,7 +325,7 @@ inline Rationnal pow_96( const Rationnal &a, const Rationnal &b ) {
 
 inline Rationnal atan2_96 ( const Rationnal &a, const Rationnal &b ) { return Rationnal( atan2( Float96(a), Float96(b) ) ); }
 
-inline Rationnal sqrt_96  ( const Rationnal &a ) { return pow_96(  ) Rationnal( log ( Float96(a) ) ); }
+inline Rationnal sqrt_96  ( const Rationnal &a ) { return pow_96( a, Rationnal( 1, 2 ) ); }
 
 inline Rationnal log_96   ( const Rationnal &a ) { return Rationnal( log ( Float96(a) ) ); }
 inline Rationnal exp_96   ( const Rationnal &a ) { return Rationnal( exp ( Float96(a) ) ); }

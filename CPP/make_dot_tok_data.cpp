@@ -9,6 +9,7 @@
 #include "splittedvec.h"
 #include "hashset.h"
 #include "typechar.h"
+#include <string.h>
 
 #define MAKE_DOT_TOK_DATA_CPP
 #include "make_dot_tok_data.h"

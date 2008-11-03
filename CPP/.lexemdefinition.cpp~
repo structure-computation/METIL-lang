@@ -190,7 +190,7 @@ void LexemDefinition::init( Lexem *t, const char *provenance, ErrorList *error_l
     set_offset_to_property_name();
     
     // abstract
-    abstract = 
+    abstract = ( block->type == STRING___abstract___NUM );
 }
 
 bool LexemDefinition::needs_try_block() const {

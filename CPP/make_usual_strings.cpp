@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h>
+#include <string.h>
 #include "hashstring.h"
 #include "typechar.h"
 #include "splittedvec.h"
@@ -366,7 +367,7 @@ int main(int argc,char **argv) {
         unsigned hash_size_trial = nb_operators;
         std::vector<int> nb; nb.resize( hash_size_trial, -1 );
         for(int i=0;i<(int)nb_operators;++i) {
-            if ( want_le xor type_char(operators[i].met_name[0])!=TYPE_CHAR_letter ) {
+            if ( want_le xor ( type_char(operators[i].met_name[0])!=TYPE_CHAR_letter ) ) {
                 unsigned hash_val = hashstring( operators[i].met_name, strlen(operators[i].met_name) ) % hash_size_trial;
                 if ( nb[hash_val] >= 0 ) { // there's already an operator in this bucket
                     nb.clear();

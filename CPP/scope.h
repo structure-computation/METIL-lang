@@ -17,6 +17,7 @@
 #include "type.h"
 #include "usual_strings.h"
 #include "sourcefile.h"
+#include <string.h>
 
 /**
     @author Grover <hugo@gronordi>

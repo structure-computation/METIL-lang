@@ -1431,7 +1431,7 @@ template<int compile_mode> const void *exec_tok_test_next_type(const N<compile_m
     Callable *c = th->current_def_trial->current_callable;
     
     --sp;
-    bool res = Bool( sp->data, 1 << 7-sp->get_bit_offset() );
+    bool res = Bool( sp->data, 1 << (7-sp->get_bit_offset()) );
     if ( *sp->cpt_use == 0 ) {
         assert( sp->type == sp->parent_type );
         dec_ref( th, sp->parent_type );
@@ -1600,7 +1600,7 @@ template<int compile_mode,int want_or> const void *exec_tok_and_or_or(const N<co
         //         make_copy( f, wf ); ++wf->cpt_use;
         return tok->next();
     }
-    bool cond = Bool( c->data, 1 << 7-c->get_bit_offset() );
+    bool cond = Bool( c->data, 1 << (7-c->get_bit_offset()) );
     // rm bool
     if ( *c->cpt_use == 0 ) {
         assert(c->data==c->parent_data and c->type==c->parent_type);

@@ -1,6 +1,8 @@
 #ifndef DISPLAY_PAINTER_CONTEXT_H
 #define DISPLAY_PAINTER_CONTEXT_H
 
+#include <limits>
+
 ///
 struct DisplayPainterContext {
     ///

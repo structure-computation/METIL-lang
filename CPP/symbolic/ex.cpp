@@ -6,6 +6,7 @@
 #include <sstream>
 #include <complex>
 #include <map>
+#include <algorithm>
 
 // #define ALWAYS_DISTRIBUTE_NUMBER
 // #define NEVER_DISTRIBUTE_NUMBER
