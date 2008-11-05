@@ -1455,9 +1455,9 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ]
     def destroy
         pass
     static const reserved := atomic_size
+    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
     size ~= Int32
     data ~= Vec[ T, atomic_size ]
-    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when variable_atomic_size pertinence 0.5
     def init( r )
@@ -1469,10 +1469,10 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
     def destroy
         if reserved
             data.free()
-    reserved ~= Int32
-    size ~= Int32
-    data ~= Ptr[ T ]
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    size ~= Int32
+    reserved ~= Int32
+    data ~= Ptr[ T ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when atomic_size == 0
     def init( r )
@@ -1482,8 +1482,8 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
         pass
     static const reserved := 0
     static const size := 0
-    data ~= VoidVec
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    data ~= VoidVec
 
 #~
 ~#

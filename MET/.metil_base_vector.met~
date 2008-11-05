@@ -912,6 +912,12 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
             select( cpt ).init( function( cpt ) )
             cpt++
     
+    def init( function, size = static_size ) # vector with function(index)
+        assert( size == static_size, "size == static_size" )
+        cpt := 0; while cpt < static_size
+            select( cpt ).init( function( cpt ) )
+            cpt++
+    
     def init( size, default_value ) pertinence 1 # vector with specified size and reservation, initialised with default_value
         assert( size == static_size, "can't change the size of a static sized vector (you want $size be we have $static_size)" )
         init( default_value = default_value )
@@ -1449,9 +1455,9 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ]
     def destroy
         pass
     static const reserved := atomic_size
+    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
     size ~= Int32
     data ~= Vec[ T, atomic_size ]
-    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when variable_atomic_size pertinence 0.5
     def init( r )
@@ -1465,8 +1471,8 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
             data.free()
     reserved ~= Int32
     size ~= Int32
-    data ~= Ptr[ T ]
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    data ~= Ptr[ T ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when atomic_size == 0
     def init( r )
@@ -1476,8 +1482,8 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
         pass
     static const reserved := 0
     static const size := 0
-    data ~= VoidVec
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    data ~= VoidVec
 
 #~
 ~#
