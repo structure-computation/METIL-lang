@@ -1,9 +1,15 @@
 #ifndef BIGRAT_H
 #define BIGRAT_H
 
+#include <limits>
+
+#include <assert.h>
+#include <cstdlib>
+#include <iomanip>
+
 #include "bigint.h"
 #include "bool.h"
-#include <metil_ieee754_config.h>
+#include "metil_ieee754_config.h"
 
 ///
 #define BASE_BIG_RAT 32768
@@ -47,24 +53,107 @@ struct BigRat {
         cannonicalize();
     }
     ///
-    BigRat( const Float32 &val ) {
-        if ( val == 0 ) { num = 0; den = 1; return; }
-        const ieee754_float &v = reinterpret_cast<const ieee754_float &>( val );
-        init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE754_FLOAT_BIAS - 23, v.ieee.mantissa + 0x00800000UL );
-    }
-    ///
-    BigRat( const Float64 &val ) {
-        if ( val == 0 ) { num = 0; den = 1; return; }
-        const ieee754_double &v = reinterpret_cast<const ieee754_double &>( val );
-        init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE754_DOUBLE_BIAS - 52, ( Unsigned64( v.ieee.mantissa0 + 0x100000UL ) << 32 ) + v.ieee.mantissa1 );
-    }
-    ///
-    BigRat( const Float96 &val ) {
-        if ( val == 0 ) { num = 0; den = 1; return; }
-        const ieee854_long_double &v = reinterpret_cast<const ieee854_long_double &>( val );
-        init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE854_LONG_DOUBLE_BIAS - 63, ( Unsigned64( v.ieee.mantissa0 ) << 32 ) + v.ieee.mantissa1 );
-    }
+    void setNum( const Float32 &val ) { approx<Float32,base,T,offset,owning>(val,num,den); }
+    void setNum( const Float64 &val ) { approx<Float64,base,T,offset,owning>(val,num,den); }
+    void setNum( const Float96 &val ) { approx<Float96,base,T,offset,owning>(val,num,den); }
     
+
+//     BigRat( const Float32 &val ) {
+//         if ( val == 0 ) { num = 0; den = 1; return; }
+//         const ieee754_float &v = reinterpret_cast<const ieee754_float &>( val );
+//         init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE754_FLOAT_BIAS - 23, v.ieee.mantissa + 0x00800000UL );
+//     }
+    BigRat( const Float32 &val ) { approx<Float32,base,T,offset,owning>(val,num,den); }
+
+    ///
+    BigRat( const Float64 &val ) { approx<Float64,base,T,offset,owning>(val,num,den); }
+
+    /*!
+    La fonction utilise les fractions continues : cf par exemple manuel de calcul numérique appliqué C. Guilpin, ed. EDP Sciences.
+    Un mot sur le paramètre tol. On compare notre fraction q à la valeur initiale val en calculant | q - val | / (1 + | val | ) et en comparant le résultat à l'epsilon du type flottant fois 2^tol. Expérimentalement tol = 4 convient.
+    Un pire cas pour les fractions continues est le nombre d'or, noté phi,  solution positive de l'équation x^2 = x + 1 soit x = 1 + 1 / x d'où le développement en fraction continue : 1 + 1 / ( 1 + 1 / ( 1 + 1 / ( ...   ))))). Tous les coefficients valent un. Voir la page de wikipedia \a http://fr.wikipedia.org/wiki/Nombre_d'or . C'est pour ce nombre que j'ai choisi une limite de 40 pour la boucle.
+    phi = (1+sqrt(5))/2 ~ 1.618033988749894848204586834365638117720309179805.
+
+    \friend raphael.pasquier@lmt.ens-cachan.fr
+
+    */
+    template<class TFLOAT,int base2,class T2,int offset2,bool owning2> void approx(const TFLOAT &val, BigInt<base2,T2,offset2,owning2> &nume, BigInt<base2,T2,offset2,owning2> &deno, int tol=4 ) {
+        Float64 ent,v,abs_v, i_abs_v;
+        BigInt<base2,T2,offset2,owning2> tmpA,tmpB;
+
+        abs_v = fabs(val);
+        i_abs_v = 1./(1.+abs_v);
+        v = modf(abs_v,&ent);
+        //std::cout << " frac  = " << std::setprecision(17) << v << "    ent = " << std::setprecision(17) << ent << std::endl;
+        BigInt<base2,T2,offset2,owning2> A0(ent);
+        BigInt<base2,T2,offset2,owning2> B0(1);
+
+        //if (v/(ent+1.)<1.e-10){ //if (fabs(v)<ldexp(std::numeric_limits<Float64>::epsilon(),20)) {
+        if ((fabs(abs_v-Float64(A0)/Float64(B0))*i_abs_v)<ldexp(std::numeric_limits<TFLOAT>::epsilon(),tol)) {
+            if (val>0.)
+                nume = A0;
+            else
+                nume = -A0;
+            deno = B0;
+            return;
+        } else
+            v = 1./v;
+        v = modf(v,&ent);
+        BigInt<base2,T2,offset2,owning2> B1(ent);
+        BigInt<base2,T2,offset2,owning2> A1;
+        BigInt<base2,T2,offset2,owning2> one(1);
+        A1 = A0*B1+one;
+        //std::cout << " frac  = " << std::setprecision(17) << v << "    ent = " << std::setprecision(17) << ent << std::endl;
+        //if (v/(ent+1.)<1.e-8) { //if (fabs(v)<ldexp(std::numeric_limits<Float64>::epsilon(),20)) {
+        if ((fabs(abs_v-Float64(A1)/Float64(B1))*i_abs_v)<ldexp(std::numeric_limits<TFLOAT>::epsilon(),tol)) {
+            if (val>0.)
+                nume = A1;
+            else
+                nume = -A1;
+            deno = B1;
+            return;
+        } else
+            v = 1./v;
+
+        for(int jj=0;jj<40;jj++) {
+            v = modf(v,&ent);
+            //std::cout << " @ " << jj << " @  frac  = " << std::setprecision(17) << v << "    ent = " << std::setprecision(17) << ent << std::endl;
+            tmpA = A1;
+            tmpB = B1;
+            BigInt<base2,T2,offset2,owning2> tmp(ent);
+            A1 = A1 * tmp + A0;
+            B1 = B1 * tmp + B0;
+            //std::cout << jj << " ____ " << A1 << "  /  " << B1 << " ____ " << std::endl;
+            //std::cout << " erreur = " << (fabs(abs_v-Float64(A1)/Float64(B1))*i_abs_v) << std::endl;
+            //if (v/(ent+1.)<1.e-8) { //if (fabs(v)<ldexp(std::numeric_limits<Float64>::epsilon(),26)) {
+            if ((fabs(abs_v-Float64(A1)/Float64(B1))*i_abs_v)<ldexp(std::numeric_limits<TFLOAT>::epsilon(),tol))
+                break;
+            v = 1./v;
+            A0 = tmpA;
+            B0 = tmpB;
+        }
+        if (val>0.)
+            nume = A1;
+        else
+            nume = -A1;
+        deno = B1;
+    }
+
+//     BigRat( const Float64 &val ) {
+//         const ieee754_double &v = reinterpret_cast<const ieee754_double &>( val );
+//         init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE754_DOUBLE_BIAS - 52, ( Unsigned64( v.ieee.mantissa0 + 0x100000UL ) << 32 ) + v.ieee.mantissa1 );
+//     }
+
+//     BigRat( const Float96 &val ) {
+//         if ( val == 0 ) { num = 0; den = 1; return; }
+//         const ieee854_long_double &v = reinterpret_cast<const ieee854_long_double &>( val );
+//         init_from_sign_expo_mant( v.ieee.negative, (Int32)v.ieee.exponent - IEEE854_LONG_DOUBLE_BIAS - 63, ( Unsigned64( v.ieee.mantissa0 ) << 32 ) + v.ieee.mantissa1 );
+//     }
+
+    BigRat( const Float96 &val ) {
+        approx<Float96,base,T,offset,owning>(val,num,den);
+    }
+
     ///
     template<int b2,class T2,int o2,bool own2> BigRat &operator=(const BigRat<b2,T2,o2,own2> &b) {
         num = b.num;
@@ -78,7 +167,11 @@ struct BigRat {
         den = b.den;
         return *this;
     }
-    
+
+    BigRat &operator=(const Float32 &val) { approx<Float32,base,T,offset,owning>(val,num,den); return *this; }
+    BigRat &operator=(const Float64 &val) { approx<Float64,base,T,offset,owning>(val,num,den); return *this; }
+    BigRat &operator=(const Float96 &val) { approx<Float96,base,T,offset,owning>(val,num,den); return *this; }
+
     /// assume base 10
     BigRat(unsigned nnum,const char *snum,unsigned nden,const char *sden) {
         BigInt<base,T,offset,owning> m(10);
