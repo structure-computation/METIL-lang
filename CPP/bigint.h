@@ -1,7 +1,14 @@
 #ifndef BIG_INT_H
 #define BIG_INT_H
 
-#include <iostream>
+#include<iostream>
+// #include<cstdlib>
+// #include<fstream>
+#include<iomanip>
+// #include<cmath>
+// #include"string.h"
+// #include"time.h"
+
 #include <sstream>
 #include "typeconfig.h"
 #include <math.h>
@@ -24,6 +31,9 @@ struct BigInt {
     BigInt( Int64 v ) { init( v ); }
     BigInt( Unsigned32 v ) { init( v ); }
     BigInt( Int32 v ) { init( v ); }
+    BigInt( Float32 v ) { init_f( v ); }
+    BigInt( Float64 v ) { init_f( v ); }
+    BigInt( Float96 v ) { init_f( v ); }
     
     ~BigInt() { destroy(); }
     
@@ -49,6 +59,35 @@ struct BigInt {
             val = v + offset;
         }
     }
+    template<class TT> void init_f( TT v = 0 ) { /// version pour Float32, Float64 et Float96 qui est valable seulement si le type Float64 peut représenter le nombre base.
+        if ( v < 0. ) {
+            init_f( -v );
+            val = - val;
+        }
+        else {
+            n = 0;
+            TT tmp = v;
+            while ( tmp >= base ) { tmp /= base; ++n; }
+            if ( n ) {
+                ext = (T *)malloc( sizeof(T) * n );
+                unsigned n2 = n-1;
+                while ( v >= base ) {
+                    Float64 tmp2 = fmod(v,base);
+//                     std::cout << " tmp2 = " << std::setprecision(18) << tmp2 << std::endl;
+//                     Float64 ie,fe;
+//                     fe = modf(v,&ie);
+//                     std::cout << " fe = " << std::setprecision(18) << fe << " ie = " << std::setprecision(18) << ie <<std::endl;
+                    ext[n2--] = (T) (tmp2) + offset;
+                    v = (v - tmp2)/base;
+                }
+            }
+            else
+                ext = NULL;
+            val = (T) v + offset;
+        }
+    }
+
+
     void init( const BigInt &b ) {
         val = b.val;
         n = b.n;
