@@ -1,0 +1,41 @@
+fn := "paint_function"
+File( "$fn.cpp", "w" ) <<<<
+    #include <QtGui/QPainter>
+    #include <QtGui/QWidget>
+    extern "C" void paint_function( QWidget *qw, int, QPaintEvent * ) {
+        int frameNo = 50;
+        QPainter painter(qw);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.translate(qw->width() / 2, qw->height() / 2);
+        for (int diameter = 0; diameter < 256; diameter += 9) {
+            int delta = abs((frameNo % 128) - diameter / 2);
+            int alpha = 255 - (delta * delta) / 4 - diameter;
+            if (alpha > 0) {
+                painter.setPen(QPen(QColor(0, diameter / 2, 127, alpha), 3));
+        
+                painter.drawEllipse(QRectF(-diameter / 2.0, -diameter / 2.0,
+                                        diameter, diameter));
+            }
+        }
+    }
+
+if not last_modification_time_or_zero_of_file_named( "$fn.so" )
+    cmd := "g++ -I$(get_QT_INCLUDE_DIR()) -fPIC -shared $fn.cpp -o $fn.so"
+    info cmd
+    if system( cmd )
+        return 1
+
+dl := DlLoader( "./$fn.so" )
+if not dl
+    info dl.get_last_error()
+    return 1
+
+fu := dl.find_symbol( "paint_function" )
+if not fu
+    info dl.get_last_error()
+    return 1
+
+d1 := DisplayWindow_( 2, fu )
+d2 := DisplayWindow_( 2, fu )
+
+

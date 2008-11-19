@@ -174,7 +174,7 @@ inline void get_primitives_File( std::vector<PrimitiveClass> &primitive_classes,
     
     primitive_functions.push_back( PrimitiveFunction( "last_modification_time_or_zero_of_file_named", "ret = last_modification_time_or_zero_of_file_named( a );", /*ret*/"Int64" ).A("any").set_supplementary_cond("args[0]->type == global_data.String") );
     
-    primitive_functions.push_back( PrimitiveFunction( "get_next_line_", "get_next_line_( th, tok, a, return_var );", /*ret*/"manual" ).A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "get_next_line_", "get_next_line_( th, tok, a, b, return_var );", /*ret*/"manual" ).A("CFile").A("Int32") );
 }
 
 inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -361,11 +361,13 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "graphviz_string", "if (return_var) {std::string s=self.graphviz_repr(th,tok,a); assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "cpp_string"     , "if (return_var) {std::string s=self.cpp_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     primitive_functions.push_back( PrimitiveFunction( "tex_string"     , "if (return_var) {std::string s=self.tex_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "ser_string"     , "if (return_var) {std::string s=self.ser_repr()     ; assign_string( th, tok, return_var, &s[0], s.size() );}", /*ret*/"manual" ). M("Op") );
     
     primitive_functions.push_back( PrimitiveFunction( "value", "if (self.known_at_compile_time()) init_arithmetic( ret, self.value() ); else { init_arithmetic( ret, 0 ); th->add_error(\"method value works only with expressions which do not depend on any symbol.\",tok); }",
         /*ret*/"Rationnal" ). M("Op") );
 
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "diff", "diff( th, tok, a, b, c );" ).A("VarArgs").A("Op").A("VarArgs") );
     
     primitive_functions.push_back( PrimitiveFunction( "polynomial_expansion_", "polynomial_expansion( th, tok, a, b, c, d );" ).A("VarArgs").A("Op").A("Int32").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b, c );" ).A("VarArgs").A("VarArgs").A("VarArgs") );
@@ -475,6 +477,9 @@ void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "destroy", "self.destroy();" ).M("Lambda") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Lambda").A("Def") );
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Def").A("Lambda") );
 }
 
 void get_primitives_Label( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -524,14 +529,23 @@ void get_primitives_DlLoader( std::vector<PrimitiveClass> &primitive_classes, st
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any") );
     primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any") );
-    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any").
-        A("any").A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_ccode_function", "exec_ccode_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("any").A("any").A("any").A("any").A("any").A("any"). A("any").A("any").A("any").A("any").A("any") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a );" ).A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b );" ).A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "exec_untyped_ptr_function", "exec_untyped_ptr_function( a, b, c, d, e, f, g, h, i, j, k, l );" ).A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr"). A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr").A("UntypedPtr") );
 }
     
 void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -562,6 +576,23 @@ void get_primitives_Pthread( std::vector<PrimitiveClass> &primitive_classes, std
 //     primitive_functions.push_back( PrimitiveFunction( "init", "self = a;" ).M("Type").A("Type") );
 //     primitive_functions.push_back( PrimitiveFunction( "reassign", "self = a;" ).M("Type").A("Type") );
 // }
+
+void get_primitives_DisplayWindow( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
+    
+    primitive_functions.push_back( PrimitiveFunction( "__add_paint_function_to_display_window__"   , "th->display_window_creator->call_add_paint_function( a, b, c, d, e );" ).
+            A(/*id*/"Int32").A(/*make_tex_function*/"UntypedPtr").A(/*paint_function*/"UntypedPtr").A(/*bb_function*/"UntypedPtr").A(/*data*/"UntypedPtr") );
+    primitive_functions.push_back( PrimitiveFunction( "__rm_paint_functions_from_display_windows__", "th->display_window_creator->call_rm_paint_functions( a );" ).A(/*id*/"Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__update_display_windows__", "th->display_window_creator->call_update_disp_widget( a );" ).A(/*id*/"Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__save_as_display_windows__", "th->display_window_creator->call_save_as( a, *(const char **)b->data, *(Int32 *)((const char **)b->data+1), c, d );" ).A(/*id*/"Int32").A("any").A("Int32").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "__set_min_max_display_windows__", "th->display_window_creator->call_set_min_max( a, b, c );" ).A(/*id*/"Int32").A("Float64").A("Float64") );
+    primitive_functions.push_back( PrimitiveFunction( "__wait_for_display_windows__", "__wait_for_display_windows__( th );" ) );
+    
+    primitive_functions.push_back( PrimitiveFunction( "__set_val_display_windows__", "th->display_window_creator->call_set_val( a, b, c );" ).A(/*id*/"Int32").A("Int32").A("Int32") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "get_QT_LIBRARIES"   , "std::string ss(QT_LIBRARIES   ); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
+    primitive_functions.push_back( PrimitiveFunction( "get_QT_INCLUDE_DIR" , "std::string ss(QT_INCLUDE_DIR ); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
+    primitive_functions.push_back( PrimitiveFunction( "get_MET_INSTALL_DIR", "std::string ss(MET_INSTALL_DIR); if (return_var) assign_string( th, tok, return_var, &ss[0], ss.size() );", /*ret*/"manual" ) );
+}
 
 // -----------------------------------------------------------------------------------------------------------------------
 inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -604,6 +635,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     get_primitives_CompiledFunctionSet( primitive_classes, primitive_functions );
     get_primitives_DlLoader( primitive_classes, primitive_functions );
     get_primitives_Pthread( primitive_classes, primitive_functions );
+    get_primitives_DisplayWindow( primitive_classes, primitive_functions );
     
     // need destroy
     
@@ -646,11 +678,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; if (return_var) assign_string( th, tok, return_var, &ss.str()[0], ss.str().size() );", /*ret*/"manual" ).M("Rationnal") );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( integer_class( primitive_classes[i] ) or float_class( primitive_classes[i] ) or primitive_classes[i].met_name=="UntypedPtr" )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << Int64( self ); std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
                     M(primitive_classes[i].met_name) );
         if ( float_class( primitive_classes[i] ) )
-            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).
-                    M(primitive_classes[i].met_name).A("Int32") );
+            primitive_functions.push_back( PrimitiveFunction( "to_string", "std::ostringstream ss; ss.precision(a); ss << self; std::string s = ss.str(); if (return_var) assign_string( th, tok, return_var, &s[0], s.size() );", /*ret*/"manual" ).M(primitive_classes[i].met_name).A("Int32") );
     }
     
     primitive_functions.push_back( PrimitiveFunction( "system"  , "ret = system_( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) );", /*ret*/"Int32" ).
@@ -733,6 +764,17 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( &a );" ).A("Def").M("Def",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( &a );" ).A("BlockOfTok").M("BlockOfTok",/*modify*/"true") );
     
+    //
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Int32").A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Float32").A("CFile") );
+    primitive_functions.push_back( PrimitiveFunction( "__read_from_stream__", "a.read_ascii( self );" ).M("Float64").A("CFile") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "init", "std::string s( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) ); self = atoi( s.c_str() );" ).M("Int32").A("any").set_supplementary_cond("args[0]->type == global_data.String") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "init", "std::string s( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) ); self = atof( s.c_str() );" ).M("Float32").A("any").set_supplementary_cond("args[0]->type == global_data.String") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "init", "std::string s( *reinterpret_cast<const char **>(a->data), *reinterpret_cast<Int32 *>(reinterpret_cast<const char **>(a->data)+1) ); self = atof( s.c_str() );" ).M("Float64").A("any").set_supplementary_cond("args[0]->type == global_data.String") );
+    
     // +, -, / ...
     const char *arithmetic_operations[] = {"add","sub","mul",NULL};
     for( const char **a=arithmetic_operations; *a; ++a )
@@ -773,7 +815,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             primitive_functions.push_back( PrimitiveFunction( "sub", "init_arithmetic( ret, -a );", /*ret*/signed_correspondance(primitive_classes[i]) ).A(primitive_classes[i].met_name) );
     for(unsigned i=0;i<primitive_classes.size();++i) {
         if ( arithmetic_class(primitive_classes[i]) and primitive_classes[i].met_name != "Bool" ) {
-            primitive_functions.push_back( PrimitiveFunction( "mod", "init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
+            primitive_functions.push_back( PrimitiveFunction( "mod", "if ( not b ) th->display_stack(tok); init_arithmetic( ret, METIL_NS::mod( a, b ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
             primitive_functions.push_back( PrimitiveFunction( "abs", "init_arithmetic( ret, METIL_NS::abs( a ) );", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name) );
         }
     }
@@ -821,6 +863,10 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
             if ( integer_class(primitive_classes[i]) )
                 primitive_functions.push_back( PrimitiveFunction( *a, "ret = (a "+std::string(*o)+" b);", /*ret*/primitive_classes[i].met_name ).A(primitive_classes[i].met_name).A(primitive_classes[i].met_name) );
     }
+    primitive_functions.push_back( PrimitiveFunction( "and_bitwise", "ret = (a and b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "or_bitwise" , "ret = (a or  b);", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "xor_bitwise", "ret = (bool(a) xor bool(b));", /*ret*/"Bool" ).A("Bool").A("Bool") );
+    
     // ~, ...
     const char *bnb_operations[] = {"not_bitwise",NULL};
     const char *bnb_operators[]  = {"~"          ,NULL};
@@ -868,6 +914,8 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "type_of", "return get_def_from_type( th, tok, sp, ret, a->type );", /*ret*/"Def" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "size_of", "ret = a->type->data_size_in_bits;", /*ret*/"Int32" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "size_of_if_in_vec", "ret = a->type->size_of_in_in_vec();", /*ret*/"Int32" ).A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "__needed_alignement_in_bits__", "ret = a->type->needed_alignement;", /*ret*/"Int32" ).A("any") );
+    primitive_functions.push_back( PrimitiveFunction( "__needed_alignement_in_bytes__", "ret = ( a->type->needed_alignement + 7 ) / 8;", /*ret*/"Int32" ).A("any") );
     
     primitive_functions.push_back( PrimitiveFunction( "has___for___method", "ret = bool( a->type->find_var( NULL, STRING___for___NUM ) );", /*ret*/"Bool" ).A("any") );
     primitive_functions.push_back( PrimitiveFunction( "rm_spaces_at_beg_of_lines", "std::string s=rm_spaces_at_beg_of_lines( a, b ); assign_string(th,tok,return_var,&s[0],s.size());",

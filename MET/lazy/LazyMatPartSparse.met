@@ -242,7 +242,7 @@ class LazyMatPartSparseRowData[ T, ST, br, bc, nr, nc, simd_size ]
                     if indices[ cpt ] == cj
                         lc := LazyMatPartSparseRowDataIndexCalculator[ 1, br, bc, nr, nc, simd_size ]()
                         return Block[ T, 0, br, bc, nr, nc, simd_size ]( data = &data[ cpt * default_block_size ] )
-                    indices.new_elem_at_position( cpt ) = cj
+                    @indices.new_elem_at_position( cpt ) = cj
                     res := data.make_room_to_insert( cpt * default_block_size, default_block_size )
                     for i in 0 .. default_block_size
                         res[ i ] = 0

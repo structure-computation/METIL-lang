@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <stdlib.h>
+#include <string.h>
 
 inline std::string capitalize_first(std::string a) {
     char n = a[0];

@@ -49,10 +49,37 @@ class AutoPtr[ T ]
     
     def conversion_to( b ) when is_of_type_UntypedPtr( b )
         b.init( p.ptr )
-#~
-~#
+
+    def write_to_stream( stream )
+        stream << p
+
+#~ ~#
 def auto_ptr( p )
     return AutoPtr[ p.T ]( p )
+
+
+#~
+~#
+class AutoUntypedPtr
+    property is_a_AutoPtr, is_Untyped
+    
+    p ~= UntypedPtr
+    
+    def init
+        p = NULL
+        
+    def init( v )
+        p = v
+        
+    def destroy
+        p.free()
+    
+    def conversion_to( b )
+        b.init( p )
+
+#~ ~#
+def auto_ptr( p ) when p.type == UntypedPtr
+    return AutoUntypedPtr( p )
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------
@@ -251,19 +278,10 @@ class UnionPtr[ lst_defs ]
 class PtrWithCptUse[ T ]
     property is_a_PtrWithCptUse, is_a_pointer
 
-    ptr := Ptr[T]( NULL )
+    ptr ~= UntypedPtr
     
-    def pointed_value
-        return @ptr
-    
-    def conversion_to( r ) when is_of_type_UntypedPtr(r)
-        r.init( ptr.ptr )
-        
-    def conversion_to( r ) when r.is_a_Ptr
-        r.init( ptr )
-    
-    def conversion_to( r ) when r.type == Bool
-        r.init( ptr )
+    def init
+        ptr.init( NULL )
     
     def init( p ) when p.is_Null
         ptr.init( NULL )
@@ -271,41 +289,53 @@ class PtrWithCptUse[ T ]
     def init( p ) when p.is_a_Ptr
         ptr.init( p )
         if ptr
-            ptr->cpt_use++
+            Ptr[T](ptr)->cpt_use++
     
     def init( p ) when p.is_a_PtrWithCptUse
         ptr.init( p.ptr )
         if ptr
-            ptr->cpt_use++
+            Ptr[T](ptr)->cpt_use++
         
+    def pointed_value
+        return @Ptr[T](ptr)
+    
+    def conversion_to( r ) when is_of_type_UntypedPtr(r)
+        r.init( ptr )
+        
+    def conversion_to( r ) when r.is_a_Ptr
+        r.init( ptr )
+    
+    def conversion_to( r ) when r.type == Bool
+        r.init( ptr )
+    
     def reassign( p ) when p.is_a_Ptr
         old_ptr := ptr
         ptr = p
         if ptr
-            ptr->cpt_use++
+            Ptr[T](ptr)->cpt_use++
         if old_ptr
-            if old_ptr->cpt_use > 1
-                old_ptr->cpt_use--
+            if Ptr[T](old_ptr)->cpt_use > 1
+                Ptr[T](old_ptr)->cpt_use--
             else
-                delete old_ptr
+                delete Ptr[T](old_ptr)
         
     def reassign( p ) when p.is_a_PtrWithCptUse
         old_ptr := ptr
         ptr = p.ptr
         if ptr
-            ptr->cpt_use++
+            Ptr[T](ptr)->cpt_use++
         if old_ptr
-            if old_ptr->cpt_use > 1
-                old_ptr->cpt_use--
+            if Ptr[T](old_ptr)->cpt_use > 1
+                Ptr[T](old_ptr)->cpt_use--
             else
-                delete old_ptr
+                delete Ptr[T](old_ptr)
     
     def destroy
         if ptr
-            if ptr->cpt_use > 1
-                ptr->cpt_use--
+            if Ptr[T](ptr)->cpt_use > 1
+                Ptr[T](ptr)->cpt_use--
             else
-                delete ptr
+                delete Ptr[T](ptr)
     
     def write_to_stream( stream )
         stream << ptr
@@ -410,14 +440,16 @@ def child_cast( p )
 class AutoRetore[ T ]
     p ~= Ptr[ T ]
     old_val ~= T
+    
     def init( v, n )
-        old_val.init( @v )
-        p.init( v )
-        @v = n
-        info n
+        old_val.init( v )
+        p.init( &v )
+        v = n
+    
     def destroy
         @p = old_val
+        old_val.destroy()
         
 def auto_restore( val, new_val )
-    return AutoRetore[ type_of( val ) ]( &val, new_val )
+    return AutoRetore[ type_of( val ) ]( val, new_val )
 

@@ -216,7 +216,7 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
             case TYPE_CHAR_string: {
                 const char *old_str = s;
                 while ( *(++s) and (*s != '"' or (s[-1] == '\\' and s[-2] != '\\')) ) {
-                    if ( s[0] == '$' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
+                    if ( s[0] == '$' and s[-1] != '$' and ( type_char(s[1])==TYPE_CHAR_letter or type_char(s[1])==TYPE_CHAR_parenthesis ) ) {
                         read_dollar( old_str + 1 );
                         old_str = --s;
                     }
@@ -259,6 +259,7 @@ template<bool stop_condition> void Lexer::read_s(const char *limit) {
                         n->has_e = true;
                         int sgn = 1;
                         if ( s[1]=='-' ) { sgn = -1; ++s; }
+                        else if ( s[1]=='+' ) { ++s; }
                         int ae = 0;
                         while ( is_num(*(++s)) ) { ae *= 10; ae += s[0] - '0'; }
                         n->expo += sgn * ae;
@@ -415,7 +416,7 @@ void Lexer::remove_cr() {
     // then, we remove \n in a+\nb, a\n+b and so on...
     for(Lexem *t = first_of_type[ Lexem::CR + 16 ]; t; t=t->sibling) {
         if ( t->num >= -1 ) {
-            if ( need_rarg(t->prev) and t->prev->children[0]==NULL and t->prev->type!=STRING___if___NUM and t->prev->type!=STRING___else___NUM ) {
+            if ( need_rarg(t->prev) and t->prev->children[0]==NULL and t->prev->type!=STRING___if___NUM and t->prev->type!=STRING___else___NUM and t->prev->type!=STRING___try___NUM ) {
                 t->num = -2;
                 t->prev->next = t->next;
                 if ( t->next ) t->next->prev = t->prev;

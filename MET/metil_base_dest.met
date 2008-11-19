@@ -1,5 +1,8 @@
+__wait_for_display_windows__()
 
 catch object_associated_with_exception
+    print "proute"
+    info __nb_stack_level__()
     TERM := getenv("TERM")
     display_escape_sequences := ( TERM != "" and TERM != "dumb" )
     if display_escape_sequences

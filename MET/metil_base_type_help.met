@@ -49,10 +49,37 @@ class AutoPtr[ T ]
     
     def conversion_to( b ) when is_of_type_UntypedPtr( b )
         b.init( p.ptr )
-#~
-~#
+
+    def write_to_stream( stream )
+        stream << p
+
+#~ ~#
 def auto_ptr( p )
     return AutoPtr[ p.T ]( p )
+
+
+#~
+~#
+class AutoUntypedPtr
+    property is_a_AutoPtr, is_Untyped
+    
+    p ~= UntypedPtr
+    
+    def init
+        p = NULL
+        
+    def init( v )
+        p = v
+        
+    def destroy
+        p.free()
+    
+    def conversion_to( b )
+        b.init( p )
+
+#~ ~#
+def auto_ptr( p ) when p.type == UntypedPtr
+    return AutoUntypedPtr( p )
 
 
 # -----------------------------------------------------------------------------------------------------------------------------------------

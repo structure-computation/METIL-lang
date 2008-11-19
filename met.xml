@@ -7,7 +7,9 @@
 <language name="Metil++" version="1.22" kateversion="2.1" section="Scripts" extensions="*.met" mimetype="text/x-metil" casesensitive="1" author="Hugo LECLERC" license="">
   <highlighting>
     <list name="prep">
-      <item> import </item>
+        <item> import </item>
+        <item> include </item>
+        <item> exec </item>
     </list>
     <list name="statements">
       <item> with_base_size_and_alignement </item>
@@ -37,6 +39,7 @@
       <item> continue </item>
       <item> continue_n </item>
       <item> def </item>
+      <item> pdef </item>
       <item> else </item>
       <item> except </item>
       <item> for </item>
@@ -103,10 +106,11 @@
       <item> ContinueException </item>
     </list>
     <list name="specialvars">
-      <item> self </item>
-      <item> none </item>
-      <item> true </item>
-      <item> false </item>
+        <item> this </item>
+        <item> self </item>
+        <item> none </item>
+        <item> true </item>
+        <item> false </item>
     </list>
     <contexts>
       <context name="Normal" attribute="Normal Text" lineEndContext="#stay">

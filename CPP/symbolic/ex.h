@@ -47,6 +47,7 @@ struct Ex {
     std::string graphviz_repr( Thread *th, const void *tok, const VarArgs &a ) const;
     std::string cpp_repr() const;
     std::string tex_repr() const;
+    std::string ser_repr() const; // for serialization
     T value() const;
     
     unsigned node_count() const;
@@ -96,6 +97,9 @@ void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressio
 
 void quadratic_expansion( Thread *th, const void *tok, const SEX &expressions, const SEX &variables, SEX &res );
 void quadratic_expansion( Thread *th, const void *tok, const VarArgs &expressions, const VarArgs &vars, VarArgs &res );
+
+void diff( Thread *th, const void *tok, const VarArgs &expr, const Ex &d, VarArgs &res );
+
 
 // ------------------------------------------------------------------------------------------------------------------
 

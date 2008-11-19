@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h>
+#include <string.h>
 #include "hashstring.h"
 #include "typechar.h"
 #include "splittedvec.h"
@@ -15,8 +16,8 @@ const unsigned MayNeedrarg = 8;
 const unsigned Needrrargs = 16;
 
 struct OpInfo {
-    char *met_name;
-    char *cpp_name;
+    const char *met_name;
+    const char *cpp_name;
     unsigned behavior;
 };
 
@@ -30,6 +31,7 @@ OpInfo operators[] = {
     { "break_n"    , "__break_n__"           , Needrarg   },
     { "pass"       , "__pass__"              , 0          },
     { "self"       , "__self__"              , 0          },
+    { "this"       , "__this__"              , 0          },
     { "try"        , "__try__"               , Needrarg   },
     { "catch"      , "__catch__"             , Needrrargs },
     { "interact"   , "__interact__"          , 0          },
@@ -48,6 +50,8 @@ OpInfo operators[] = {
     { ";"          , "__comma_dot__"         , Need2args  },
     
     { "import"     , "__import__"            , Needrarg   },
+    { "include"    , "__include__"           , Needrarg   },
+    { "exec"       , "__exec__"              , Needrarg   },
     
     { "inherits"   , "__inherits__"          , Need2args  },
     { "pertinence" , "__pertinence__"        , Need2args  },
@@ -363,7 +367,7 @@ int main(int argc,char **argv) {
         unsigned hash_size_trial = nb_operators;
         std::vector<int> nb; nb.resize( hash_size_trial, -1 );
         for(int i=0;i<(int)nb_operators;++i) {
-            if ( want_le xor type_char(operators[i].met_name[0])!=TYPE_CHAR_letter ) {
+            if ( want_le xor ( type_char(operators[i].met_name[0])!=TYPE_CHAR_letter ) ) {
                 unsigned hash_val = hashstring( operators[i].met_name, strlen(operators[i].met_name) ) % hash_size_trial;
                 if ( nb[hash_val] >= 0 ) { // there's already an operator in this bucket
                     nb.clear();

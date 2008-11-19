@@ -6,6 +6,7 @@
 #include "nstring.h"
 #include <set>
 #include <map>
+#include <algorithm>
 
 unsigned OpWithSeq::current_id = 0;
 

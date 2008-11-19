@@ -21,12 +21,10 @@
 #endif
 
 void DlLoader::init() {
-    init( NULL );
-    //     lib = NULL;
+    lib = NULL;
 }
 
 bool DlLoader::init( const char *lib_name, int size_lib_name ) {
-    //     return true;
     char *str = (char *)malloc( size_lib_name + 8 );
     for(int i=0;i<size_lib_name;++i) // -> libdl read char by sets of 4
         str[i] = lib_name[i];
@@ -38,7 +36,6 @@ bool DlLoader::init( const char *lib_name, int size_lib_name ) {
 }
 
 bool DlLoader::init( const char *lib_name ) {
-//     return true;
     #ifdef HAVE_LIBDL
         lib = dlopen( lib_name, RTLD_LAZY );
     #else
@@ -49,12 +46,11 @@ bool DlLoader::init( const char *lib_name ) {
 
 
 void DlLoader::destroy() {
-    std::cout << lib << std::endl;
-//     #ifdef HAVE_LIBDL
-//         if ( lib ) dlclose( lib );
-//     #else
-//         FreeLibrary( static_cast<HMODULE>( lib ) );
-//     #endif
+    #ifdef HAVE_LIBDL
+        if ( lib ) dlclose( lib );
+    #else
+        FreeLibrary( static_cast<HMODULE>( lib ) );
+    #endif
 }
 
 const char *DlLoader::last_error() const {
@@ -86,16 +82,16 @@ const char *DlLoader::last_error() const {
 }
 
 void *DlLoader::find_symbol( const char *symbol_name ) const {
-//     return NULL;
     #ifdef HAVE_LIBDL
-        return dlsym( lib, symbol_name ); 
+        if ( lib )
+            return dlsym( lib, symbol_name ); 
+        return NULL;
     #else
         return (void *)GetProcAddress( static_cast<HMODULE>(lib), symbol_name );
     #endif
 }
 
 void *DlLoader::find_symbol( const char *symbol_name, int size_symbol_name ) const {
-//     return NULL;
     std::string s( symbol_name, symbol_name + size_symbol_name );
     return find_symbol( s.c_str() );
 }

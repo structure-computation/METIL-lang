@@ -62,7 +62,7 @@ class LazyComputerPool
         ext_memories .push_back()
         main_memories.push_back()
         for i in 0 .. nb_cpus
-            n_cpu := &cpus.push_back()
+            n_cpu := cpus.push_back()
             n_cpu->cpu_nb = i
             n_cpu->main_memory  = main_memories.begin
             n_cpu->main_memory->attached_cpus.push_back( n_cpu )

@@ -154,6 +154,8 @@ def split( str, separators = [" ","\n","\t","\r"] )  return Split( str, separato
 ## ##
 class AssertionError
     msg := StringStream()
+    def init( str )
+        msg.init( str )
     def write_to_stream( stream )
         stream << msg.str
 
@@ -187,7 +189,7 @@ def throw_failed_assertion( txt, from_stack_level = 0 )
     Basic class for files.
 ##
 class File( write_allowed=false, read_allowed=false )
-    property is_stream
+    property is_stream, is_a_File
     f ~= CFile
     options ~= StreamOptions
     # name := ""
@@ -214,7 +216,7 @@ class File( write_allowed=false, read_allowed=false )
     def get_tell                                return f.tell()
     def get_size                                return f.get_size()
     def seek( v )                               f.seek( Int64( v ) )
-    def get_next_line                           return get_next_line_( f )
+    def get_next_line( max_nb_char = -1 )       return get_next_line_( f, Int32( max_nb_char ) )
     def for_lines( block )
         while f
             l := get_next_line()
@@ -257,6 +259,15 @@ def shift_right(stream,a) when stream.is_stream
     a.read_from_stream(stream)
     return stream
 
+def read_from_stream( self, stream ) when is_of_type_Int32( self ) and stream.is_a_File
+    self.__read_from_stream__( stream.f )
+
+def read_from_stream( self, stream ) when is_of_type_Float32( self ) and stream.is_a_File
+    self.__read_from_stream__( stream.f )
+
+def read_from_stream( self, stream ) when is_of_type_Float64( self ) and stream.is_a_File
+    self.__read_from_stream__( stream.f )
+
 stdout ~= File[true ,false]; stdout.f.init( 0 ); stdout.options.init() # standard output stream
 stderr ~= File[true ,false]; stderr.f.init( 1 ); stderr.options.init() # standard output error stream
 stdin  ~= File[false,true ]; stdin .f.init( 2 ); stdin .options.init() # standard input stream
@@ -298,6 +309,11 @@ static const fflush := Fflush()
 # things like stream << [0 1 2]
 def write_to_stream( self, stream ) when has___for___method( self ) pertinence -1
     for i in self stream << i << stream.options.separators[0]
+
+# things like stream >> vec
+def read_from_stream( self, stream ) when has___for___method( self ) pertinence -1
+    for i in self
+        stream >> i
 
 # stream << VarArgs
 def write_to_stream( self, stream ) when is_of_type_VarArgs(self) pertinence -0.5

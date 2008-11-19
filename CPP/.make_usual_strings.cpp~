@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h>
+#include <string.h>
 #include "hashstring.h"
 #include "typechar.h"
 #include "splittedvec.h"
@@ -15,8 +16,8 @@ const unsigned MayNeedrarg = 8;
 const unsigned Needrrargs = 16;
 
 struct OpInfo {
-    char *met_name;
-    char *cpp_name;
+    const char *met_name;
+    const char *cpp_name;
     unsigned behavior;
 };
 
@@ -30,6 +31,7 @@ OpInfo operators[] = {
     { "break_n"    , "__break_n__"           , Needrarg   },
     { "pass"       , "__pass__"              , 0          },
     { "self"       , "__self__"              , 0          },
+    { "this"       , "__this__"              , 0          },
     { "try"        , "__try__"               , Needrarg   },
     { "catch"      , "__catch__"             , Needrrargs },
     { "interact"   , "__interact__"          , 0          },
@@ -48,6 +50,8 @@ OpInfo operators[] = {
     { ";"          , "__comma_dot__"         , Need2args  },
     
     { "import"     , "__import__"            , Needrarg   },
+    { "include"    , "__include__"           , Needrarg   },
+    { "exec"       , "__exec__"              , Needrarg   },
     
     { "inherits"   , "__inherits__"          , Need2args  },
     { "pertinence" , "__pertinence__"        , Need2args  },
@@ -143,7 +147,7 @@ OpInfo operators[] = {
     { "~"          , "not_bitwise"           , Needrarg   },
     { "'"          , "trans"                 , Needlarg   },
     
-    { "(*)"        , "tensorial_product"     , Need2args  },
+    { "***"        , "tensorial_product"     , Need2args  },
         
     { "--"         , "post_dec"              , Needlarg   },
     { "++"         , "post_inc"              , Needlarg   },

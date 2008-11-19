@@ -72,8 +72,9 @@ public:
     SplittedVec<OldPC,4> old_pc_list;
     unsigned cpt_use;
     int return_value;
-    bool compile_mode;
+    bool compile_mode, profile_mode;
     unsigned max_recursive_depth;
+    struct DisplayWindowCreator *display_window_creator;
 //     std::ofstream display_stack_file;
 private:
     void append_def_data_if_basic_conditions_are_checked( DefTrial *def_trial, Variable *&sp, DefinitionData *dd );
@@ -85,7 +86,7 @@ extern unsigned tok_end_def_block[], tok_test_next_type[];
 void assign_error_var( Variable *v );
 void assign_void_var( Variable *v );
 
-bool thread_loop( Thread *th, bool compile_mode=false, bool profile_mode=false ); /// 
+bool thread_loop( Thread *th ); /// 
 
 template<int compile_mode> const void *exec_tok_apply( const N<compile_mode> &n__compile_mode, Thread *th, const void *tok,
         unsigned nb_unnamed, unsigned nb_named, const Nstring *named, bool expect_res, const void *next_tok,Variable * &sp,

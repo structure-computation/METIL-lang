@@ -15,6 +15,8 @@
 #define __STDC_LIMIT_MACROS
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
+
 //ULONG_MAX
 #ifndef SIZE_MAX
 #define SIZE_MAX INT_MAX

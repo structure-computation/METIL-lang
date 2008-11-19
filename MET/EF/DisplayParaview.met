@@ -23,7 +23,7 @@ class DisplayParaview
         for s in lazy_objects
             op( s )
         
-    def exec( pvd_filename = "tmp/collection.pvd" )
+    def exec_( pvd_filename = "tmp/collection.pvd" )
         ls := LazySimpleScheduler( [ self ] ); ls.execute()
 
         #

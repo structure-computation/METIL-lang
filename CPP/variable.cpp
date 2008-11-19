@@ -296,7 +296,7 @@ const void *varargs_contains_only_named_variables_included_in_self_non_static_va
 }
 
 const void *init_using_varargs( Thread *th, const void *tok, Variable *var_to_init, VarArgs &va, Variable * &sp ) {
-    Nstring name_proc = STRING_init_NUM;
+    Nstring name_proc = STRING_reassign_NUM;
     // nb_init_call and reassign_using_mem_copy
     unsigned nb_init_call = 0;
     for(unsigned i=0;i<va.nb_nargs();++i) {
@@ -723,9 +723,11 @@ void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *retur
     assign_string( th, tok, return_var, &res[0], res.size() );
 }
 
-void get_next_line_( Thread *th, const void *tok, CFile &a, Variable *return_var ) {
+void get_next_line_( Thread *th, const void *tok, CFile &a, Int32 b, Variable *return_var ) {
     std::string res;
-    while ( true ) {
+    if ( b < 0 )
+        b = std::numeric_limits< Int32 >::max();
+    for( ; b>=0; --b ) {
         char c = getc( a.f );
         if ( feof( a.f ) or c=='\n' )
             break;
@@ -759,15 +761,39 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g ) { ((CcodeFunction7 *)( f_ ))( a, b, c, d, e, f, g ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h ) { ((CcodeFunction8 *)( f_ ))( a, b, c, d, e, f, g, h ); }
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i ) { ((CcodeFunction9 *)( f_ ))( a, b, c, d, e, f, g, h, i ); }
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j ) {
-    ((CcodeFunction10 *)( f_ ))( a, b, c, d, e, f, g, h, i, j );
-}
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k ) {
-    ((CcodeFunction11 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k );
-}
-void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k, Variable *l ) {
-    ((CcodeFunction12 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k, l );
-}
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j ) { ((CcodeFunction10 *)( f_ ))( a, b, c, d, e, f, g, h, i, j ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k ) { ((CcodeFunction11 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k ); }
+void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k, Variable *l ) { ((CcodeFunction12 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k, l ); }
+
+typedef void UntypedPtrFunction0 (  );
+typedef void UntypedPtrFunction1 ( void * );
+typedef void UntypedPtrFunction2 ( void *, void * );
+typedef void UntypedPtrFunction3 ( void *, void *, void * );
+typedef void UntypedPtrFunction4 ( void *, void *, void *, void * );
+typedef void UntypedPtrFunction5 ( void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction6 ( void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction7 ( void *, void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction8 ( void *, void *, void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction9 ( void *, void *, void *, void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction10( void *, void *, void *, void *, void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction11( void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void * );
+typedef void UntypedPtrFunction12( void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void * );
+
+
+void exec_untyped_ptr_function( void *f_ ) { ((UntypedPtrFunction0 *)( f_ ))(); }
+void exec_untyped_ptr_function( void *f_, void *a ) { ((UntypedPtrFunction1 *)( f_ ))( a ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b ) { ((UntypedPtrFunction2 *)( f_ ))( a, b ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c ) { ((UntypedPtrFunction3 *)( f_ ))( a, b, c ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d ) { ((UntypedPtrFunction4 *)( f_ ))( a, b, c, d ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e ) { ((UntypedPtrFunction5 *)( f_ ))( a, b, c, d, e ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f ) { ((UntypedPtrFunction6 *)( f_ ))( a, b, c, d, e, f ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g ) { ((UntypedPtrFunction7 *)( f_ ))( a, b, c, d, e, f, g ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h ) { ((UntypedPtrFunction8 *)( f_ ))( a, b, c, d, e, f, g, h ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i ) { ((UntypedPtrFunction9 *)( f_ ))( a, b, c, d, e, f, g, h, i ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j ) { ((UntypedPtrFunction10 *)( f_ ))( a, b, c, d, e, f, g, h, i, j ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j, void *k ) { ((UntypedPtrFunction11 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k ); }
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j, void *k, void *l ) { ((UntypedPtrFunction12 *)( f_ ))( a, b, c, d, e, f, g, h, i, j, k, l ); }
+
 
 void *mmap_file( const char *s, unsigned si, Int32 &length ) {
     std::string str( s, s+si );

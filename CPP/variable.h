@@ -153,7 +153,7 @@ void getcwd( Thread *th, const void *tok, Variable *ret );
 void get_os_type_( Thread *th, const void *tok, Variable *return_var );
 void get_cpu_type_( Thread *th, const void *tok, Variable *return_var );
 void get_type_md5_sum( Thread *th, const void *tok, Variable *a, Variable *return_var );
-void get_next_line_( Thread *th, const void *tok, struct CFile &a, Variable *return_var );
+void get_next_line_( Thread *th, const void *tok, struct CFile &a, Int32 b, Variable *return_var );
 
 void exec_ccode_function( void *f_ );
 void exec_ccode_function( void *f_, Variable *a );
@@ -168,6 +168,20 @@ void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Varia
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k );
 void exec_ccode_function( void *f_, Variable *a, Variable *b, Variable *c, Variable *d, Variable *e, Variable *f, Variable *g, Variable *h, Variable *i, Variable *j, Variable *k, Variable *l );
+
+void exec_untyped_ptr_function( void *f_ );
+void exec_untyped_ptr_function( void *f_, void *a );
+void exec_untyped_ptr_function( void *f_, void *a, void *b );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j, void *k );
+void exec_untyped_ptr_function( void *f_, void *a, void *b, void *c, void *d, void *e, void *f, void *g, void *h, void *i, void *j, void *k, void *l );
 
 void exec_asm( void *th, void *code );
 

@@ -9,6 +9,7 @@
 #include "splittedvec.h"
 #include "hashset.h"
 #include "typechar.h"
+#include <string.h>
 
 #define MAKE_DOT_TOK_DATA_CPP
 #include "make_dot_tok_data.h"
@@ -953,7 +954,7 @@ void DotSarToDotTok::push_tok_try( const Lexem *l ) {
     unsigned *offset_to_next_inst = bin.binary_write<unsigned>( 0 );
     
     // block
-    const Lexem *b = child_if_block( l->children[1] );
+    const Lexem *b = child_if_block( l->children[0] );
     StackPrev *old_stack_prev = stack_prev; stack_prev = new StackPrev; // looking in parent scopes is forbidden
     // 
     push_block( b );
@@ -1174,9 +1175,20 @@ void DotSarToDotTok::push_tok( const Lexem *l, bool expect_result ) {
         case STRING___self___NUM:
             push_type_and_offsets( l, Tok::SELF, 1 ); // type
             break;
+        case STRING___this___NUM:
+            push_type_and_offsets( l, Tok::PUSH_ROOM_FOR_NEW_VARIABLE, 1 );
+            push_tok_variable( l, "pointer_on", 10 );
+            push_type_and_offsets( l, Tok::SELF, 1 ); // 
+            push_tok_apply( l, 1, expect_result );
+            break;
         case STRING___import___NUM:
+        case STRING___include___NUM:
             push_tok( l->children[0], true );
             push_type_and_offsets( l, Tok::IMPORT, -1 ); // type
+            break;
+        case STRING___exec___NUM:
+            push_tok( l->children[0], true );
+            push_type_and_offsets( l, Tok::EXEC, -1 ); // type
             break;
         case STRING___throw___NUM:
             if ( expect_result ) error_list->add("a throw does not return anything.",l->s,provenance);

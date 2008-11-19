@@ -38,6 +38,9 @@ def self_div( a, b )      a = a / b
 def self_div_int( a, b )  a = a // b
 def self_mod( a, b )      a = a % b
 
+def self_and( a, b )      a = and_bitwise( a, b )
+def self_or( a, b )       a = or_bitwise( a, b )
+
 def self_shift_right( a, b )      a = a >> b
 def self_shift_left ( a, b )      a = a << b
 
@@ -271,10 +274,16 @@ def select( obje, b )
 def size_of( a ) when __is_a_Property__(a)  toto := a; return size_of(toto)
 
 def get_byte_size( self )
-    return size_of( partial_instanciation self ) // 8
+    return ( size_of( partial_instanciation self ) + 7 ) // 8
     
 def get_byte_size_if_in_vec( self )
     return ( size_of_if_in_vec( partial_instanciation self ) + 7 ) // 8
+
+def get_needed_alignement_in_bits( self )
+    return __needed_alignement_in_bits__( partial_instanciation self )
+
+def get_needed_alignement_in_bytes( self )
+    return __needed_alignement_in_bytes__( partial_instanciation self )
 
 # ------------- type promote -----------
 # def type_promote( a, b, op ) pertinence -5
@@ -460,3 +469,7 @@ class GetNamedArguments
 def get_named_arguments( self ) when is_of_type_VarArgs( self )
     return GetNamedArguments( self )
 
+# ------------------------------------------------------------------------------------
+def mkdir( directory )
+    return system( "mkdir $directory 2> /dev/null" )
+    

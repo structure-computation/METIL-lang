@@ -36,13 +36,16 @@ class PyLabPlot
             else if v.tensor_order!=1 and ( cpt % 2 )
                 f << "["
                 for x in lst[cpt-1]
-                    f << Float64( v( x ) ).to_string(8) << ","
+                    f << Float64( v( x ) ).to_string(16) << ","
                 f << "], "
             else
-                f << "[" << join(v.map( Float64 ),",") << "], " # (x).to_string(8)
+                f << "["
+                for x in v
+                    f << Float64( x ).to_string(16) << ","
+                f << "], " # (x).to_string(8)
         f <<< ")"
         f.flush()
-    def plot( lst )          g_plot( "plot"    , lst )
+    def plot( varargs )      g_plot( "plot"    , varargs )
     def loglog( varargs )    g_plot( "loglog"  , varargs )
     def semilogx( varargs )  g_plot( "semilogx", varargs )
     def semilogy( varargs )  g_plot( "semilogy", varargs )
@@ -96,7 +99,7 @@ class GnuPlot[ dim = 2 ] inherits GenericPlotDevice[ dim ]
 def plot( varargs )
     p := PyLabPlot()
     p.destroy_pipe = false
-    p.plot( varargs )
+    p.g_plot( "plot", varargs )
     p.show()
 
 

@@ -113,6 +113,7 @@ inline void get_tok_defs( std::vector<TokDef> &tok_defs ) {
     tok_defs.push_back(TokDef("pass"));
     
     tok_defs.push_back(TokDef("import"));
+    tok_defs.push_back(TokDef("exec"));
     
     tok_defs.push_back(TokDef("throw"));
     tok_defs.push_back(TokDef("try").A("tok_offset","offset_to_next_inst").set_field_for_next_in_exception_mode("offset_to_next_inst"));

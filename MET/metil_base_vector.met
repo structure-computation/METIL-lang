@@ -912,6 +912,12 @@ class Vec[ T, static_size=-1, ST=Int32 ] when static_size >= 0
             select( cpt ).init( function( cpt ) )
             cpt++
     
+    def init( function, size = static_size ) # vector with function(index)
+        assert( size == static_size, "size == static_size" )
+        cpt := 0; while cpt < static_size
+            select( cpt ).init( function( cpt ) )
+            cpt++
+    
     def init( size, default_value ) pertinence 1 # vector with specified size and reservation, initialised with default_value
         assert( size == static_size, "can't change the size of a static sized vector (you want $size be we have $static_size)" )
         init( default_value = default_value )
@@ -1105,15 +1111,15 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         while size_ < ns
             select( size_++ ).init( default_value )
             
-    def new_elem # TODO -> return a pointer (ref is error prone)
+    def new_elem
         # not enough room ?
         if size_ >= reserved_
             reserve( 1 + reserved_ * 2 )
-        return __get_data_in_dyn_vec__( data_.ptr, pt, size_++ )
+        return &__get_data_in_dyn_vec__( data_.ptr, pt, size_++ )
     
     def new_preinitialized_elem
-        n := ref new_elem()
-        n.init()
+        n := new_elem()
+        n->init()
         return n
         
     def new_elem_at_position( pos )
@@ -1121,16 +1127,16 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         resize( os + 1 )
         for i in ( pos .. os ).reversed
             select( i+1 ) = select( i )
-        res := ref select( pos )
-        res.destroy()
-        res.init()
+        res := &select( pos )
+        res->destroy()
+        res->init()
         return res
         
     def insert_before( item, value )
         pos := &item - data_
-        n := &new_elem_at_position( pos )
+        n := new_elem_at_position( pos )
         @n = value
-        return @n
+        return n
     
     def make_room_to_insert( from, n )
         os := size_
@@ -1140,30 +1146,35 @@ class Vec[ T, static_size=-1, ST=Int32, T_alignement = 0 ] when static_size < 0
         return data_ + from
         
     def push_back( val ) pertinence 2
-        n := ref new_elem()
-        n.init( val )
+        n := new_elem()
+        n->init( val )
         return n
         
     def push_back( varargs ) #
-        n := ref new_elem()
-        call( n.init, varargs )
+        n := new_elem()
+        call( n->init, varargs )
         return n
         
     def push_front( val ) #
         os := size_ 
         if not os
             return push_back( val )
-        n := pointer_on( new_elem() )
+        n := new_elem()
         n->init( n[-1] ); n--
         for cpt in 1..os
             @n = n[-1]; n--
         @n = val
-        return @n
+        return n
         
     def remove_unordered( i )
         if i != size-1
             select( i ) = get_back()
         size_--
+        
+    def erase_unordered( item )
+        i := index_of_first_item_equal_to( item )
+        assert( i >= 0, "not found" )
+        remove_unordered( i )
         
     def append( vec )
         for v in vec
@@ -1417,6 +1428,25 @@ def chained_list( first_ptr, function = _0.next )
     return res
 
 # --------------------------------------------------------------------------------------------------------------------------------------------------------------
+class ChainedListPtr
+    static const tensor_order := 1
+    # property is_a_vector
+    op := InternalVariable()
+    pl := InternalVariable()
+    
+    def __for__( block )
+        p := @pl
+        while p
+            block( p )
+            p = (@op)( p )
+
+def chained_list_ptr( first_ptr, function = _0->next )
+    res := ChainedListPtr()
+    res.pl.init_using_var( first_ptr )
+    res.op.init_using_var( function )
+    return res
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ]
     def init( r )
         assert( r == atomic_size, "r == atomic_size" )
@@ -1425,9 +1455,9 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ]
     def destroy
         pass
     static const reserved := atomic_size
+    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
     size ~= Int32
     data ~= Vec[ T, atomic_size ]
-    next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when variable_atomic_size pertinence 0.5
     def init( r )
@@ -1439,10 +1469,10 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
     def destroy
         if reserved
             data.free()
-    reserved ~= Int32
-    size ~= Int32
-    data ~= Ptr[ T ]
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    size ~= Int32
+    reserved ~= Int32
+    data ~= Ptr[ T ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when atomic_size == 0
     def init( r )
@@ -1452,8 +1482,8 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
         pass
     static const reserved := 0
     static const size := 0
-    data ~= VoidVec
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    data ~= VoidVec
 
 #~
 ~#
@@ -1542,32 +1572,32 @@ class SplittedVec[ T, atomic_size, first_atom_in_stack = true, ST = Int32, varia
             stream.write( a.data.begin, nb * a.size )
     
     def new_elem # new uninitialised element. TODO : return a pointer
-        return @check_contiguous_room( 1, 1 )
+        return check_contiguous_room( 1, 1 )
     
     def new_elem_in_reserved_room # new uninitialised element. TODO : return a pointer
         if last
-            return last->data[ last->size++ ]
-        return first.data[ first.size++ ]
+            return last->data + (last->size++)
+        return first.data + (first.size++)
     
     def new_preinitialized_elem
-        n := ref new_elem()
-        n.init()
+        n := new_elem()
+        n->init()
         return n
         
     def push_back( varargs )
-        n := ref new_elem()
-        call( n.init, varargs )
+        n := new_elem()
+        call( n->init, varargs )
         return n
         
     def push_back_unique( val )
         for i in self
             if i == val
-                return i
+                return &i
         return push_back( val )
         
     def push_back_in_reserved_room( val )
-        n := ref new_elem_in_reserved_room()
-        n.init( val )
+        n := new_elem_in_reserved_room()
+        n->init( val )
         return n
         
     def push_n( p, n ) # must must be a pointer on n contiguous elements
@@ -1713,7 +1743,7 @@ class VecUnique[ V, cmp = equal ]
     def push_back( val )
         for v in data
             if cmp( v, val )
-                return v
+                return &v
         return data.push_back( val )
     def clear           data.clear()
     def get_size        return data.size
@@ -1895,8 +1925,8 @@ class VecSparse[ T, default_value = T( 0 ), ST = SizeType ]
                     vs->values[i] = v
                     return none
                 if vs->indices[i] > ind
-                    vs->indices.new_elem_at_position( i ) = ind
-                    vs->values.new_elem_at_position( i ) = v
+                    @vs->indices.new_elem_at_position( i ) = ind
+                    @vs->values .new_elem_at_position( i ) = v
                     return none
             vs->indices.push_back( ind )
             vs->values.push_back( v )

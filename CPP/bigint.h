@@ -12,6 +12,8 @@
 #include <sstream>
 #include "typeconfig.h"
 #include <math.h>
+#include <stdlib.h>
+
 /**
    unlimited int.
     \param owning -> true if delete after destruction is authorized
@@ -498,7 +500,7 @@ BigInt<base,T,offset> operator*(BigInt<base,T,offset,owning> a,BigInt<base,T,off
         res.val = v;
         return res;
     }
-    bool sgn = a.val < 0 xor b.val < 0;
+    bool sgn = ( a.val < 0 ) xor ( b.val < 0 );
     a.val = abs( a.val );
     b.val = abs( b.val );
     
@@ -562,7 +564,7 @@ BigInt<base,T,offset> operator/( BigInt<base,T,offset> a, BigInt<base,T,offset> 
     if ( a.n == 0 and b.n == 0 ) { res.val = a.val / b.val; return res; }
     // < 0
     if ( a.val<0 or b.val<0 ) {
-        bool sgn = ( a.val < 0 xor b.val < 0 );
+        bool sgn = ( a.val < 0 ) xor ( b.val < 0 );
         a.val = abs( a.val );
         b.val = abs( b.val );
         res = a / b;
@@ -607,7 +609,7 @@ BigInt<base,T,offset> operator%( BigInt<base, T, offset> a, BigInt<base, T, offs
     if ( a.n == 0 and b.n == 0 ) { a.val %= b.val; if (a.val<0) a.val+= b.val; return a; }
     
     // < 0
-    bool minus_sgn = a.val<0 xor b.val<0;
+    bool minus_sgn = ( a.val<0 ) xor ( b.val<0 );
     a.val = abs( a.val );
     b.val = abs( b.val );
     

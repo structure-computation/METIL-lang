@@ -1,5 +1,6 @@
 ## generic init with named arguments ##
 def init( self, varargs ) when varargs.contains_only_named_variables_included_in_self_non_static_variables( self ) pertinence -2
+    init_using_default_values( self )
     init_using_varargs( self, varargs )
 
 ## generic init ##
@@ -29,6 +30,7 @@ def reassign( self, __source_object__ ) when __is_a_Property__( __source_object_
     
 ## default conversion_to -> error message ##
 def conversion_to( self, b )
+    stack_info()
     assert( 0, "Unable to convert type '"+self.type+"' to type '"+b.type+"'" )
 
 ## default destroy -> do nothing ##
@@ -202,9 +204,11 @@ class Ptr(T)
     def init()                                           pass
     def init( val ) when is_of_type_UntypedPtr(val)      ptr.init( val )
     def init( val ) when type_of(val)==Null              ptr.init( 0 )
-    def init( val )                                      assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
+    def init( val ) when val.is_a_Ptr and val.T==T       ptr.init( val.ptr )
+    def init( val )                                      assert( val.is_Untyped or inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($T <- $(val.T))" ); ptr.init( UntypedPtr( val ) )
     def reassign( val ) when is_of_type_UntypedPtr(val)  ptr = val
     def reassign( val ) when type_of(val)==Null          ptr = 0
+    def reassign( val ) when val.is_a_Ptr and val.T==T   ptr = val.ptr
     def reassign( val )                                  assert( inheritance( @val, partial_instanciation T ), "pointers do not adress to the same type ($(val.T) != $T)" ); ptr = UntypedPtr( val )
     def select( n )                                      return __get_data_in_dyn_vec__( ptr, partial_instanciation T, Int32(n) )
     def free                                             ptr.free()
@@ -225,10 +229,10 @@ def type_promote( a, b, op ) when b.is_a_Ptr and is_of_type_UntypedPtr(a) return
 
 ## ##
 def add( a, b ) when a.is_a_Ptr and b.tensor_order <= 0 pertinence 1000
-    return Ptr[ a.T ]( a.ptr + Int32( b * size_of(partial_instanciation a.T) // 8 ) )
+    return Ptr[ a.T ]( a.ptr + Int32( b * a.T.byte_size_if_in_vec ) )
 ## ##
 def sub( a, b ) when a.is_a_Ptr and b.tensor_order <= 0 and not b.is_a_Ptr pertinence 1000
-    return Ptr[ a.T ]( a.ptr + Int32( - b * size_of(partial_instanciation a.T) // 8 ) )
+    return Ptr[ a.T ]( a.ptr + Int32( - b * a.T.byte_size_if_in_vec ) )
 
 ## ##
 def sub( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000
@@ -236,10 +240,13 @@ def sub( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000
     return ( a.ptr - b.ptr ) // Int32( size_of(partial_instanciation a.T) / 8 )
 
 ## ##
-def inferior( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr < b.ptr
-def superior( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr > b.ptr
+def equal         ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr == b.ptr
+def inferior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr <  b.ptr
+def superior      ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >  b.ptr
 def inferior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr <= b.ptr
 def superior_equal( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr >= b.ptr
+def not_equal     ( a, b ) when a.is_a_Ptr and b.is_a_Ptr pertinence 1000  return a.ptr != b.ptr
+    
     
 def reinterpret_cast( T, p )
     return T( UntypedPtr( p ) )
@@ -307,12 +314,23 @@ def equal( a, b ) when a.is_a_Ptr and b.is_Null
 
 const SizeType := ( Int32, Int64 )[ size_of(UntypedPtr) == 64 ]
 
-def type_promote( a, b, op ) when a.is_Null and b.is_of_type_UntypedPtr
+def type_promote( a, b, op ) when a.is_Null and is_of_type_UntypedPtr( b )
     return NULL
 
-def type_promote( a, b, op ) when b.is_Null and a.is_of_type_UntypedPtr
+def type_promote( a, b, op ) when b.is_Null and is_of_type_UntypedPtr( a )
     return NULL
 
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+#~ hum... ~#
+class SpinLock
+    val := 0
+    def acquire
+        # hum...
+        while val
+            pass
+        val = 1
+    def release
+        val = 0
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -338,7 +356,7 @@ class String
             data_ = data
     def init( c_str )                          pertinence -2
         init( size = strlen( UntypedPtr( c_str ) ), data = c_str )
-    def reassign( s ) when s.is_a_String                    destroy(); init(s)
+    def reassign( s ) when s.is_a_String                       destroy(); init(s)
     def destroy                                                if reserved_  data_.free()
     def write_to_stream( stream )                              stream.write( data_, size_ )
     def conversion_to( val ) when type_of(val)==Bool           val.init( size_ )
@@ -485,7 +503,7 @@ def __str_partial_instanciations__  s ~= String
 __str_partial_instanciations__()
 
 def stack_info( n = 200 )
-    for i in 3 .. min( n+4, __nb_stack_level__() )
+    for i in 2 .. min( n, __nb_stack_level__() )
         print __file_at_stack_level__(i), __line_at_stack_level__(i)
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -513,7 +531,7 @@ import "metil_base_map.met"
 import "metil_base_polynomial.met"
 import "metil_base_complex.met"
 import "metil_base_big_unsigned.met"
-import "metil_base_serialization.met"
+# import "metil_base_serialization.met"
 import "metil_base_mpi.met"
 # import "lazy_mat.met"
 

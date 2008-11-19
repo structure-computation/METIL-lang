@@ -14,7 +14,7 @@ CONFIGURE_FILE( metil_readline_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_rea
 # dl library
 CHECK_LIBRARY_EXISTS( dl dlopen "" HAVE_LIBDL )
 CONFIGURE_FILE( metil_dl_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_dl_config.h )
-MESSAGE( HAVE_LIBDL ${HAVE_LIBDL} )
+MESSAGE( HAVE_LIBDL=${HAVE_LIBDL} )
 
 # pthread library
 INCLUDE( FindThreads )
@@ -24,9 +24,27 @@ INCLUDE( FindThreads )
 # mpi library
 INCLUDE( FindMPI )
 CONFIGURE_FILE( metil_mpi_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_mpi_config.h )
-IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
-    ADD_DEFINITIONS( -I${MPI_INCLUDE_PATH} )
-ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
+MESSAGE( "iz" ${MPI_FOUND} )
+IF ( MPI_FOUND )
+    INCLUDE_DIRECTORIES(
+        ${MPI_INCLUDE_PATH}
+    )
+ENDIF ( MPI_FOUND )
+
+
+# Qt4 library
+SET(QT_USE_QTSVG 1)
+SET (QT_MIN_VERSION "4.4.0")
+FIND_PACKAGE(Qt4)
+INCLUDE(${QT_USE_FILE})
+CONFIGURE_FILE( metil_qt_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config.h )
+SET( MOC_CPP_FILES  )
+MESSAGE( QT ${QT4_FOUND} )
+IF(QT4_FOUND)
+    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindow.h  ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp )
+    QT4_GENERATE_MOC( ${CMAKE_CURRENT_SOURCE_DIR}/DisplayWindowCreator.h  ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindowCreator.moc.cpp )
+    SET( MOC_CPP_FILES ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindow.moc.cpp ${CMAKE_CURRENT_BINARY_DIR}/DisplayWindowCreator.moc.cpp )
+ENDIF(QT4_FOUND)
 
 # ieee754 + BigEndian
 INCLUDE( TestBigEndian )
@@ -87,6 +105,7 @@ ADD_LIBRARY( metil_thread STATIC
 
     mutex.cpp
     dlloader.cpp
+    cfile.cpp
     symbolic/ex.cpp
     symbolic/quadratic_expansion.cpp
     symbolic/polynomial_expansion.cpp
@@ -110,25 +129,29 @@ ADD_LIBRARY( metil_thread STATIC
     metil_interactive.cpp
     transientdata.cpp
     md5.cpp
+    DisplayWindowCreator.cpp
+    DisplayWindow.cpp
+    DisplayWidget.cpp
+    DisplayPainter.cpp
+    ${MOC_CPP_FILES}
 )
 ADD_DEPENDENCIES( metil_thread ${ARITHMETIC_OPERATION_OUT} )
 
 # lib_mpi_wrap
-IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
+IF ( MPI_FOUND )
     ADD_LIBRARY( metil_mpi_wrap STATIC mpi_wrap.c )
-ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
+ENDIF ( MPI_FOUND )
 ADD_LIBRARY( metil_mpi_wrap_no STATIC mpi_wrap_no.c )
 
 # main executable
 ADD_EXECUTABLE( metil metil.cpp )
-TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ) # -ltermcap 
+TARGET_LINK_LIBRARIES( metil metil_thread metil_lexer metil_mpi_wrap_no ${QT_LIBRARIES} ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ) # -ltermcap 
 
 # main mpi executable
-IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
+IF ( MPI_FOUND )
     ADD_EXECUTABLE( metil_mpi metil.cpp )
-    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ${MPI_LIBRARY} -llam ) #  -ltermcap
-ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
-MESSAGE( ${MPI_LIBRARY} )
+    TARGET_LINK_LIBRARIES( metil_mpi metil_thread metil_lexer metil_mpi_wrap ${QT_LIBRARIES} ${READLINE_LIBRARY} -ldl ${CMAKE_THREAD_LIBS_INIT} ${MPI_LIBRARIES} ) #  -ltermcap
+ENDIF ( MPI_FOUND )
 
 # INSTALL
 INSTALL( TARGETS metil RUNTIME DESTINATION bin ) #   LIBRARY DESTINATION lib #   ARCHIVE DESTINATION lib
@@ -137,3 +160,6 @@ IF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
     INSTALL( TARGETS metil_mpi RUNTIME DESTINATION bin ) #   LIBRARY DESTINATION lib #   ARCHIVE DESTINATION lib
 ENDIF ( MPI_INCLUDE_PATH AND MPI_LIBRARY )
 
+INSTALL( FILES DisplayPainter.h DESTINATION ${CMAKE_METIL_INSTALL_PREFIX} )
+INSTALL( FILES DisplayPainterContext.h DESTINATION ${CMAKE_METIL_INSTALL_PREFIX} )
+INSTALL( FILES ${CMAKE_CURRENT_BINARY_DIR}/metil_qt_config.h DESTINATION ${CMAKE_METIL_INSTALL_PREFIX} )

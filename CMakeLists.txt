@@ -1,6 +1,8 @@
 # project name
 PROJECT( metil )
 
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
 # test
 # SET( CTEST_COMMAND "/usr/local/bin/ctest -D Experimental" )
 # SET (DROP_SITE "localhost")
@@ -22,4 +24,5 @@ ADD_SUBDIRECTORY( CPP )
 ADD_SUBDIRECTORY( MET )
 ADD_SUBDIRECTORY( TESTS )
 
-INSTALL( FILES met.xml DESTINATION ~/.kde/share/apps/katepart/syntax )
+MESSAGE( "Copy met.xml to " $ENV{HOME}/.kde/share/apps/katepart/syntax )
+INSTALL( FILES met.xml DESTINATION $ENV{HOME}/.kde/share/apps/katepart/syntax )

@@ -16,6 +16,7 @@
 #include "type.h"
 #include "definitiondata.h"
 #include <metil_sys_dir.h>
+#include <string.h>
 
 GlobalData global_data;
 

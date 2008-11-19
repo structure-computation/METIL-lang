@@ -2,6 +2,7 @@
 #define BOOL_H
 
 #include "size_alignement.h"
+#include <limits>
 // #include "config.h"
 
 struct Bool {
