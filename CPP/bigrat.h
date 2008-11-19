@@ -168,6 +168,12 @@ struct BigRat {
         return *this;
     }
 
+    BigRat &operator=(const Bool &val) { num = (int)val; den = 1; return *this; }
+    BigRat &operator=(const Int32 &val) { num = val; den = 1; return *this; }
+    BigRat &operator=(const Unsigned32 &val) { num = val; den = 1; return *this; }
+    BigRat &operator=(const Int64 &val) { num = val; den = 1; return *this; }
+    BigRat &operator=(const Unsigned64 &val) { num = val; den = 1; return *this; }
+    
     BigRat &operator=(const Float32 &val) { approx<Float32,base,T,offset,owning>(val,num,den); return *this; }
     BigRat &operator=(const Float64 &val) { approx<Float64,base,T,offset,owning>(val,num,den); return *this; }
     BigRat &operator=(const Float96 &val) { approx<Float96,base,T,offset,owning>(val,num,den); return *this; }
