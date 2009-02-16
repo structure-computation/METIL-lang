@@ -14,6 +14,18 @@
 // #define A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
 #define USE_SERIES_FOR_TAYLOR
 
+inline std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {
+    Ex mo = v.real() * v.real() + v.imag() * v.imag();
+    Ex m = log( mo + eqz( mo ) ) / 2, a = atan2( v.imag(), v.real() );
+    return std::exp( Ex( p ) * std::complex<Ex>( m, a ) );
+}
+
+inline std::complex<Ex> sqrtc( const Ex &v ) {
+    Ex s = pow( abs( v ), Rationnal(1,2) );
+    Ex p = heaviside( v );
+    return std::complex<Ex>( s * p, s * ( 1 - p ) );
+}
+
 struct ExPtrCmp {
     bool operator()( const Ex &a, const Ex &b ) const {
         if ( a.op->type==Op::NUMBER and b.op->type==Op::NUMBER )
@@ -128,6 +140,10 @@ Ex &Ex::operator+=(const Ex &c) { *this = *this + c; return *this; }
 
 Ex &Ex::operator*=(const Ex &c) { *this = *this * c; return *this; }
 
+Ex &Ex::operator-=(const Ex &c) { *this = *this - c; return *this; }
+
+Ex &Ex::operator/=(const Ex &c) { *this = *this / c; return *this; }
+
 void Ex::set_beg_value( T b, bool inclusive ) {
     op->set_beg_value( b, inclusive );
 }
@@ -147,6 +163,10 @@ void Ex::set_access_cost( Float64 c ) {
 void Ex::set_nb_simd_terms( Int32 c ) {
     if ( op->type == Op::SYMBOL )
         op->symbol_data()->nb_simd_terms = c;
+}
+
+void Ex::set_integer_type( Int32 c ) {
+    op->integer_type = c;
 }
 
 bool Ex::end_value_valid() const {
@@ -843,11 +863,37 @@ Ex tanh( const Ex &a_ ) {
     if ( is_a_number( a.op ) ) return tanh_96( a.op->number_data()->val );
     return Op::new_function( STRING_tanh_NUM, a.op );
 }
+
+Ex floor( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return floor( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_floor_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
+Ex ceil( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return ceil( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_ceil_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
+Ex round( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return round( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_round_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
 Ex min( const Ex &a, const Ex &b ) {
     return b - pos_part( b - a );
     //     Ex s = heaviside( b - a );
     //     return s * a + ( 1 - s ) * b;
 }
+
 Ex max( const Ex &a, const Ex &b ) {
     return a + pos_part( b - a );
     //     Ex s = heaviside( a - b );
@@ -874,6 +920,121 @@ void sort( Ex &a, Ex &b, Ex &c ) {
     b = max(b,t);    
 }
 
+Ex select_symbolic( const Ex &vec_, const Ex &index_ ) {
+    Ex vec   = a_posteriori_simplification( vec_   );
+    Ex index = a_posteriori_simplification( index_ );
+    return Op::new_function( STRING_select_symbolic_NUM, vec.op, index.op );
+}
+
+
+// ------------------------------------------------------------------------------------------------------------
+Ex roots( Thread *th, const void *tok, const Ex &f, const Ex &x ) {
+    Op *res = Op::new_function( STRING_roots_NUM, f.op, x.op );
+    
+    //
+    int deg = f.poly_deg( x );
+    if ( deg >= 0 ) {
+        SEX coeff, expressions;
+        expressions.push_back( f );
+        coeff.get_room_for( deg + 1 );
+        polynomial_expansion( th, tok, expressions, x, deg, coeff );
+        for(unsigned i=0;i<coeff.size();++i)
+            res->chroot.push_back( coeff[i].op->inc_ref() );
+    }
+    
+    //
+    return res;
+}
+
+Ex root( Thread *th, const void *tok, const Ex &r, int n ) {
+    if ( r.op->type != STRING_roots_NUM ) {
+        th->add_error( "root must take a roots(...) as first argument.", tok );
+        return 0;
+    }
+    
+    //
+    if ( r.op->chroot.size() == 1 ) {
+        return 0;
+    } else if ( r.op->chroot.size() == 2 ) {
+        return - Ex( r.op->chroot[0] ) / Ex( r.op->chroot[1] );
+    } else if ( r.op->chroot.size() == 3 ) {
+        Ex a = r.op->chroot[2], b = r.op->chroot[1], c = r.op->chroot[0];
+        Ex delta = pow( b, 2 ) - 4 * a * c;
+        Ex ea = eqz( a ), eb = eqz( b ), hd = heaviside( delta );
+        Ex sq_delta = pow( delta * hd, Rationnal( 1, 2 ) );
+        if ( n == 0 )
+            return - ( ( 1 - ea ) * ( b + sq_delta ) + ea * c ) / ( 2 * a + ea * ( b + eb ) ); // first root
+        else
+            return - (                b - sq_delta            ) / ( 2 * a + ea              ); // second one
+        //validity[ 0 ] = 1 - ea * eb;
+        //validity[ 1 ] = ( 1 - ea ) * hd;
+    } else if ( r.op->chroot.size() == 4 ) {
+        Ex z = r.op->chroot[3], ez = eqz( z );
+        Ex a = r.op->chroot[2] / ( z + ez ), b = r.op->chroot[1] / ( z + ez ), c = r.op->chroot[0] / ( z + ez );
+        
+        Ex p = 2 * pow(a,3) - 9 * a * b + 27 * c;
+        Ex delta = pow( p, 2 ) + 4 * ( 3 * b - a * a );
+        
+        using namespace std;
+        
+        // delta < 0
+        complex<Ex> u = ( - p + sqrtc( delta ) ) / Ex( 54 );
+        complex<Ex> v = ( - p - sqrtc( delta ) ) / Ex( 54 );
+        complex<Ex> j1(  Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+        complex<Ex> j2( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+        
+        
+        complex<Ex> pu = powc( u, Rationnal(1,3) );
+        complex<Ex> pv = powc( v, Rationnal(1,3) );
+        
+        std::cout << -a / 3 +      pu +      pv << std::endl;
+        std::cout << -a / 3 - j1 * pu + j2 * pv << std::endl;
+        std::cout << -a / 3 + j2 * pu - j1 * pv << std::endl;
+        
+        if ( n == 0 )
+            return real( complex<Ex>( -a/3 ) + powc( u, Rationnal(1,3) ) + powc( v, Rationnal(1,3) ) );
+        if ( n == 1 )
+            return real( complex<Ex>( -a/3 ) - j1 * powc( u, Rationnal(1,3) ) + j2 * powc( v, Rationnal(1,3) ) );
+        if ( n == 2 )
+            return real( complex<Ex>( -a/3 ) + j2 * powc( u, Rationnal(1,3) ) - j1 * powc( v, Rationnal(1,3) ) );
+        
+//         Ex delta = -2*pow(a,3)+9*a*b-27*c+
+//         std::cout << a << " " << b << " " << c << " " << z << std::endl;
+//         Ex p = b - pow(a,2) / 3;
+//         Ex q = pow(a,3) * Rationnal(2,27) - a * b / 3 + c;
+//         Ex delta = 4 * pow(p,3) + 27 * pow(q,2);
+//         std::cout << delta << std::endl;
+//         //delta >= 0
+//         //         Ex u = (-27*q+sqrt(27*delta))/2;
+//         //         Ex v = (-27*q-sqrt(27*delta))/2;
+//         //         res += heaviside( delta ) * ExVector(
+//         //             sgn(u)*pow(abs(u),1.0/3.0)+sgn(v)*pow(abs(v),1.0/3.0)-a)/3.0
+//         //         );
+//         //delta < 0
+//         std::complex<Ex> j( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+//         std::complex<Ex> v( -27 * q / 2, 0 );
+//         v += sqrtc( - Rationnal(27,4) * delta ) * std::complex<Ex>( 0, 1 );
+//         std::complex<Ex> u( powc( v, Rationnal(1,3) ) );
+//         Ex x0 = ( 2 * std::real(    u) - a ) / 3;
+//         Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
+//         Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
+//         
+//         //Ex va = 1 - ez;
+//         if ( n == 0 )
+//             return x0;
+//         //validity[ 0 ] = ( 1 - va ) * validity[ 0 ] + va;
+//         //va *= 1 - heaviside( delta );
+//         if ( n == 1 )
+//             return x1;
+//         if ( n == 2 )
+//             return x2;
+//         //validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
+//         //validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
+    }
+    
+    //
+    return Op::new_function( STRING_root_NUM, Op::new_number( n ), r.op );
+}
 
 // ------------------------------------------------------------------------------------------------------------
 void destroy_rec( Op *a ) {
@@ -934,6 +1095,11 @@ struct DiffRec {
             case STRING_abs_NUM:       MAKE_D0( ( 2 * heaviside( Ex( c0 ) ) - 1 ) * Ex( d0 ) ); break;
             case STRING_pos_part_NUM:  MAKE_D0( heaviside( Ex( c0 ) ) * Ex( d0 ) ); break;
             case STRING_exp_NUM:       MAKE_D0( Ex( d0 ) * Ex( a ) ); break;
+            case STRING_floor_NUM:     a->additional_info = zero.op->inc_ref(); break;
+            case STRING_ceil_NUM:      a->additional_info = zero.op->inc_ref(); break;
+            case STRING_round_NUM:     a->additional_info = zero.op->inc_ref(); break;
+            case STRING_select_symbolic_NUM:
+                a->additional_info = zero.op->inc_ref(); break;
             
             case STRING_sin_NUM:       MAKE_D0( Ex( d0 ) * cos( Ex( c0 ) ) ); break;
             case STRING_cos_NUM:       MAKE_D0( - Ex( d0 ) * sin( Ex( c0 ) ) ); break;
@@ -1021,7 +1187,11 @@ struct SubsRec {
             case STRING_mul_NUM:       MAKE_S0S1( e0 * e1 ); break;
             case STRING_pow_NUM:       MAKE_S0S1( pow( e0, e1 ) ); break;
             case STRING_atan2_NUM:     MAKE_S0S1( atan2( e0, e1 ) ); break;
+            case STRING_select_symbolic_NUM:     MAKE_S0S1( select_symbolic( e0, e1 ) ); break;
             
+            case STRING_floor_NUM:     MAKE_S0( floor( e0 ) ); break;
+            case STRING_ceil_NUM:      MAKE_S0( ceil ( e0 ) ); break;
+            case STRING_round_NUM:     MAKE_S0( round( e0 ) ); break;
             case STRING_heaviside_NUM: MAKE_S0( heaviside( e0 ) ); break;
             case STRING_pos_part_NUM:  MAKE_S0( pos_part ( e0 ) ); break;
             case STRING_eqz_NUM:       MAKE_S0( eqz      ( e0 ) ); break;
@@ -1062,6 +1232,14 @@ Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
     a.op->additional_info = b.op->inc_ref();
     SubsRec<> sr( th, tok, *this );
     return op->additional_info;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+int Ex::poly_deg( const Ex &var ) const {
+    ++Op::current_op;
+    var.op->op_id = Op::current_op;
+    var.op->additional_int = 1;
+    return op->poly_deg_rec();
 }
 
 // ------------------------------------------------------------------------------------------------------------
@@ -1532,17 +1710,6 @@ Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &exp
     //     return res;
 }
 
-std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {
-    Ex mo = v.real() * v.real() + v.imag() * v.imag();
-    Ex m = log( mo + eqz( mo ) ) / 2, a = atan2( v.imag(), v.real() );
-    return std::exp( Ex( p ) * std::complex<Ex>( m, a ) );
-}
-
-std::complex<Ex> sqrtc( const Ex &v ) {
-    Ex s = pow( abs( v ), Rationnal(1,2) );
-    Ex p = heaviside( v );
-    return std::complex<Ex>( s * p, s * ( 1 - p ) );
-}
 
 Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validity ) {
     for(unsigned i=0;i<std::min(3u,taylor_expansion.size());++i) {

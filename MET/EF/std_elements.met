@@ -231,7 +231,7 @@ class Quad_8 inherits Quad
 class Quad_9 inherits Quad
     static vtk_num  := -1 # TODO
     static points   := [
-        [0/2,0/2],[1/2,0/2],[2/2,2/2],
+        [0/2,0/2],[1/2,0/2],[2/2,0/2],
         [0/2,1/2],[1/2,1/2],[2/2,1/2],
         [0/2,2/2],[1/2,2/2],[2/2,2/2]
     ]

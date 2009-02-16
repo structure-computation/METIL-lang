@@ -410,6 +410,8 @@ class Concatenate
         for l in lists
             res += l.size
         return res # sum( lists.map( _0.size ) )
+    def get_values
+        return self
     def map( function ) 
         res := Concatenate()
         res.lists.init()
@@ -1317,14 +1319,17 @@ class LittleHeterogeneousArray[ tensor_order, sizes ]
         return values.get_unnamed_argument_nb( Int32(n) )
     ## ##
     def get_nb_rows
-        return sizes[0]
+        return sizes[1]
     ## ##
     def get_nb_cols
-        return sizes[1]
+        return sizes[0]
     ## ##
     def select( n ) when n.tensor_order == 1 and n.size == tensor_order pertinence 1
         s := 0; for i, j in zip( n, cum_index ) s += i * j
         return values.get_unnamed_argument_nb( s )
+    ## vraiment très **** ce cas particulier pour les matrices ##
+    def select( r, c ) when tensor_order == 2
+        return values[ r * sizes[0] + c ]
     ## ##
     def select( varargs ) when varargs.nb_named_arguments()==0 and varargs.nb_unnamed_arguments()==tensor_order pertinence 0.5 # Ex: select(1,2,3) (several arguments)
         return select( varargs )

@@ -434,6 +434,9 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
         for r, c in structure
             self[ r, c ].init( m[ r, c ] )
     
+    def init( ascii_file ) pertinence -1
+        
+    
     def reassign( m ) when m.is_a_matrix pertinence 3
         structure.resize( m.nb_rows, m.nb_cols, data, T(0) ) # TODO -> meaning of 0
         for r, c in structure
@@ -724,7 +727,7 @@ def add( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
     assert( m1.nb_rows == m2.nb_rows and m1.nb_cols == m2.nb_cols, "sum of matrices with != sizes if forbidden ( $(m1.nb_rows)x$(m2.nb_rows) and $(m1.nb_cols)x$(m2.nb_cols) )" )
     ST := type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add )
     TR := type_promote( type_promote_list( m1.sub_types, m2.sub_types, add ).map( partial_inst ), add )
-    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m1.structure.is_sym ]
+    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m2.structure.is_sym ]
     res := Mat[ TR, GE, ST = ST ]( m1.nb_rows, m1.nb_cols )
     for r in 0 .. m1.nb_rows
         for c in 0 .. m1.nb_cols
@@ -735,7 +738,7 @@ def sub( m1, m2 ) when m1.is_a_matrix and m2.is_a_matrix pertinence 4
     assert( m1.nb_rows == m2.nb_rows and m1.nb_cols == m2.nb_cols, "sum of matrices with != sizes if forbidden ( $(m1.nb_rows)x$(m2.nb_rows) and $(m1.nb_cols)x$(m2.nb_cols) )" )
     ST := type_promote( partial_instanciation m1.ST, partial_instanciation m2.ST, add )
     TR := type_promote( type_promote_list( m1.sub_types, m2.sub_types, sub ).map( partial_inst ), sub )
-    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m1.structure.is_sym ]
+    GE := [ Gen[ m1.static_nb_rows, m1.static_nb_cols ], Sym[ m1.static_nb_rows ] ][ m1.structure.is_sym and m2.structure.is_sym ]
     res := Mat[ TR, GE, ST = ST ]( m1.nb_rows, m1.nb_cols )
     for r in 0 .. m1.nb_rows
         for c in 0 .. m1.nb_cols

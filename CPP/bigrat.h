@@ -416,4 +416,19 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     return res;
 }
 
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> floor(const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( floor( double( a ) ) );
+}
+
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> ceil (const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( ceil( double( a ) ) );
+}
+
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> round(const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( round( double( a ) ) );
+}
+
 #endif // BIGRAT_H

@@ -55,6 +55,7 @@ void OpWithSeq::init_gen() {
     id = 0;
     access_cost = 0;
     nb_simd_terms = 0;
+    integer_type = 0;
 }
 
 OpWithSeq::~OpWithSeq() {
@@ -81,12 +82,14 @@ OpWithSeq *make_OpWithSeq_rec( const Op *op ) {
         op->additional_info = reinterpret_cast<Op *>( res );
         res->access_cost = op->symbol_data()->access_cost;
         res->nb_simd_terms = op->symbol_data()->nb_simd_terms;
+        res->integer_type = op->integer_type;
         return res;
     }
     //
     if ( op->type == Op::NUMBER ) {
         OpWithSeq *res = OpWithSeq::new_number( op->number_data()->val );
         op->additional_info = reinterpret_cast<Op *>( res );
+        res->integer_type = op->integer_type;
         return res;
     }
     //
@@ -97,6 +100,7 @@ OpWithSeq *make_OpWithSeq_rec( const Op *op ) {
         for(unsigned i=0;i<sum.size();++i)
             res->add_child( make_OpWithSeq_rec( sum[i] ) );
         op->additional_info = reinterpret_cast<Op *>( res );
+        res->integer_type = op->integer_type;
         return res;
     }
     //
@@ -120,6 +124,7 @@ OpWithSeq *make_OpWithSeq_rec( const Op *op ) {
         if ( want_neg )
             res = new_neg( res );
         op->additional_info = reinterpret_cast<Op *>( res );
+        res->integer_type = op->integer_type;
         return res;
     }
     //
@@ -137,14 +142,25 @@ OpWithSeq *make_OpWithSeq_rec( const Op *op ) {
         if ( a < 0 )
             res = new_inv( res );
         op->additional_info = reinterpret_cast<Op *>( res );
+        res->integer_type = op->integer_type;
         return res;
     }
+
+    //
+    //     if ( op->type == STRING_select_symbolic_NUM ) {
+    //         OpWithSeq *res = new OpWithSeq( op->type );
+    //         res->add_child( make_OpWithSeq_rec( op->func_data()->children[1] ) );
+    //         op->additional_info = reinterpret_cast<Op *>( res );
+    //         res->integer_type = op->integer_type;
+    //         return res;
+    //     }
 
     //
     OpWithSeq *res = new OpWithSeq( op->type );
     for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i)
         res->add_child( make_OpWithSeq_rec( op->func_data()->children[i] ) );
     op->additional_info = reinterpret_cast<Op *>( res );
+    res->integer_type = op->integer_type;
     return res;
 }
 
@@ -165,6 +181,7 @@ OpWithSeq *new_neg( OpWithSeq *ch ) {
     //
     OpWithSeq *res = new OpWithSeq( OpWithSeq::NEG );
     res->add_child( ch );
+    res->integer_type = ch->integer_type;
     return res;
 }
 

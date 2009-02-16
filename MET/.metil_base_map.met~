@@ -38,7 +38,7 @@ class Map[ K, V, default_value = V() ]
     
     def __for__( block )
         for k, v in keys, values
-            block( k, v )
+            block(( k, v ))
         
     
     def write_to_stream( stream )

@@ -5,7 +5,7 @@ import "SymbolicElement.met"
 ~#
 class InstanceParametricElement[ NE, dim, ST ]
     static const nb_nodes := NE::points.size
-    static const sym_elt  := SymbolicElement[ NE, dim, lmtpp = false ]( "elem" )
+    static const sym_elt  := SymbolicElement[ NE, dim ]( "elem" ) # , lmtpp = false
     static const vtk_num  := NE::vtk_num
     
     class NodeIndex[ ST ]

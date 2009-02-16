@@ -20,6 +20,7 @@ struct Op {
     Op *additional_info;
     unsigned cleared_id;
     unsigned cpt_use;
+    int integer_type;
     
     /// if NUMBER
     struct NumberData {

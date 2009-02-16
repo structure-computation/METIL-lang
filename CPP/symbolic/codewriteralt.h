@@ -14,7 +14,7 @@ struct Variable;
 struct Definition;
 
 struct CodeWriterAlt {
-    void init( const char *s, Int32 si, const char *t, Int32 ti );
+    void init( const char *a, Int32 ai, const char *b, Int32 bi, const char *c, Int32 ci, const char *d, Int32 di );
     void init( CodeWriterAlt &c );
     void reassign( Thread *th, const void *tok, CodeWriterAlt &c );
     void add_expr( Thread *th, const void *tok, Variable *str, const Ex &expr, Definition &b );
@@ -42,6 +42,7 @@ struct CodeWriterAlt {
     
     bool has_init_methods;
     char *basic_type, *basic_simd;
+    char *basic_integer_type, *basic_integer_simd;
 private:
     struct OpWithSeq *make_seq();
 

@@ -392,7 +392,7 @@ def sigma_hooke_iso( eps, young, poisson )
   Example of formulation
     + dot( dep_imposed_strength.expr * ( dep.expr - dep_imposed.expr ), dep.test ) * dN
 ~#
-class Elasticity[dim] inherits Formulation
+class Elasticity[dim] inherits Formulation[dim]
     dep := Variable( "nodal", [ dim ], unknown = true, default_value = [ 0 0 ] )
     E   := Variable( "global", default_value = 210e9 )
     nu  := Variable( "global", default_value = 0.33 )

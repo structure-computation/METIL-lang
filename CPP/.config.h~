@@ -71,6 +71,24 @@ namespace METIL_NS {
         return a;
     }
     
+    template<class T> BigInteger pow( BigInteger a, int b ) {
+        if ( b == 0 )
+            return Rationnal( 1, 1 );
+        if ( b <= 0 ) {
+            b = -b;
+            std::swap( a.num, a.den );
+        }
+        if ( b == 1 )
+            return a;
+        Rationnal tmp = a;
+        while ( --b ) {
+            a.num = a.num * tmp.num;
+            a.den = a.den * tmp.den;
+        }
+        a.cannonicalize(); // necessary ?
+        return a;
+    }
+    
     template<class T> T div_int( T a, T b ) { return a / b; }
     template<class T> bool div_int( Bool a, T b ) { return false; }
     template<class T> bool div_int( T a, Bool b ) { return false; }
@@ -105,7 +123,10 @@ namespace METIL_NS {
     inline bool is_integer( const Rationnal  &val ) { return val.den == Rationnal::BI(1); }
 
     template<class T> T abs( const T &val ) { return std::abs(val); }
+    inline signed char abs( signed char val ) { return ( val > 0 ? val : val ); }
+    inline short int abs( short int val ) { return ( val > 0 ? val : val ); }
     inline int abs( int val ) { return ( val > 0 ? val : val ); }
+    inline long long abs( long long val ) { return ( val > 0 ? val : val ); }
     inline Rationnal abs( const Rationnal &val ) { Rationnal res = val; res.num.val = abs(res.num.val); return res; }
     inline Unsigned8  abs( const Unsigned8  &val ) { return val; }
     inline Unsigned16 abs( const Unsigned16 &val ) { return val; }

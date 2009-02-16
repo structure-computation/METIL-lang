@@ -26,6 +26,8 @@ struct Ex {
     
     Ex &operator+=(const Ex &c);
     Ex &operator*=(const Ex &c);
+    Ex &operator-=(const Ex &c);
+    Ex &operator/=(const Ex &c);
     
     ~Ex() { destroy(); }
     
@@ -65,10 +67,13 @@ struct Ex {
     
     Ex expand( Thread *th, const void *tok ) const;
     
+    int poly_deg( const Ex &var ) const;
+    
     void set_beg_value( T b, bool inclusive );
     void set_end_value( T e, bool inclusive );
     void set_access_cost( Float64 c );
     void set_nb_simd_terms( Int32 c );
+    void set_integer_type( Int32 c );
     
     bool beg_value_valid() const;
     bool end_value_valid() const;
@@ -131,8 +136,17 @@ Ex sinh     ( const Ex &a );
 Ex cosh     ( const Ex &a );
 Ex tanh     ( const Ex &a );
 
+Ex floor    ( const Ex &a );
+Ex ceil     ( const Ex &a );
+Ex round    ( const Ex &a );
+
+Ex roots( Thread *th, const void *tok, const Ex &f, const Ex &x );
+Ex root( Thread *th, const void *tok, const Ex &r, int n );
+
 inline Ex sqrt( const Ex &a ) { return pow( a, Rationnal(1,2) ); }
 inline Ex rsqrt( const Ex &a ) { return pow( a, Rationnal(-1,2) ); }
+
+Ex select_symbolic( const Ex &vec, const Ex &index );
 
 #define PRINT( A ) \
     std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl
