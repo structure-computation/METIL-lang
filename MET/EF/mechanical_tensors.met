@@ -12,6 +12,7 @@ def sigma_hooke_iso( eps, young, poisson )
   isotropic hooke
 ~#
 def hooke_iso( E, nu )
+    dim := 3
     e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
     s := sigma_hooke_iso( e, E, nu )
     # -> sigma.diff( epsilon )
