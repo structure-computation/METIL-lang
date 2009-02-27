@@ -308,16 +308,18 @@ class MatAncestor
     def get_is_sym
         return Structure::is_sym
         
-    def get_is_sym_rt
+    def get_is_sym_rt # runtime test
         if Structure::is_sym
             return true
+        if get_nb_rows() != get_nb_cols()
+            return false
         for i in 0 .. get_nb_rows()
             for j in 0 .. i
                 if not assumed( select(i,j) == select(j,i) )
                     return false
         return true
         
-    def get_is_diag_rt
+    def get_is_diag_rt # runtime test
         if Structure::is_diag
             return true
         if Structure::is_sym

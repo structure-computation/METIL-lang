@@ -768,6 +768,42 @@ def map( self, function ) when ( self.tensor_order == 1 or self.is_a_String ) an
     res.va.push_unnamed( self )
     return res
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+
+## Ex : [1,2]+["toto","tata"] -> VecOp with refs on the two vector and operation add equivalent to ["1toto","2tata"] ##
+class VecFilter
+    static const tensor_order := 1
+    static const size_evaluation_costs_a_lot := true
+    property is_a_vector, is_a_VecFilter
+    
+    op := InternalVariable() # we don't use Def because interpreter would be confused about store_in_inst and so on
+    va := InternalVariable() # vector
+    
+    def init( function, vector )
+        op.init_using_var( function )
+        va.init_using_var( vector   )
+        
+    def get_values
+        return self
+        
+    def get_T
+        return va.T
+        
+    def __for__( block )
+        for val in @va
+            if (@op)( val )
+                block( val )
+
+
+## general definition of filter ##
+def filter( self, function ) when ( self.tensor_order == 1 or self.is_a_String ) and not self.is_an_array pertinence 0
+    res := VecFilter()
+    res.op.init_using_var( function )
+    res.va.init_using_var( self )
+    return res
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## vector with all identical values ##
 class VecCst

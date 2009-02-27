@@ -1756,10 +1756,6 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
         roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
         validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
         validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
-        
-        std::cout << Float64( x0.value() )+5 << std::endl;
-        std::cout << Float64( x1.value() )+5 << std::endl;
-        std::cout << Float64( x2.value() )+5 << std::endl;
     }
     
     return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );

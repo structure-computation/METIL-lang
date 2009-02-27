@@ -15,7 +15,10 @@ class SymbolicElementAncestor
     virtual def get_shape_functions                                                   abstract
     virtual def get_name                                                              abstract
     virtual def get_nb_dim                                                            abstract
+    virtual def get_nb_nodes_                                                         abstract
     virtual def children( nvi )                                                       abstract
+    virtual def var_inter_for_node_nb( num_node )                                     abstract
+    virtual def var_inter_                                                            abstract
 
 #~
 ~#
@@ -36,6 +39,18 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         for i in 1 .. nvi + 1
             for c in _children[ i ]
                 delete c
+    
+    #
+    virtual def get_nb_nodes_
+        return nb_nodes
+        
+    #
+    virtual def var_inter_
+        return var_inter
+    
+    #
+    virtual def var_inter_for_node_nb( num_node )
+        return TE::points[ num_node ]
     
     #
     virtual def get_name
@@ -80,6 +95,9 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
+    
+    def var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
+        return pe.var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
     
     def get_jac_mat
         if assume_const_jac

@@ -308,7 +308,7 @@ class MatAncestor
     def get_is_sym
         return Structure::is_sym
         
-    def get_is_sym_rt
+    def get_is_sym_rt # runtime test
         if Structure::is_sym
             return true
         for i in 0 .. get_nb_rows()
@@ -317,7 +317,7 @@ class MatAncestor
                     return false
         return true
         
-    def get_is_diag_rt
+    def get_is_diag_rt # runtime test
         if Structure::is_diag
             return true
         if Structure::is_sym
@@ -433,9 +433,6 @@ class Mat[ T, Structure = Gen, Storage = Dense, ST = SizeType ] when Storage == 
         # interact
         for r, c in structure
             self[ r, c ].init( m[ r, c ] )
-    
-    def init( ascii_file ) pertinence -1
-        
     
     def reassign( m ) when m.is_a_matrix pertinence 3
         structure.resize( m.nb_rows, m.nb_cols, data, T(0) ) # TODO -> meaning of 0

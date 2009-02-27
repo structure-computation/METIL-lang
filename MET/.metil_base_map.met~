@@ -4,8 +4,8 @@
 class Map[ K, V, default_value = V() ]
     property is_a_Map
     
-    keys := Vec[K]()
-    values := Vec[V]()
+    keys   := SplittedVec[K,32]()
+    values := SplittedVec[V,32]()
     
     def select( key ) when type_of( key ) == K
         for i in 0 .. keys.size
@@ -38,7 +38,7 @@ class Map[ K, V, default_value = V() ]
     
     def __for__( block )
         for k, v in keys, values
-            block(( k, v ))
+            block( [ k, v ] )
         
     
     def write_to_stream( stream )
