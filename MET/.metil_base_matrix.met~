@@ -240,7 +240,9 @@ class MatAncestor
     def select( v1 , v2  ) when v1.tensor_order == 1 and v2.tensor_order == 1 pertinence 3
         return SubMatExtraction[ST]( self, v1, v2 )
     def select( v1  ) when v1.tensor_order == 1
-        return SubMatExtraction[ST]( self, v1, v1 )
+        info v1
+        return select( v1[0], v1[1] )
+        # return SubMatExtraction[ST]( self, v1, v1 )
     def apply( x, y )
         return select( x, y )
     def get_diag
@@ -311,6 +313,8 @@ class MatAncestor
     def get_is_sym_rt # runtime test
         if Structure::is_sym
             return true
+        if get_nb_rows() != get_nb_cols()
+            return false
         for i in 0 .. get_nb_rows()
             for j in 0 .. i
                 if not assumed( select(i,j) == select(j,i) )

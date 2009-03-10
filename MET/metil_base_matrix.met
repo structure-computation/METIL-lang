@@ -240,7 +240,8 @@ class MatAncestor
     def select( v1 , v2  ) when v1.tensor_order == 1 and v2.tensor_order == 1 pertinence 3
         return SubMatExtraction[ST]( self, v1, v2 )
     def select( v1  ) when v1.tensor_order == 1
-        return SubMatExtraction[ST]( self, v1, v1 )
+        return select( v1[0], v1[1] )
+        # return SubMatExtraction[ST]( self, v1, v1 )
     def apply( x, y )
         return select( x, y )
     def get_diag

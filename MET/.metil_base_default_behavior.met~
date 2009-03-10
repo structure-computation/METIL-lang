@@ -38,8 +38,7 @@ def self_div( a, b )      a = a / b
 def self_div_int( a, b )  a = a // b
 def self_mod( a, b )      a = a % b
 
-def self_and( a, b )      a = a and b
-
+def self_and( a, b )      a = and_bitwise( a, b )
 def self_or( a, b )       a = or_bitwise( a, b )
 
 def self_shift_right( a, b )      a = a >> b
@@ -194,7 +193,7 @@ class SingleIndexAndValueIterator
         block( ( [], @s ) )
         
 #~ ~#
-def indices_and_values_of( s ) when s.tensor_order <= 0
+def indices_and_values_of( s, compressed = false ) when s.tensor_order <= 0
     return SingleIndexAndValueIterator( s )
 
 #~ ~#
@@ -207,11 +206,25 @@ class VectorIndexAndValueIterator
             block( ( [i], s->select(i) ) )
 
 #~ ~#
-def indices_and_values_of( s ) when ( not s.has_for_with_index_and_values ) and s.tensor_order >= 0
+def indices_and_values_of( s, compressed = false ) when ( not s.has_for_with_index_and_values ) and s.tensor_order >= 0
     return VectorIndexAndValueIterator( s )
 
-def indices_and_values_of( s ) when s.has_for_with_index_and_values pertinence 1000
+#~ ~#
+def indices_and_values_of( s, compressed = false ) when s.has_for_with_index_and_values and compressed = false pertinence 1000
     return s
+
+#~ ~#
+class CompressedIndexAndValueIterator
+    s := InternalVariable()
+    def init( v )
+        s.init_using_var( v )
+    def __for__( block )
+        for i, j in s->structure
+            block( ( [i,j], s->select(i,j) ) )
+
+#~ ~#
+def indices_and_values_of( s, compressed ) when s.has_for_with_index_and_values and compressed = true pertinence 1000
+    return CompressedIndexAndValueIterator( s )
 
 
 # --------- primitive / Property ---------
