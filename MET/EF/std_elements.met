@@ -29,6 +29,8 @@ class Bar_3 inherits Bar
     static vtk_num  := 4 # TODO
     static children := [(NodalElement,[0]),(NodalElement,[2])]
     static points   := [[0/2],[1/2],[2/2]]
+    static def get_lower_degree_element
+        return Bar
 
 # 0 -- 1 -- 2 -- 3
 class Bar_4 inherits Bar
@@ -69,6 +71,17 @@ class Triangle_6 inherits Triangle
     static vtk_num  := -1 # TODO
     static points   := [[0,0],[0.5,0],[1,0],[0,0.5],[0.5,0.5],[0,1]]
     static children := [(Bar_3,[0,1,2]),(Bar_3,[2,4,5]),(Bar_3,[5,3,0])]
+    static def get_lower_degree_element
+        return Triangle
+    static def val_nodes_from_lower_degre( ptr )
+        return [
+            ptr[0]
+            0.5 * ( ptr[0] + ptr[2] )
+            ptr[2]
+            0.5 * ( ptr[0] + ptr[5] )
+            0.5 * ( ptr[2] + ptr[5] )
+            ptr[5]
+        ]
 
 #~
     8

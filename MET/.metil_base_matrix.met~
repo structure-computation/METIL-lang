@@ -240,7 +240,6 @@ class MatAncestor
     def select( v1 , v2  ) when v1.tensor_order == 1 and v2.tensor_order == 1 pertinence 3
         return SubMatExtraction[ST]( self, v1, v2 )
     def select( v1  ) when v1.tensor_order == 1
-        info v1
         return select( v1[0], v1[1] )
         # return SubMatExtraction[ST]( self, v1, v1 )
     def apply( x, y )
@@ -798,16 +797,18 @@ def doubledotdot( m1, m2 ) when m1.tensor_order == 3 and m1.tensor_order == 3
 class LU_matrix[ T, Storage, static_size, ST ]
     property is_a_LU_matrix
     fact := Mat[ T, Gen[static_size,static_size], Storage, ST ]()
+    use_eqz := 0
     
-    def init( mat ) when mat.is_a_matrix
+    def init( mat, assume_lu_factorizable = false ) when mat.is_a_matrix
         fact.init( mat.nb_rows, mat.nb_cols )
+        use_eqz = not assume_lu_factorizable
         for row in ST(0) .. mat.nb_rows
             # L
             for col in ST(0) .. row
                 tmp := mat[ row, col ]
                 tmp -= dot( fact[ 0..col, col ], fact[ row, 0..col ] )
                 d := fact[ col, col ]
-                fact[ row, col ] = tmp / ( d + eqz(d) ) * ( 1 - eqz(d) )
+                fact[ row, col ] = tmp / ( d + eqz(d) * use_eqz ) * ( 1 - eqz(d) * use_eqz )
             # U
             for col in ST(0) .. row+1
                 tmp := mat[ col, row ]
@@ -831,15 +832,15 @@ def mul( a, b ) when a.is_a_LU_matrix and b.tensor_order == 1 pertinence 20
     # U
     for c in ( 0 .. a.nb_cols ).reversed
         d := a.fact[c,c]
-        res[c] /= ( d + eqz(d) )
+        res[c] /= ( d + eqz(d) * a.use_eqz )
         res[0..c] -= a.fact[0..c,c] * res[c]
     return res
 
-def lu( mat ) when mat.tensor_order == 2
+def lu( mat, assume_lu_factorizable = false ) when mat.tensor_order == 2
     TR := mat.T
     if ( partial_instanciation TR ).is_an_integer_number
         TR = Rationnal
-    return LU_matrix[ TR, mat.Storage, mat.static_nb_rows, mat.ST ]( mat )
+    return LU_matrix[ TR, mat.Storage, mat.static_nb_rows, mat.ST ]( mat, assume_lu_factorizable )
     # def test_lu
         # m := Mat[ Rationnal ]( nb_rows = 15, nb_cols = 15, function = ( x => rand()%10000 ) )
         # infon m # infon lu( m ).fact

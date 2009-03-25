@@ -10,6 +10,7 @@ struct Thread;
 
 struct Ex {
     typedef Rationnal T;
+    typedef SplittedVec<Ex,8,8,true> SEX;
     
     // --------------------------
     Ex() { init(); }
@@ -59,6 +60,7 @@ struct Ex {
     
     Ex diff( Thread *th, const void *tok, const Ex &a ) const;
     Ex subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const;
+    Ex subs( Thread *th, const void *tok, const SEX &a, const SEX &b ) const;
     Ex subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const;
     bool depends_on( const Ex &a ) const;
     Rationnal subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const;

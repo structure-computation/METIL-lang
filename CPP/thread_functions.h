@@ -870,7 +870,7 @@ template<int compile_mode> const void *exec_tok_def_return(const N<compile_mode>
                 if ( v->type == global_data.Int32 )
                     th->return_value = *reinterpret_cast<Int32 *>( v->data );
                 else if ( v->type == global_data.Bool )
-                    th->return_value = Bool( v->data, 1 << 7-v->get_bit_offset() );
+                    th->return_value = Bool( v->data, 1 << (7-v->get_bit_offset()) );
                 else {
                     std::cerr << "TODO : th->return_value of type " << v->type->name << "." << std::endl;
                     th->return_value = 1;
@@ -1318,7 +1318,7 @@ template<int compile_mode> const void *exec_tok_get_attr(const N<compile_mode> &
     if ( th->main_scope->has_prop( name ) ) {
         th->push_var_in_variables_to_del_at_next_end_block_if_to_be_destroyed( v );
         v->init( global_data.Bool, Variable::CONST );
-        Bool( v->data, 1 << 7-v->get_bit_offset() ) = false;
+        Bool( v->data, 1 << (7-v->get_bit_offset()) ) = false;
         return tok->next();
     }
     

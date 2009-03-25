@@ -21,11 +21,11 @@ class Tensor[ T, s=[], ST=SizeType ]
             # v.init()
         base.init("pouet")
     
-    def init( tensor ) when tensor.tensor_order == tensor_order
-        base.init("pouet")
-        data.init()
-        for ind, val in data
-            val.init( tensor[ ind ] )
+    # def init( tensor ) when tensor.tensor_order == tensor_order
+        # base.init("pouet")
+        # data.init()
+        # for ind, val in data
+            # val.init( tensor[ ind ] )
     
     def init( tensor ) when tensor.is_a_matrix pertinence 3
         assert( tensor_order == 2, "Matrix -> Tensor imply Tensor.tensor_order==2" )
@@ -44,7 +44,7 @@ class Tensor[ T, s=[], ST=SizeType ]
         for ind, v in data
             data[ind] = function( ind )
     
-    def init( vec ) when vec.tensor_order == s.tensor_order
+    def init( vec ) when vec.tensor_order == tensor_order
         init()
         #
         for ind, val in indices_and_values_of( vec )
@@ -195,11 +195,16 @@ def div( a, b ) when a.is_a_tensor and b.tensor_order<=0
     return res
 
 def doubledot( a, b ) when a.tensor_order > 0 and b.tensor_order > 0
+    T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
     # -> scalar
     if a.tensor_order==2 and b.tensor_order==2
-        return dot( a.data.values, b.data.values )
+        assert( a.sizes == b.sizes, "a : b with tensor of different sizes ($(a.sizes) != $(b.sizes))" )
+        res := T( 0 )
+        for i in 0 .. a.sizes[0]
+            for j in 0 .. a.sizes[1]
+                res += a[[i,j]] * b[[i,j]]
+        return res
     # -> tensor
-    T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
     if a.tensor_order > b.tensor_order
         ns := a.tensor_order - b.tensor_order
         s := Vec[a.ST,ns]( a.s[ 0 .. ns ] )

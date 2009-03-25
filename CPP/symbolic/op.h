@@ -3,6 +3,7 @@
 
 #include "splittedvec.h"
 #include "simplevector.h"
+#include "staticordyncontiguousvec.h"
 #include "config.h"
 #include <usual_strings.h>
 
@@ -85,7 +86,8 @@ struct Op {
     // ----------------------------------
     int type;
     int integer_type;
-    SplittedVec<Op *,2,8> parents;
+    StaticOrDynContiguousVec<Op *,4> parents;
+    // SplittedVec<Op *,2,8> parents;
     mutable bool simplified; // already simplified ?
     mutable Op *additional_info;
     mutable int additional_int; // hum

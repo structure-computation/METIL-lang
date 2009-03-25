@@ -466,7 +466,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         //             already_calculated[i].op->clear_additional_info_rec();
         ++Op::current_op;
         
-        double t0 = time_of_day_in_sec();
+        //double t0 = time_of_day_in_sec();
         
         // parents
         SplittedVec<ParentsOpAndNumReg,256,1024,true> parents;
@@ -487,13 +487,13 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
                 disp_res( ss, op_to_write[i].op, ponr, cpt_op, put_a_cr, nb_spaces, basic_type );
             }
         }
-        double t1 = time_of_day_in_sec();
+        //double t1 = time_of_day_in_sec();
 //         std::cout << "1->" << t1-t0 << std::endl;
         // front (must be done after parents)
         SplittedVec<Op *,256,1024> front;
         for(unsigned i=0;i<op_to_write.size();++i) // leaves and parents
             get_front( op_to_write[i].op, front );
-        double t2 = time_of_day_in_sec();
+        // double t2 = time_of_day_in_sec();
 //         std::cout << "2->" << t2-t1 << std::endl;
 
         // write_code
@@ -501,7 +501,7 @@ std::string CodeWriter::to_string( Thread *th, const void *tok, Int32 nb_spaces 
         write_code( ss, front, nb_spaces, put_a_cr );
         if ( put_a_cr == false ) ss << "\n";
         //         }
-        double t3 = time_of_day_in_sec();
+        // double t3 = time_of_day_in_sec();
 //         std::cout << "3->" << t3-t2 << std::endl;
     
         // free

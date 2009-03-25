@@ -1076,7 +1076,7 @@ template<int compile_mode,int want_while> const void *exec_tok_if_or_while(const
         }
         
         // push new scope and execute
-        th->display_stack(tok);
+        // th->display_stack(tok);
         if ( cond or tok->offset_if_fail ) {
             OldScope *os = (OldScope *)th->info_stack.get_room_for( sizeof(OldScope) );
             os->last_named_variable = th->last_named_variable_in_current_scope;
