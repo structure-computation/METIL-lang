@@ -35,6 +35,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     _want_alternate_pos := false
     
     assume_const_jac := 0
+    num_child        := -1 # if self is a child elem
+    sub_nvi          := -1 # if self is a child elem
     
     #
     def destroy
@@ -69,7 +71,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     virtual def get_nb_dim
         return dim
         
-    #
+    # renvoie une liste de pointeurs vers éléments enfant de sub_nvi-ième génération.
     virtual def children( sub_nvi )
         if sub_nvi > nvi
             return []
@@ -77,6 +79,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if sub_nvi
                 for num_child in 0 .. pe.nb_children( sub_nvi )
                     ns := new SymbolicElement[ pe.type_child( sub_nvi, num_child ), dim ]( name_elem )
+                    ns->num_child = num_child
+                    ns->sub_nvi   = sub_nvi
                     _children[ sub_nvi ].push_back( ns )
             else
                 _children[ 0 ] = [ this ]
@@ -127,6 +131,13 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     
     def var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
         return pe.var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
+        
+    #~
+    
+    ~#
+    def projection_on_child_elem( expression, child_elem )
+        c := child_cast( child_elem )
+        return expression.subs( var_inter, var_inter_from_child_var_inter( c->sub_nvi, c->num_child, c->var_inter ) )
     
     def get_jac_mat
         if assume_const_jac

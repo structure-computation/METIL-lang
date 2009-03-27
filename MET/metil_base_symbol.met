@@ -56,8 +56,14 @@ def launch_and_display_tex_with_str( str, filename="tmp" )
         stderr <<< "Pb in latex formula (command was latex --interaction=nonstopmode $filename.tex)."
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
-    if system( "okular $filename.eps > /dev/null 2> /dev/null" )
-        stderr <<< "Pb with okular (command was okular $filename.eps)."
+    prg_found := false
+    prg_list := ["okular","evince","gv"]
+    for prg in prg_list
+        if system( "$prg $filename.eps" ) == 0 #  > /dev/null 2> /dev/null
+            prg_found = true
+            break
+    if not prg_found
+        stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
 
 ## 
     display symbolic formual of variable v
