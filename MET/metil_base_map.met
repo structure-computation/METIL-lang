@@ -64,6 +64,9 @@ class MapDef[ V ]
         keys.push_unnamed( key )
         return @values.push_back()
         
+    def __for__( block )
+        for k, v in keys, values
+            block( ( k, v ) )
         
         
 ##

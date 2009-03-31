@@ -65,11 +65,16 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if not prg_found
         stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
 
+#~
+~#
+def tex_string( self )
+    return String( self )
+
 ## 
     display symbolic formual of variable v
 ##
 def display_tex( self, filename="tmp", blocking = true )
-    launch_and_display_tex_with_str( "$\displaystyle" + self.tex_string() + "$", filename, blocking )
+    launch_and_display_tex_with_str( "\$\displaystyle{}" + self.tex_string() + "\$", filename, blocking )
     
 def display_few_eqns(V, filename="tmp") when V.is_a_vector
     t:=V.size

@@ -228,7 +228,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 if name.type != String
                     s = name( i )
                 else
-                    s = symbol("$name_elem.node($i)->$name") # $name_elem.ind[$i].index
+                    s = symbol("$name_elem.node($i)->$name","$name^{N$i}") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
             return pe.interpolation( var_inter, vec )
