@@ -146,6 +146,15 @@ class Split
                 while cpt < str->size and ( str->select(cpt) in @separators )  cpt++
                 old_cpt = cpt
             cpt ++
+    def select( i )
+        cpt := 0
+        for j in self
+            if cpt++ == i
+                info j
+                info cpt
+                return j
+        return None
+
 def split( str, separators = [" ","\n","\t","\r"] )  return Split( str, separators )
 
 # ------------------------------------------------------------------------------------------------
@@ -314,7 +323,6 @@ def write_to_stream( self, stream ) when has___for___method( self ) pertinence -
 def read_from_stream( self, stream ) when has___for___method( self ) pertinence -1
     for i in self
         stream >> i
-        info i
 
 # stream << VarArgs
 def write_to_stream( self, stream ) when is_of_type_VarArgs(self) pertinence -0.5

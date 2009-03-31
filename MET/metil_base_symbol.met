@@ -38,7 +38,7 @@ def graphviz_string( self ) when self.tensor_order == 1
 ## 
     make a .tex file and display corresponding .eps
 ##
-def launch_and_display_tex_with_str( str, filename="tmp" )
+def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     f := File("$filename.tex","w")
     f <<<<
         \documentclass{article}
@@ -59,7 +59,7 @@ def launch_and_display_tex_with_str( str, filename="tmp" )
     prg_found := false
     prg_list := ["okular","evince","gv"]
     for prg in prg_list
-        if system( "$prg $filename.eps" ) == 0 #  > /dev/null 2> /dev/null
+        if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
             prg_found = true
             break
     if not prg_found
@@ -68,8 +68,8 @@ def launch_and_display_tex_with_str( str, filename="tmp" )
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp" )
-    launch_and_display_tex_with_str( "$\displaystyle" + self.tex_string() + "$", filename )
+def display_tex( self, filename="tmp", blocking = true )
+    launch_and_display_tex_with_str( "$\displaystyle" + self.tex_string() + "$", filename, blocking )
     
 def display_few_eqns(V, filename="tmp") when V.is_a_vector
     t:=V.size
@@ -137,18 +137,18 @@ def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vec
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp" ) when self.tensor_order == 1
+def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 1
     str := StringStream()
     str <<< "$\displaystyle\\left[\\begin{array}{c}"
     for i in self.values
         str << i.tex_string() <<< "\\\\"
     str <<< "\\end{array}\\right]$"
-    launch_and_display_tex_with_str( str, filename )
+    launch_and_display_tex_with_str( str, filename, blocking )
 
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp" ) when self.tensor_order == 2
+def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 2
     str := StringStream()
     str <<< "$\displaystyle\\left[\\begin{array}{$("c"*self.nb_cols)}"
     for r in 0 .. self.nb_rows
@@ -157,7 +157,7 @@ def display_tex( self, filename="tmp" ) when self.tensor_order == 2
         str <<< "\\\\" * ( r != self.nb_rows-1 )
     str <<< "\\end{array}\\right]$"
     # info str.str
-    launch_and_display_tex_with_str( str, filename )
+    launch_and_display_tex_with_str( str, filename, blocking )
 
 # -----------------------------------------------------------------------------------
 ## differenciation ( toto.diff(tata) ) ##

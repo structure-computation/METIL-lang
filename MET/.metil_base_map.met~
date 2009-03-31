@@ -38,7 +38,7 @@ class Map[ K, V, default_value = V() ]
     
     def __for__( block )
         for k, v in keys, values
-            block( [ k, v ] )
+            block( make_varargs( k, v ) )
         
     
     def write_to_stream( stream )
@@ -53,16 +53,18 @@ def __in__( key, map_ ) when map_.is_a_Map
 
 #~
 ~#
-class MapDef[ V, default_value = V() ]
+class MapDef[ V, default_value = none ]
     keys   := VarArgs()
     values := Vec[ V ]()
     
     def select( key )
         for k, cpt in keys, 0...
-            if @k == key
+            if k == key
                 return values[ cpt ]
         keys.push_unnamed( key )
-        return values.push_back( default_value )
+        if default_value.type == None
+            return @values.push_back()
+        return @values.push_back( default_value )
         
         
         

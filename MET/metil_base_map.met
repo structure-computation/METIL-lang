@@ -53,16 +53,16 @@ def __in__( key, map_ ) when map_.is_a_Map
 
 #~
 ~#
-class MapDef[ V, default_value = V() ]
+class MapDef[ V ]
     keys   := VarArgs()
     values := Vec[ V ]()
     
     def select( key )
         for k, cpt in keys, 0...
-            if @k == key
+            if k == key
                 return values[ cpt ]
         keys.push_unnamed( key )
-        return values.push_back( default_value )
+        return @values.push_back()
         
         
         

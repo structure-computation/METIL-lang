@@ -57,8 +57,8 @@ struct Op {
 
     int poly_deg_rec() const;
     
-    const Op *find_discontinuity( const Op *var ) const;
-    const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
+    void find_discontinuities( const Op *var, SimpleVector<Op *> &discontinuities ) const;
+    void find_discontinuities_rec( const Op *var, SimpleVector<Op *> &discontinuities ) const; // without update of current_op
     
     int nb_nodes() const; //
     int nb_nodes_rec() const; // without update of current_op

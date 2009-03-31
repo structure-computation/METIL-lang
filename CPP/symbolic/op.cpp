@@ -601,33 +601,26 @@ void get_sub_symbols( const Op *op, SplittedVec<const Op *,32> &symbols ) {
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-const Op *Op::find_discontinuity_rec( const Op *var ) const {
+void Op::find_discontinuities_rec( const Op *var, SimpleVector<Op *> &discontinuities ) const {
     if ( op_id == current_op )
-        return NULL;
+        return;
     op_id = current_op;
+    
     //
     if ( type > 0 ) {
-        if ( type == STRING_heaviside_NUM or type == STRING_abs_NUM or type == STRING_pos_part_NUM ) {
-            if ( not func_data()->children[0]->depends_on( var ) )
-                return NULL;
-            const Op *d = func_data()->children[0]->find_discontinuity( var ); // look deeper ( H( H(a) - 1 ) should hiv H(a) )
-            if ( d )
-                return d;
-            return this;
+        if ( ( type == STRING_heaviside_NUM or type == STRING_abs_NUM or type == STRING_pos_part_NUM ) and func_data()->children[0]->depends_on( var ) ) {
+            discontinuities.push_back_unique( func_data()->children[0] );
+            return;
         }
         // else
-        const Op *r = func_data()->children[0]->find_discontinuity_rec( var );
-        if ( r ) return r;
-        if ( func_data()->children[1] ) {
-            r = func_data()->children[1]->find_discontinuity_rec( var );
-            if ( r ) return r;
-        }
+        func_data()->children[0]->find_discontinuities_rec( var, discontinuities );
+        if ( func_data()->children[1] )
+            func_data()->children[1]->find_discontinuities_rec( var, discontinuities );
     }
-    return NULL;
 }
-const Op *Op::find_discontinuity( const Op *var ) const {
+void Op::find_discontinuities( const Op *var, SimpleVector<Op *> &discontinuities ) const {
     ++current_op;
-    return find_discontinuity_rec( var );
+    find_discontinuities_rec( var, discontinuities );
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------

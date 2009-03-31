@@ -1773,244 +1773,246 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
     return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
 }
 
-Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    const Op *disc = expr.op->find_discontinuity( var.op );
-    if ( disc ) {
-        const Op *ch = disc->func_data()->children[0];
-        Ex ex_disc( disc );
-        Ex ex_ch( ch );
-        
-        // ch = f * g
-        //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
-        if ( ch->type == STRING_mul_NUM ) {
-            Ex new_expr;
-            if ( disc->type == STRING_heaviside_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
-            }
-            else if ( disc->type == STRING_abs_NUM ) {
-                Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
-                Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
-            }
-            else if ( disc->type == STRING_pos_part_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
-            }
-            else
-                assert( 0 /* TODO */ );
-            
-            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
-        }
-        
-        // taylor_expansion
-        #ifdef WANT_ORDER_2_FOR_DISC_INTEGRATION
-        SEX taylor_expansion;
-        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
-        SEX poly_coeff; // best L2 fitting of order 7 -> order 3
-        poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
-        poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+// Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+//     const Op *disc = expr.op->find_discontinuities( var.op );
+//     if ( disc ) {
+//         const Op *ch = disc->func_data()->children[0];
+//         Ex ex_disc( disc );
+//         Ex ex_ch( ch );
+//         
+//         // ch = f * g
+//         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
+//         if ( ch->type == STRING_mul_NUM ) {
+//             Ex new_expr;
+//             if ( disc->type == STRING_heaviside_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
+//             }
+//             else if ( disc->type == STRING_abs_NUM ) {
+//                 Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
+//                 Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
+//             }
+//             else if ( disc->type == STRING_pos_part_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
+//             }
+//             else
+//                 assert( 0 /* TODO */ );
+//             
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         
+//         // taylor_expansion
+//         #ifdef WANT_ORDER_2_FOR_DISC_INTEGRATION
+//         SEX taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         SEX poly_coeff; // best L2 fitting of order 7 -> order 3
+//         poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
+//         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
+//         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
+//         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+// 
+//         SEX roots, root_validity;
+//         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
+//         
+//         // ch = f * g (mandatory : in case of several roots, ch is factorized and then we use this optimization)
+//         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
+//         if ( ch->type == STRING_mul_NUM ) {
+//             Ex new_expr;
+//             if ( disc->type == STRING_heaviside_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
+//             }
+//             else if ( disc->type == STRING_abs_NUM ) {
+//                 Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
+//                 Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
+//             }
+//             else if ( disc->type == STRING_pos_part_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
+//             }
+//             else
+//                 assert( 0 /* TODO */ );
+//             
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         
+//         // several roots ?
+//         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
+//             Ex su = leading_coefficient;
+//             for(unsigned i=0;i<roots.size();++i)
+//                 if ( not root_validity[i].op->is_zero() )
+//                     su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
+//             Ex new_expr = expr.subs( th, tok, ex_ch, su );
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         #else // order 1
+//         SEX taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         SEX poly_coeff; // best L2 fitting of order 7 -> order 1
+//         /*
+//             a := symbol("a")
+//             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+//             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+//             p := dot( c, a ^ (0...) )
+//             q := dot( v, a ^ (0...) )
+//             del := symbol("del")
+//             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+//             for i in c
+//                 info i, r[0].diff(i)
+//             for i in c
+//                 info i, r[1].diff(i)
+//         */
+//         Ex p0 = taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * taylor_expansion[6];
+//         Ex p1 = taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * taylor_expansion[5];
+//         Ex roots[] = { -p1 / p0 };
+//         #endif
+//         
+//         // special case ( the last one ) : only one root
+//         Ex cut = mid + roots[0];
+//         Ex subs_p, subs_n;
+//         if ( disc->type == STRING_heaviside_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+//             subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
+//         }
+//         else if ( disc->type == STRING_abs_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
+//             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
+//         }
+//         else if ( disc->type == STRING_pos_part_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+//             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
+//         }
+//         else
+//             assert( 0 ); //
+//         
+//         //
+//         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+//         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+//         Ex n_beg = 1 - p_beg;
+//         Ex n_end = 1 - p_end;
+//         
+//         //
+//         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+//         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+//         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+//         Ex pe = end + ( cut - end ) * p_beg * n_end;
+//         
+//         Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
+//         Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
+//         return int_n + int_p;
+//     }
+//     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
+// }
 
-        SEX roots, root_validity;
-        Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
-        
-        // ch = f * g (mandatory : in case of several roots, ch is factorized and then we use this optimization)
-        //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
-        if ( ch->type == STRING_mul_NUM ) {
-            Ex new_expr;
-            if ( disc->type == STRING_heaviside_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
-            }
-            else if ( disc->type == STRING_abs_NUM ) {
-                Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
-                Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
-            }
-            else if ( disc->type == STRING_pos_part_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
-            }
-            else
-                assert( 0 /* TODO */ );
-            
-            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
-        }
-        
-        // several roots ?
-        if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
-            Ex su = leading_coefficient;
-            for(unsigned i=0;i<roots.size();++i)
-                if ( not root_validity[i].op->is_zero() )
-                    su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
-            Ex new_expr = expr.subs( th, tok, ex_ch, su );
-            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
-        }
-        #else // order 1
-        SEX taylor_expansion;
-        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
-        SEX poly_coeff; // best L2 fitting of order 7 -> order 1
-        /*
-            a := symbol("a")
-            c := Vec[Op,7]( function = x => symbol("c[$x]") )
-            v := Vec[Op,2]( function = x => symbol("v[$x]") )
-            p := dot( c, a ^ (0...) )
-            q := dot( v, a ^ (0...) )
-            del := symbol("del")
-            r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
-            for i in c
-                info i, r[0].diff(i)
-            for i in c
-                info i, r[1].diff(i)
-        */
-        Ex p0 = taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * taylor_expansion[6];
-        Ex p1 = taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * taylor_expansion[5];
-        Ex roots[] = { -p1 / p0 };
-        #endif
-        
-        // special case ( the last one ) : only one root
-        Ex cut = mid + roots[0];
-        Ex subs_p, subs_n;
-        if ( disc->type == STRING_heaviside_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
-        }
-        else if ( disc->type == STRING_abs_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
-        }
-        else if ( disc->type == STRING_pos_part_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
-        }
-        else
-            assert( 0 ); //
-        
-        //
-        Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
-        Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
-        Ex n_beg = 1 - p_beg;
-        Ex n_end = 1 - p_end;
-        
-        //
-        Ex nb = beg + ( cut - beg ) * p_beg * n_end;
-        Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
-        Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
-        Ex pe = end + ( cut - end ) * p_beg * n_end;
-        
-        Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
-        Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
-        return int_n + int_p;
-    }
-    return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
-}
-
-Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const Ex &var, const Ex &cen, const Ex &beg, const Ex &end ) {
-    // look up for a discontinuity
-    const Op *disc = NULL;
-    ++Op::current_op;
-    for(unsigned i=0;i<taylor_expansion.size() and not disc;++i)
-        disc = taylor_expansion[i].op->find_discontinuity_rec( var.op );
+Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const Ex &var, const Ex &cen, const Ex &beg, const Ex &end, int level = 0 ) {
+//     // look up for a discontinuity
+//     SimpleVector<Op *> discontinuities;
+//     ++Op::current_op;
+//     for(unsigned i=0;i<taylor_expansion.size();++i)
+//         taylor_expansion[i].op->find_discontinuity_rec( var.op, discontinuities );
+    
     // found one
-    if ( disc ) {
-        const Op *ch = disc->func_data()->children[0];
-        Ex ex_disc( disc ), ex_ch( ch );
-        
-        //         // taylor_expansion of child (to find the roots)
-        //         SEX taylor_expansion;
-        //         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        //         Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        //         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
-        //         SEX poly_coeff; // best L2 fitting of order 7 -> order 3
-        //         poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
-        //         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
-        //         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
-        //         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
-        // 
-        //         SEX roots, root_validity;
-        //         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
-        //         
-        //         // several roots ?
-        //         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
-        //             Ex su = leading_coefficient;
-        //             for(unsigned i=0;i<roots.size();++i)
-        //                 if ( not root_validity[i].op->is_zero() )
-        //                     su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
-        //             Ex new_expr = expr.subs( th, tok, ex_ch, su );
-        //             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
-        //         }
-        SEX ch_taylor_expansion;
-        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, ch_taylor_expansion );
-        /*
-            a := symbol("a")
-            c := Vec[Op,7]( function = x => symbol("c[$x]") )
-            v := Vec[Op,2]( function = x => symbol("v[$x]") )
-            p := dot( c, a ^ (0...) )
-            q := dot( v, a ^ (0...) )
-            del := symbol("del")
-            r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
-            for i in c
-                info i, r[0].diff(i)
-            for i in c
-                info i, r[1].diff(i)
-        */
-        // best L2 fitting of order 7 -> order 1
-        Ex p0 = ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6];
-        Ex p1 = ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5];
-        
-        // end case : only one root
-        SEX taylor_expansion_p, taylor_expansion_n;
-        if ( disc->type == STRING_heaviside_NUM ) {
-            for(unsigned i=0;i<taylor_expansion.size();++i) {
-                taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
-                taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 1 ) ) );
-            }
-        }
-        else if ( disc->type == STRING_abs_NUM ) {
-            for(unsigned i=0;i<taylor_expansion.size();++i) {
-                taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, - ex_ch ) );
-                taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
-            }
-        }
-        else if ( disc->type == STRING_pos_part_NUM ) {
-            for(unsigned i=0;i<taylor_expansion.size();++i) {
-                taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
-                taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
-            }
-        }
-        else
-            assert( 0 ); //
-        
-        //
-        Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
-        Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
-        Ex n_beg = 1 - p_beg;
-        Ex n_end = 1 - p_end;
-        
-        //
-        Ex cut = mid - p0 / ( p1 + eqz( p1 ) );
-        Ex nb = beg + ( cut - beg ) * p_beg * n_end;
-        Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
-        Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
-        Ex pe = end + ( cut - end ) * p_beg * n_end;
-        
-        Ex int_n = integ_discontinuities_rec( th, tok, taylor_expansion_n, var, cen, nb , ne  );
-        Ex int_p = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, pb , pe  );
-        Ex int_z = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, beg, end );
-        return ( int_n + int_p ) * ( 1 - eqz( p1 ) ) + int_z * eqz( p1 );
-    }
+//     if ( disc ) {
+//         const Op *ch = disc->func_data()->children[0];
+//         Ex ex_disc( disc ), ex_ch( ch );
+//         std::cout << level << " " << ex_disc << std::endl;
+//         
+//         //         // taylor_expansion of child (to find the roots)
+//         //         SEX taylor_expansion;
+//         //         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         //         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         //         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         //         SEX poly_coeff; // best L2 fitting of order 7 -> order 3
+//         //         poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
+//         //         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
+//         //         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
+//         //         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+//         // 
+//         //         SEX roots, root_validity;
+//         //         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
+//         //         
+//         //         // several roots ?
+//         //         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
+//         //             Ex su = leading_coefficient;
+//         //             for(unsigned i=0;i<roots.size();++i)
+//         //                 if ( not root_validity[i].op->is_zero() )
+//         //                     su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
+//         //             Ex new_expr = expr.subs( th, tok, ex_ch, su );
+//         //             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         //         }
+//         SEX ch_taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, ch_taylor_expansion );
+//         /*
+//             a := symbol("a")
+//             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+//             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+//             p := dot( c, a ^ (0...) )
+//             q := dot( v, a ^ (0...) )
+//             del := symbol("del")
+//             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+//             for i in c
+//                 info i, r[0].diff(i)
+//             for i in c
+//                 info i, r[1].diff(i)
+//         */
+//         // best L2 fitting of order 7 -> order 1
+//         Ex p0 = ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6];
+//         Ex p1 = ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5];
+//         
+//         // end case : only one root
+//         SEX taylor_expansion_p, taylor_expansion_n;
+//         if ( disc->type == STRING_heaviside_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 1 ) ) );
+//             }
+//         }
+//         else if ( disc->type == STRING_abs_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, - ex_ch ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
+//             }
+//         }
+//         else if ( disc->type == STRING_pos_part_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
+//             }
+//         }
+//         else
+//             assert( 0 ); //
+//         
+//         //
+//         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+//         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+//         Ex n_beg = 1 - p_beg;
+//         Ex n_end = 1 - p_end;
+//         
+//         //
+//         Ex cut = mid - p0 / ( p1 + eqz( p1 ) );
+//         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+//         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+//         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+//         Ex pe = end + ( cut - end ) * p_beg * n_end;
+//         
+//         Ex int_n = integ_discontinuities_rec( th, tok, taylor_expansion_n, var, cen, nb , ne , level + 1 );
+//         Ex int_p = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, pb , pe , level + 1 );
+//         Ex int_z = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, beg, end, level + 1 );
+//         return ( int_n + int_p ) * ( 1 - eqz( p1 ) ) + int_z * eqz( p1 );
+//     }
     
     
     // else -> no discontinuities
@@ -2030,7 +2032,7 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     // add interval assumptions
     if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
         Ex old_var = var;
-        var = Ex( "tmp", 3, "tmp", 3 );
+        var = Ex( "tmp_end_beg_known", 3, "tmp_end_beg_known", 3 );
         if ( beg.known_at_compile_time() )
             var.set_beg_value( beg.value(), true );
         if ( end.known_at_compile_time() )
@@ -2043,12 +2045,68 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
     
     // polynomial_expansion
-    Ex mid = ( beg + end ) / 2;
-    SEX taylor_expansion;
-    get_taylor_expansion( th, tok, expr, mid, var, deg_poly, taylor_expansion );
+    Ex exc("tmp",3,"tmp",3);
+    expr = expr.subs( th, tok, var, beg + exc );
+    SEX expressions, taylor_expansion;
+    expressions.push_back( expr );
+    taylor_expansion.get_room_for( deg_poly + 1 );
+    polynomial_expansion( th, tok, expressions, exc, deg_poly, taylor_expansion );
+    
+    // look up for discontinuities
+    SimpleVector<Op *> discontinuities_;
+    expr.op->find_discontinuities( exc.op, discontinuities_ );
+    if ( discontinuities_.size() ) {
+        SEX discontinuities;
+        for(unsigned i=0;i<discontinuities_.size();++i) {
+            Ex d( discontinuities_[i] );
+            for(unsigned j=0;;++j) {
+                if ( j == discontinuities.size() ) {
+                    discontinuities.push_back( d );
+                    break;
+                }
+                if ( same_ex( - d, discontinuities[ j ] ) )
+                    break;
+            }
+        }
+        // cuts -> linearization of f(a) in H( f( a ) )
+        SEX p0, p1;
+        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+        Ex del = Rationnal( 1, 2 ) * ( end - beg );
+        for(unsigned i=0;i<discontinuities.size();++i) {
+            SEX ch_taylor_expansion;
+            get_taylor_expansion( th, tok, discontinuities[ i ], mid, var, 7, ch_taylor_expansion );
+            /*
+                a := symbol("a")
+                c := Vec[Op,7]( function = x => symbol("c[$x]") )
+                v := Vec[Op,2]( function = x => symbol("v[$x]") )
+                p := dot( c, a ^ (0...) )
+                q := dot( v, a ^ (0...) )
+                del := symbol("del")
+                r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+                for i in c
+                    info i, r[0].diff(i)
+                for i in c
+                    info i, r[1].diff(i)
+            */
+            // best L2 fitting of order 7 -> order 1
+            p0.push_back( ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6] );
+            p1.push_back( ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5]                                                        );
+        }
+        
+        //
+        return integration_disc_rec( th, tok,  );
+    }
+
+    //
+    Ex res( 0 );
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
+        res = res + taylor_expansion[i] * (
+            pow( end - beg, Ex( Rationnal( i + 1 ) ) )
+        ) * Rationnal( 1, i + 1 );
+    return res; 
     
     //
-    return integ_discontinuities_rec( th, tok, taylor_expansion, var, mid, beg, end );
+    //     return integ_discontinuities_rec( th, tok, taylor_expansion, var, mid, beg, end );
 }
 
 
