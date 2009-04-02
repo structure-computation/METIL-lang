@@ -65,8 +65,8 @@ class MapDef[ V ]
         return @values.push_back()
         
     def __for__( block )
-        for k, cpt in keys, 0...
-            if k == key
+        for k, v in keys, values
+            block( ( k, v ) )
         
         
 ##
@@ -88,6 +88,10 @@ class Set[ K, eq = equal ]
                 return i
         # creation of a new key
         return keys.push_back( key )
+        
+    def insert( varargs ) #
+        n := call_with_return( K, varargs )
+        return insert( n )
 
     def remove( key )
         for i in 0 .. keys.size

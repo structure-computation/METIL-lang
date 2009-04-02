@@ -82,12 +82,16 @@ class Set[ K, eq = equal ]
         for k in values
             insert( k )
     
-    def insert( key )
+    def insert( key ) pertinence 2
         for i in keys
             if assumed( eq( key, i ) )
                 return i
         # creation of a new key
         return keys.push_back( key )
+        
+    def insert( varargs ) #
+        n := call_with_return( K, varargs )
+        return insert( n )
 
     def remove( key )
         for i in 0 .. keys.size
