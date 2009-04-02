@@ -2032,7 +2032,7 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     // add interval assumptions
     if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
         Ex old_var = var;
-        var = Ex( "tmp_end_beg_known", 3, "tmp_end_beg_known", 3 );
+        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
         if ( beg.known_at_compile_time() )
             var.set_beg_value( beg.value(), true );
         if ( end.known_at_compile_time() )
@@ -2045,8 +2045,10 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
     
     // polynomial_expansion
+    Ex mid = ( beg + end ) / 2;
+    Ex deb = ( end - beg ) / 2;
     Ex exc("tmp",3,"tmp",3);
-    expr = expr.subs( th, tok, var, beg + exc );
+    expr = expr.subs( th, tok, var, mid + exc );
     SEX expressions, taylor_expansion;
     expressions.push_back( expr );
     taylor_expansion.get_room_for( deg_poly + 1 );
@@ -2068,13 +2070,16 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     break;
             }
         }
-        // cuts -> linearization of f(a) in H( f( a ) )
+        // cuts -> linearization of all f(a) in H( f( a ) )
+        const int nb_terms_taylor_ch = 7;
+        SEX ch_taylor_expansion;
+        ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
+        polynomial_expansion( th, tok, discontinuities, exc, nb_terms_taylor_ch - 1, ch_taylor_expansion );
+        //         for(int i=0;i<ch_taylor_expansion.size();++i)
+        //             std::cout << ch_taylor_expansion[i] << std::endl;
+        
         SEX p0, p1;
-        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        for(unsigned i=0;i<discontinuities.size();++i) {
-            SEX ch_taylor_expansion;
-            get_taylor_expansion( th, tok, discontinuities[ i ], mid, var, 7, ch_taylor_expansion );
+        for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
             /*
                 a := symbol("a")
                 c := Vec[Op,7]( function = x => symbol("c[$x]") )
@@ -2089,24 +2094,24 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     info i, r[1].diff(i)
             */
             // best L2 fitting of order 7 -> order 1
-            p0.push_back( ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6] );
-            p1.push_back( ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5]                                                        );
+            p0.push_back( ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(deb,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(deb,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(deb,6) * ch_taylor_expansion[j+6] );
+            p1.push_back( ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(deb,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(deb,4) * ch_taylor_expansion[j+5]                                                          );
         }
+        for(unsigned i=0;i<p0.size();++i)
+            std::cout << mid - p1[i] / p0[i] << std::endl;
         
         //
-        return integration_disc_rec( th, tok,  );
+        return 0;
+        // return integration_disc_rec( th, tok,  );
     }
 
     //
     Ex res( 0 );
-    for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
-        res = res + taylor_expansion[i] * (
-            pow( end - beg, Ex( Rationnal( i + 1 ) ) )
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+        res = res + 2 * taylor_expansion[i] * (
+            pow( deb, Ex( Rationnal( i + 1 ) ) )
         ) * Rationnal( 1, i + 1 );
     return res; 
-    
-    //
-    //     return integ_discontinuities_rec( th, tok, taylor_expansion, var, mid, beg, end );
 }
 
 

@@ -120,6 +120,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         for num_node in 0 .. tmp_e.nb_nodes
             val_nodes.push_back( field.subs( var_inter, tmp_e.points[ num_node ] ) )
         field = tmp_e.interpolation( val_nodes ).subs( tmp_e.var_inter, var_inter )
+        return field
     
     # Ex : triangle_6.set_pos_field_as_it_was_from_lower_degree_element() will set triangle_6.pos = standard pos for a Triangle
     def set_pos_field_as_it_was_from_lower_degree_element
