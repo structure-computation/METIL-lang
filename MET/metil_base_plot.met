@@ -94,6 +94,7 @@ class PyLabPlot
     def reassign_ylabel( t )  f << "ylabel( r'$t' )" <<< fflush
     def reassign_xgrid( t )   f << "ax = subplot(111); ax.xaxis.grid( $(Int32(t)) )" <<< fflush
     def reassign_ygrid( t )   f << "ax = subplot(111); ax.yaxis.grid( $(Int32(t)) )" <<< fflush
+    def reassign_grid ( t )   reassign_xgrid( t ); reassign_ygrid( t )
     def reassign_title( t )   f << "title( '$t' )" <<< fflush
     def reassign_xmin_xmax( t )  f << "ax = subplot(111); ax.xaxis.set_data_interval( $(t[0]), $(t[1]) )" <<< fflush
     def reassign_use_tex( t ) f << "rc('text', usetex=$(1*Bool(t)))" <<< fflush

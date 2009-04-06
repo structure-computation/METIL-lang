@@ -263,18 +263,23 @@ class SelectVec
             r = v
     def get_tensor_order                return selection->tensor_order
     def get_size                        return selection->size
-    def select( n )       when n.is_a_number pertinence 2
+    def select( n )       when n.tensor_order <= 0 pertinence 2
         return vec->select( selection->select(n) )
     def select( varargs ) pertinence 1  return select( varargs )
     def get_sub_types                   return vec->sub_types
     def __for__( block )
         for i in @selection
+            info i
+            info vec->select(i)
             block( vec->select(i) )
     def get_T
         return vec->T
+    def get_values
+        return self
 
 ## ##
-def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0  return SelectVec( self, vec )
+def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0 pertinence 3
+    return SelectVec( self, vec )
 ## ##
 def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 3
     return SelectVec( self, range( vec.begin, vec.begin + ( self.size - vec.begin ) // vec.increment, vec.increment ) )
@@ -773,6 +778,7 @@ def map( self, function ) when ( self.tensor_order == 1 or self.is_a_String ) an
 ## Ex : [1,2]+["toto","tata"] -> VecOp with refs on the two vector and operation add equivalent to ["1toto","2tata"] ##
 class VecFilter
     static const tensor_order := 1
+    static const size_evaluation_costs_a_lot := true
     property is_a_vector, is_a_VecFilter
     
     op := InternalVariable() # we don't use Def because interpreter would be confused about store_in_inst and so on

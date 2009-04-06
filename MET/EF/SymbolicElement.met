@@ -37,6 +37,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     assume_const_jac := 0
     num_child        := -1 # if self is a child elem
     sub_nvi          := -1 # if self is a child elem
+    tex_symbol_pos   := ""
     
     #
     def destroy
@@ -89,11 +90,12 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
-        return symbol( "$name_elem.node($num_node)->pos[$d]", "P_{$num_node}^{$(letters[d])}" )
+        return symbol( "$name_elem.node($num_node)->pos[$d]", tex_symbol_pos + "_{$num_node}^{$(letters[d])}" )
         
     #
-    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function )
+    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P" )
         init_using_default_values( self )
+        self.tex_symbol_pos = tex_symbol_pos
         self.name_elem = name_elem
         for num_node in 0 .. nb_nodes
             for d in 0 .. dim
