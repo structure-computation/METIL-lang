@@ -356,14 +356,20 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             res[i] = div( tens.row( i ) )
         return res
     
-    #
+    #~
+        returns var_inter of self for a position p
+        meaning that p is a vector of size e.dim
+    ~#
     virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
         return Vec[ Op ](
             newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true )
         )
 
-    #
+    #~
+        returns a symbolic function = 1 if position p is inside self
+        meaning that p is a vector of size e.dim
+    ~#
     virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
         vi := var_inter_for_pos( p, nb_iterations )
         return var_inter_is_inside( vi, tolerance )

@@ -269,8 +269,6 @@ class SelectVec
     def get_sub_types                   return vec->sub_types
     def __for__( block )
         for i in @selection
-            info i
-            info vec->select(i)
             block( vec->select(i) )
     def get_T
         return vec->T
