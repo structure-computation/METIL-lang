@@ -414,7 +414,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "set_integer_type", "self.set_integer_type(a);" ).M("Op").A("Int32") );
 
     
-    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = Float64( self.value() );" ).M("Op").A("Float64") );
+    for(unsigned i=0;i<primitive_classes.size();++i)
+        if ( arithmetic_class( primitive_classes[i] ) )
+            primitive_functions.push_back( PrimitiveFunction( "conversion_to", "init_arithmetic( a, self.value() );" ).M("Op").A( primitive_classes[i].met_name ) );
     
     
     primitive_functions.push_back( PrimitiveFunction( "roots", "ret.init( roots( th, tok, self, a ) );", /*ret*/"Op" ).M("Op").A("Op") );

@@ -414,7 +414,9 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "set_integer_type", "self.set_integer_type(a);" ).M("Op").A("Int32") );
 
     
-    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = Float64( self.value() );" ).M("Op").A("Float64") );
+    for(unsigned i=0;i<primitive_classes.size();++i)
+        if ( arithmetic_class( primitive_classes[i] ) )
+            primitive_functions.push_back( PrimitiveFunction( "conversion_to", "init_arithmetic( self, a.value() );" ).M("Op").A( primitive_classes[i].met_name ) );
     
     
     primitive_functions.push_back( PrimitiveFunction( "roots", "ret.init( roots( th, tok, self, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
@@ -466,7 +468,7 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     primitive_classes.push_back( PrimitiveClass( "CodeWriterAlt_", "CodeWriterAlt" ).avoid_reassign_using_mem_copy() );
     
     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriterAlt_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6,\"S\",1);" ).M("CodeWriterAlt_") );
+    // primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6,\"S\",1,\"double\",6,\"S\",1);" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "init", 
         "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ),*reinterpret_cast<const char **>(b->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(b->data) + 1 ),*reinterpret_cast<const char **>(c->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(c->data) + 1 ),*reinterpret_cast<const char **>(d->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(d->data) + 1 ));" ).A("any").A("any").A("any").A("any").M("CodeWriterAlt_").
             set_pertinence(1e5).

@@ -39,6 +39,10 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     sub_nvi          := -1 # if self is a child elem
     tex_symbol_pos   := ""
     
+    # interval for integration
+    def get_interval_var_inter
+        return pe.interval_var_inter( var_inter )
+    
     #
     def destroy
         for i in 1 .. nvi + 1
