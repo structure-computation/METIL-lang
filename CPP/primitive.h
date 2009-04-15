@@ -423,6 +423,7 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "root", "ret.init( root( th, tok, self, a ) );", /*ret*/"Op" ).M("Op").A("Int32") );
     
     primitive_functions.push_back( PrimitiveFunction( "poly_deg", "ret = self.poly_deg( a );", /*ret*/"Int32" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "poly_deg", "ret = self.poly_deg( a );", /*ret*/"Int32" ).M("Op").A("VarArgs") );
     
     primitive_functions.push_back( PrimitiveFunction( "select_symbolic", "ret.init( select_symbolic( self, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
 }

@@ -70,6 +70,7 @@ struct Ex {
     Ex expand( Thread *th, const void *tok ) const;
     
     int poly_deg( const Ex &var ) const;
+    int poly_deg( const VarArgs &a ) const;
     
     void set_beg_value( T b, bool inclusive );
     void set_end_value( T e, bool inclusive );

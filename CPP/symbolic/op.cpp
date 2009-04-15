@@ -496,7 +496,7 @@ int Op::poly_deg_rec() const {
     } else if ( type == STRING_add_NUM ) {
         int d0 = func_data()->children[0]->poly_deg_rec();
         int d1 = func_data()->children[1]->poly_deg_rec();
-        additional_int = ( d0 < 0 or d1 < 0 ? -1 : d0 + d1 );
+        additional_int = ( d0 < 0 or d1 < 0 ? -1 : std::max( d0, d1 ) );
     } else if ( type == STRING_pow_NUM and func_data()->children[1]->type == Op::NUMBER and func_data()->children[1]->number_data()->val.is_integer() and func_data()->children[1]->number_data()->val.is_pos() ) {
         int d0 = func_data()->children[0]->poly_deg_rec();
         additional_int = ( d0 < 0 ? -1 : d0 * int( func_data()->children[1]->number_data()->val.num ) );

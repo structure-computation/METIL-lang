@@ -1253,6 +1253,17 @@ int Ex::poly_deg( const Ex &var ) const {
 }
 
 // ------------------------------------------------------------------------------------------------------------
+int Ex::poly_deg( const VarArgs &var ) const {
+    ++Op::current_op;
+    for(unsigned i=0;i<var.nb_uargs();++i) {
+        Op *op = reinterpret_cast<Ex *>( var.uarg(i)->data)->op;
+        op->op_id = Op::current_op;
+        op->additional_int = 1;
+    }
+    return op->poly_deg_rec();
+}
+
+// ------------------------------------------------------------------------------------------------------------
 unsigned Ex::node_count() const {
     return op->nb_nodes();
 }

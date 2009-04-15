@@ -200,6 +200,14 @@ def diff( lst, a ) when lst.tensor_order == 1 and a.type == Op
 
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
+def poly_deg( self, expr ) when expr.tensor_order == 1
+    va := VarArgs()
+    for e in expr
+        va.push_unnamed( e )
+    return self.poly_deg( va )
+
+# -----------------------------------------------------------------------------------
+## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
 def subs( self, from, to ) when from.tensor_order == 1 and to.tensor_order == 1 and not ( is_of_type_VarArgs(from) or is_of_type_VarArgs(to) )
     if __is_a_Property__( self )
         toto := self
