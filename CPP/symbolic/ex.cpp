@@ -2036,6 +2036,42 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
     return res; 
 }
 
+Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const SEX &discontinuities, unsigned offset_in_discontinuities, const SEX &p0, const SEX &p1, const Ex &beg, const Ex &end ) {
+    if ( offset_in_discontinuities == discontinuities.size() ) {
+        // [ -deb; deb ]
+        Ex res( 0 );
+        for(Int32 i=0;i<(Int32)taylor_expansion.size();++i) {
+            res = res + taylor_expansion[i] * (
+                pow( end, Ex( Rationnal( i + 1 ) ) ) - pow( beg, Ex( Rationnal( i + 1 ) ) )
+            ) * Rationnal( 1, i + 1 );
+        }
+        return res; 
+    }
+    
+    //
+    Ex cut = - p0[offset_in_discontinuities] / ( p1[offset_in_discontinuities] + eqz( p1[offset_in_discontinuities] ) );
+    Ex end_sup_beg = heaviside( end - beg );
+    Ex beg_ = min( beg, eng );
+    
+    //
+    Ex mon( -1 );
+    SEX neg_taylor_expansion;
+    ++Op::current_op;
+    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = mon.op;
+    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); neg_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+    Ex res = integration_disc_rec( th, tok, neg_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, beg_, max(beg_,min(end_,cut)) );
+    
+    //
+    Ex one(  1 );
+    SEX sup_taylor_expansion;
+    ++Op::current_op;
+    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = one.op;
+    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); sup_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+    res = res + integration_disc_rec( th, tok, sup_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, max(beg_,min(end_,cut)), end_ );
+    
+    return res;
+}
+
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     if ( same_op( beg.op, end.op ) )
         return Ex( 0 );
@@ -2081,13 +2117,12 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     break;
             }
         }
+            
         // cuts -> linearization of all f(a) in H( f( a ) )
         const int nb_terms_taylor_ch = 7;
         SEX ch_taylor_expansion;
         ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
         polynomial_expansion( th, tok, discontinuities, exc, nb_terms_taylor_ch - 1, ch_taylor_expansion );
-        //         for(int i=0;i<ch_taylor_expansion.size();++i)
-        //             std::cout << ch_taylor_expansion[i] << std::endl;
         
         SEX p0, p1;
         for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
@@ -2108,12 +2143,9 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             p0.push_back( ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(deb,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(deb,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(deb,6) * ch_taylor_expansion[j+6] );
             p1.push_back( ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(deb,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(deb,4) * ch_taylor_expansion[j+5]                                                          );
         }
-        for(unsigned i=0;i<p0.size();++i)
-            std::cout << mid - p1[i] / p0[i] << std::endl;
         
         //
-        return 0;
-        // return integration_disc_rec( th, tok,  );
+        return integration_disc_rec( th, tok, taylor_expansion, discontinuities, 0, p0, p1, -deb, deb );
     }
 
     //

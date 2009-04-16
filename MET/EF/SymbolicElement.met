@@ -19,6 +19,7 @@ class SymbolicElementAncestor
     virtual def children( nvi )                                                       abstract
     virtual def var_inter_for_node_nb( num_node )                                     abstract
     virtual def var_inter_                                                            abstract
+    virtual def node_number_is_a_vertex( i )                                          abstract
 
 #~
 ~#
@@ -417,4 +418,13 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     # return a function != 0 if self and e may have a common area
     def area_intersection( e, mul_by_jac = true )
         return integration( e.point_is_inside( pos ), mul_by_jac )
+    
+    # return true if node number $node_number is a vertex in self
+    # Example : Bar 0 -- 1 -- 2 -- 3 return true false false true for respectively 0 1 2 3
+    virtual def node_number_is_a_vertex( node_number )
+        return TE::node_number_is_a_vertex( node_number )
+        
+    def corr_cpp( num_node )
+        return TE::corr_cpp( num_node )
+        
         

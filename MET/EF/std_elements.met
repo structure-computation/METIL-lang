@@ -5,6 +5,17 @@ class NameElement
         return points.size
     static def get_nvi
         return points[0].size
+    # return true if node number $node_number is a vertex in self
+    # Example : Bar 0 -- 1 -- 2 -- 3 return true false false true for respectively 0 1 2 3
+    static def node_number_is_a_vertex( node_number )
+        p := points[ node_number ]
+        r := interval_var_inter( p )
+        s := 0
+        for coord_p, coord_r in p, r
+            s += Bool( sum( coord_p == coord_r ) )
+        return s == nvi
+    static def corr_cpp( num_node ) pertinence 0
+        return num_node
     
 # 0
 class NodalElement inherits NameElement
@@ -31,6 +42,8 @@ class Bar_3 inherits Bar
     static points   := [[0/2],[1/2],[2/2]]
     static def get_lower_degree_element
         return Bar
+    static def corr_cpp( num_node )
+        return [ 0 2 1 ][ num_node ]
 
 # 0 -- 1 -- 2 -- 3
 class Bar_4 inherits Bar
@@ -67,6 +80,7 @@ class Triangle inherits NameElement
     |   \
     0-1-2
 ~#
+
 class Triangle_6 inherits Triangle
     static vtk_num  := -1 # TODO
     static points   := [[0,0],[0.5,0],[1,0],[0,0.5],[0.5,0.5],[0,1]]
@@ -82,6 +96,8 @@ class Triangle_6 inherits Triangle
             0.5 * ( ptr[2] + ptr[5] )
             ptr[5]
         ]
+    static def corr_cpp( num_node )
+        return [ 0 3 1 5 4 2 ][ num_node ]
 
 #~
     8
@@ -487,7 +503,7 @@ class BarGeneric[ n ] inherits NameElement
     for i in 0 .. n+1
         points.push_back( [ i/n ] )
     #
-    static children := [(NodalElement,[0]),(NodalElement,[1])]
+    static children := [(NodalElement,[0]),(NodalElement,[n-1])]
     static def interval_var_inter( vi )
         return [ [0, 1] ]
         
