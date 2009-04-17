@@ -196,7 +196,20 @@ def diff( lst, a ) when lst.tensor_order == 1 and a.type == Op
     diff( src, a, res )
     return Vec[Op]( res )
 
+#~ diff scalar by vector -> returns a vector ~#
+def diff( self, vec ) when self.tensor_order <= 0 and vec.tensor_order == 1
+    res := Vec[Op,vec.size]()
+    for r, v in res, vec
+        r = self.diff( v )
+    return res
 
+#~ diff vector by vector -> returns a matrix ~#
+def diff( self, vec ) when self.tensor_order == 1 and vec.tensor_order == 1
+    res := Mat[Op,Gen[self.size,vec.size]]()
+    for i in 0 .. self.size
+        for j in 0 .. vec.size
+            res[i,j] = self[i].diff( vec[j] )
+    return res
 
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
