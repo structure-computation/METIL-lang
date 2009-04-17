@@ -211,6 +211,20 @@ def diff( self, vec ) when self.tensor_order == 1 and vec.tensor_order == 1
             res[i,j] = self[i].diff( vec[j] )
     return res
 
+#
+def interval( self, variables, begins, ends )
+    variables_ := VarArgs()
+    begins_    := VarArgs()
+    ends_      := VarArgs()
+    for v in variables  variables_.push_unnamed( Op( v ) )
+    for v in begins     begins_   .push_unnamed( Op( v ) )
+    for v in ends       ends_     .push_unnamed( Op( v ) )
+    b := Op()
+    e := Op()
+    self.interval( variables_, begins_, ends_, b, e )
+    return [ b, e ]
+
+
 # -----------------------------------------------------------------------------------
 ## substitution ( a + b ).subs( b, toto**2 ) -> a + toto**2. Version with lists which are not VarArgs of Op ##
 def poly_deg( self, expr ) when expr.tensor_order == 1

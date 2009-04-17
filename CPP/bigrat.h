@@ -77,7 +77,7 @@ struct BigRat {
     \friend raphael.pasquier@lmt.ens-cachan.fr
 
     */
-    template<class TFLOAT,int base2,class T2,int offset2,bool owning2> void approx(const TFLOAT &val, BigInt<base2,T2,offset2,owning2> &nume, BigInt<base2,T2,offset2,owning2> &deno, int tol=4 ) {
+    template<class TFLOAT,int base2,class T2,int offset2,bool owning2> static void approx(const TFLOAT &val, BigInt<base2,T2,offset2,owning2> &nume, BigInt<base2,T2,offset2,owning2> &deno, int tol=4 ) {
         Float64 ent,v,abs_v, i_abs_v;
         BigInt<base2,T2,offset2,owning2> tmpA,tmpB;
 

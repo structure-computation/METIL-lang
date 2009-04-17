@@ -71,24 +71,6 @@ namespace METIL_NS {
         return a;
     }
     
-    template<class T> BigInteger pow( BigInteger a, int b ) {
-        if ( b == 0 )
-            return Rationnal( 1, 1 );
-        if ( b <= 0 ) {
-            b = -b;
-            std::swap( a.num, a.den );
-        }
-        if ( b == 1 )
-            return a;
-        Rationnal tmp = a;
-        while ( --b ) {
-            a.num = a.num * tmp.num;
-            a.den = a.den * tmp.den;
-        }
-        a.cannonicalize(); // necessary ?
-        return a;
-    }
-    
     template<class T> T div_int( T a, T b ) { return a / b; }
     template<class T> bool div_int( Bool a, T b ) { return false; }
     template<class T> bool div_int( T a, Bool b ) { return false; }

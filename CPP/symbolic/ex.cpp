@@ -1145,6 +1145,132 @@ void diff( Thread *th, const void *tok, const VarArgs &expr, const Ex &d, VarArg
 }
 
 // ------------------------------------------------------------------------------------------------------------
+struct MinMax {
+    Ex beg;
+    Ex end;
+};
+
+void get_interval_rec( Thread *th, const void *tok, Op *op, SplittedVec<MinMax,64> &v ) {
+    if ( op->op_id == Op::current_op )
+        return;
+    op->op_id = Op::current_op;
+    op->additional_info = reinterpret_cast<Op *>( v.new_elem() );
+    MinMax *min_max = reinterpret_cast<MinMax *>( op->additional_info );
+    //
+    //
+    #define up_ch_0  get_interval_rec( th, tok, op->func_data()->children[0], v )
+    #define up_ch_1  get_interval_rec( th, tok, op->func_data()->children[1], v )
+    #define mm_ch_0  reinterpret_cast<MinMax *>( op->func_data()->children[0]->additional_info )
+    #define mm_ch_1  reinterpret_cast<MinMax *>( op->func_data()->children[1]->additional_info )
+    switch ( op->type ) {
+        case Op::NUMBER:            min_max->beg = op; min_max->end = op; break;
+        case Op::SYMBOL:            min_max->beg = op; min_max->end = op; break;
+        
+        // monotonic
+        case STRING_heaviside_NUM:  up_ch_0; min_max->beg = heaviside( mm_ch_0->beg ); min_max->end = heaviside( mm_ch_0->end ); break;
+        case STRING_log_NUM:        up_ch_0; min_max->beg = log      ( mm_ch_0->beg ); min_max->end = log      ( mm_ch_0->end ); break;
+        case STRING_pos_part_NUM:   up_ch_0; min_max->beg = pos_part ( mm_ch_0->beg ); min_max->end = pos_part ( mm_ch_0->end ); break;
+        case STRING_exp_NUM:        up_ch_0; min_max->beg = exp      ( mm_ch_0->beg ); min_max->end = exp      ( mm_ch_0->end ); break;
+        case STRING_floor_NUM:      up_ch_0; min_max->beg = floor    ( mm_ch_0->beg ); min_max->end = floor    ( mm_ch_0->end ); break;
+        case STRING_ceil_NUM:       up_ch_0; min_max->beg = ceil     ( mm_ch_0->beg ); min_max->end = ceil     ( mm_ch_0->end ); break;
+        case STRING_round_NUM:      up_ch_0; min_max->beg = round    ( mm_ch_0->beg ); min_max->end = round    ( mm_ch_0->end ); break;
+        case STRING_atan_NUM:       up_ch_0; min_max->beg = atan     ( mm_ch_0->beg ); min_max->end = atan     ( mm_ch_0->end ); break;
+        //
+        case STRING_eqz_NUM:        
+            up_ch_0;
+            min_max->beg = eqz( mm_ch_0->beg ) * eqz( mm_ch_0->end );
+            min_max->end = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
+            break;
+        case STRING_add_NUM:
+            up_ch_0; up_ch_1;
+            min_max->beg = mm_ch_0->beg + mm_ch_1->beg;
+            min_max->end = mm_ch_0->end + mm_ch_1->end;
+            break;
+        case STRING_mul_NUM:
+            //             Ex same_side = heaviside( mm_ch_0->beg ) * heaviside( mm_ch_1->beg ) + heaviside( - mm_ch_0->end ) * heaviside( - mm_ch_1->end );
+            //             Ex oppo_side = heaviside( mm_ch_0->beg ) * heaviside( - mm_ch_1->end ) + heaviside( - mm_ch_0->end ) * heaviside( mm_ch_1->beg );
+            //             
+            //             Ex cen_0_neg_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( - mm_ch_1->end );
+            //             Ex cen_0_cen_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( - mm_ch_1->beg ) * heaviside( mm_ch_1->end );
+            //             Ex cen_0_pos_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( mm_ch_1->beg );
+            //             
+            //             min_max->beg = 
+            //                 mm_ch_0->beg * mm_ch_1->beg * same_side + 
+            //                 mm_ch_0->end * mm_ch_1->end * oppo_side +
+            //                 mm_ch_0->end * mm_ch_1->beg * cen_0_neg_1
+            //                 min( mm_ch_0->beg * mm_ch_1->beg );
+            //             min_max->end = 
+            //                 mm_ch_0->end * mm_ch_1->end * same_side + 
+            //                 mm_ch_0->beg * mm_ch_1->beg * oppo_side +
+            //                 mm_ch_0->beg * mm_ch_1->beg * cen_0_neg_1
+            //                 ;
+            up_ch_0;
+            up_ch_1;
+            min_max->beg = min( min( min( mm_ch_0->beg * mm_ch_1->beg, mm_ch_0->beg * mm_ch_1->end ), mm_ch_0->end * mm_ch_1->beg ), mm_ch_0->end * mm_ch_1->end );
+            min_max->end = max( max( max( mm_ch_0->beg * mm_ch_1->beg, mm_ch_0->beg * mm_ch_1->end ), mm_ch_0->end * mm_ch_1->beg ), mm_ch_0->end * mm_ch_1->end );
+            break;
+        case STRING_abs_NUM:
+            up_ch_0;
+            min_max->beg = min( abs( mm_ch_0->beg ), abs( mm_ch_0->end ) );
+            min_max->end = max( abs( mm_ch_0->beg ), abs( mm_ch_0->end ) );
+            break;
+        // case STRING_sin_NUM:        break;
+        // case STRING_cos_NUM:        break;
+        // case STRING_tan_NUM:        break;
+        // case STRING_asin_NUM:       break;
+        // case STRING_acos_NUM:       break;
+        case STRING_pow_NUM: {
+            up_ch_0;
+            up_ch_1;
+            if ( mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->number_data()->val == mm_ch_1->end.op->number_data()->val ) {
+                Rationnal expo = mm_ch_1->end.op->number_data()->val;
+                std::cout << expo << std::endl;
+                if ( expo.is_even() ) {
+                    Ex opposite = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
+                    min_max->beg = ( 1 - opposite ) * min( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                    min_max->end = max( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                    break;
+                } else if ( expo.is_odd() ) {
+                    if ( expo.is_pos() ) {
+                        min_max->beg = pow( mm_ch_0->beg, expo );
+                        min_max->end = pow( mm_ch_0->end, expo );
+                    } else {
+                        min_max->beg = pow( mm_ch_0->end, expo );
+                        min_max->end = pow( mm_ch_0->beg, expo );
+                    }
+                    break;
+                }
+            }
+            Ex tmp = exp( log( Ex( op->func_data()->children[0] ) ) * Ex( op->func_data()->children[1] ) );
+            get_interval_rec( th, tok, tmp.op, v );
+            min_max->beg = reinterpret_cast<MinMax *>( tmp.op->additional_info )->beg;
+            min_max->end = reinterpret_cast<MinMax *>( tmp.op->additional_info )->end;
+            break;
+        } default:
+            th->add_error( "for now, no rules to get interval from function of type '"+std::string(Nstring(op->type))+"'.", tok );
+    }
+}
+
+void Ex::interval( Thread *th, const void *tok, const VarArgs &a, const VarArgs &beg, const VarArgs &end, Ex &res_beg, Ex &res_end ) const {
+    ++Op::current_op;
+    SplittedVec<MinMax,64> v;
+    for(unsigned i=0;i<a.nb_uargs();++i) {
+        const Op *a_op = reinterpret_cast<Ex *>(a.variables[i].data)->op;
+        a_op->op_id = Op::current_op;
+        a_op->additional_info = reinterpret_cast<Op *>( v.new_elem() );
+        reinterpret_cast<MinMax *>( a_op->additional_info )->beg = *reinterpret_cast<Ex *>( beg.variables[i].data );
+        reinterpret_cast<MinMax *>( a_op->additional_info )->end = *reinterpret_cast<Ex *>( end.variables[i].data );
+    }
+    //
+    get_interval_rec( th, tok, op, v );
+    //
+    res_beg = reinterpret_cast<MinMax *>( op->additional_info )->beg;
+    res_end = reinterpret_cast<MinMax *>( op->additional_info )->end;
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------------
 struct IdEx { Ex operator()( const Ex &ex ) const { return ex; } };
 
 template<class Func = IdEx>
@@ -2051,7 +2177,8 @@ Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansio
     //
     Ex cut = - p0[offset_in_discontinuities] / ( p1[offset_in_discontinuities] + eqz( p1[offset_in_discontinuities] ) );
     Ex end_sup_beg = heaviside( end - beg );
-    Ex beg_ = min( beg, eng );
+    Ex beg_ = min( beg, end );
+    Ex end_ = max( beg, end );
     
     //
     Ex mon( -1 );

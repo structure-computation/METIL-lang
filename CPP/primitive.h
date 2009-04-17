@@ -373,6 +373,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     primitive_functions.push_back( PrimitiveFunction( "diff", "diff( th, tok, a, b, c );" ).A("VarArgs").A("Op").A("VarArgs") );
     
+    primitive_functions.push_back( PrimitiveFunction( "interval", "self.interval( th, tok, a, b, c, d, e );" ).M("Op").A("VarArgs").A("VarArgs").A("VarArgs").A("Op").A("Op") );
+    
     primitive_functions.push_back( PrimitiveFunction( "polynomial_expansion_", "polynomial_expansion( th, tok, a, b, c, d );" ).A("VarArgs").A("Op").A("Int32").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b, c );" ).A("VarArgs").A("VarArgs").A("VarArgs") );
     
