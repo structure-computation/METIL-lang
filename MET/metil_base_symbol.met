@@ -19,7 +19,7 @@ def display_graphviz( self, lst )
     f <<< "}"
     f.close()
     
-    system( "dot -Tpdf res.dot > res.eps; okular res.pdf" )
+    system( "dot -Tpdf res.dot > res.pdf; okular res.pdf" )
 
 #~ 
     display symbolic graph of variable v

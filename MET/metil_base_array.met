@@ -13,21 +13,27 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     static const s := Vec[ Int32, s_.size ]( s_ )
     static const static_tensor_order   := max( s.size - (s.size==0), d )
     static const static_sizes := ( s, vec_cst( tensor_order, -1 ) )[ Int32( d > s.size ) ]
-    static const known_nb_values  := all( s.map( _0 >= 0 ) )
-    static const static_nb_values := ( -1, product( s ) )[ Int32(known_nb_values) ]
+    static const known_nb_values  := [ false, all( s.map( _0 >= 0 ) ) ][ s.size != 0 ]
+    static const static_nb_values := [ -1, product( s ) ][ Int32(known_nb_values) ]
     static const static_cum_index_reversed := Vec[ST,ST(s.size)]( accumulation( s.reversed, mul, first_val = 1 ) )
     static const static_cum_index := Vec[ST,ST(s.size)]( static_cum_index_reversed.reversed )
     
-    # cum_index_ := StaticValIf[ known_nb_values, static_cum_index, Vec[Int32,static_tensor_order] ]()
     data := Vec[ T, static_nb_values ]()
+    dynamic_cum_index := Vec[ Int32, static_tensor_order ]( default_value = 0 )
+    _sizes := Vec[ Int32, ( 1 - known_nb_values ) * static_tensor_order ]( default_value = 0 )
     
     #
     def init
-        data.init( default_value = T() )
+        init_using_default_values( self )
+        data.init( size = max( 0, static_nb_values ), default_value = T() )
+        
     #
     def init( a ) when a.is_an_array
+        init_using_default_values( self )
+        dynamic_cum_index = a
         for ind, v in self
             v.init( a[ ind ] )
+            
     #
     def init( default_value = a ) pertinence -2
         data.init( default_value = default_value )
@@ -37,6 +43,29 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
         data.init( values = values )
     
     #
+    def _update_cum_sizes( sizes )
+        cum_index = Vec[Int32](accumulation( sizes.reversed, mul, first_val = 1 )).reversed
+        data.size = product( sizes )
+        _sizes = sizes
+    
+    #
+    def init( sizes ) when sizes.tensor_order == 1 pertinence -2
+        init_using_default_values( self )
+        _update_cum_index( sizes )
+    
+    #
+    def init( sizes, default_value ) when sizes.tensor_order == 1 pertinence -2
+        init( sizes = sizes )
+        for d in data
+            d = default_value
+    
+    #
+    def init( sizes, function ) when sizes.tensor_order == 1 pertinence -2
+        init( sizes = sizes )
+        for r in rectilinear( sizes )
+            select( r ) = function( r )
+    
+    #
     def init( function ) pertinence -2
         data.init()
         for ind, val in self
@@ -44,8 +73,15 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     
     #
     def get_sizes
-        assert( known_nb_values, "TODO" )
-        return static_sizes
+        if known_nb_values
+            return static_sizes
+        return _sizes
+        
+    #
+    def reassign_sizes( s )
+        assert( sizes == 0 or sizes[1...] == s[1...], "TODO : resize an Array with initial sizes != 0" )
+        _update_cum_sizes( s )
+        
     def get_nb_rows  return sizes[0]
     def get_nb_cols  return sizes[1]
     #
@@ -54,8 +90,9 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
         return static_tensor_order
     #
     def get_cum_index
-        assert( static_tensor_order >= 0, "TODO" )
-        return static_cum_index
+        if known_nb_values
+            return static_cum_index
+        return dynamic_cum_index
         
     def get_nb_values           return data.size
     def get_values              return data
@@ -65,8 +102,8 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     def index( varargs )                   return sum( varargs * cum_index )
     def index( n ) when n.tensor_order==1  return sum( n * cum_index ) # A[ [1,2,3] ]
         
-    def select( n ) when n.tensor_order pertinence 3
-        return data[ sum( n * cum_index ) ]
+    def select( n ) when n.tensor_order == 1 pertinence 3
+        return data[ dot( n, cum_index ) ]
         
     def select( n ) when n.tensor_order == 0 pertinence 3
         return data[ n ]
