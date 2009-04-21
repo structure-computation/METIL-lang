@@ -105,7 +105,10 @@ namespace METIL_NS {
     inline bool is_integer( const Rationnal  &val ) { return val.den == Rationnal::BI(1); }
 
     template<class T> T abs( const T &val ) { return std::abs(val); }
+    inline signed char abs( signed char val ) { return ( val > 0 ? val : val ); }
+    inline short int abs( short int val ) { return ( val > 0 ? val : val ); }
     inline int abs( int val ) { return ( val > 0 ? val : val ); }
+    inline long long abs( long long val ) { return ( val > 0 ? val : val ); }
     inline Rationnal abs( const Rationnal &val ) { Rationnal res = val; res.num.val = abs(res.num.val); return res; }
     inline Unsigned8  abs( const Unsigned8  &val ) { return val; }
     inline Unsigned16 abs( const Unsigned16 &val ) { return val; }

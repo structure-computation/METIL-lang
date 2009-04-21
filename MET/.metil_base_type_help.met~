@@ -38,6 +38,10 @@ class AutoPtr[ T ]
     def init( v )
         p = v
         
+    def init( b ) when b.is_a_AutoPtr
+        T2 := true_type(@b.p)
+        p.init( new T2( @reinterpret_cast( Ptr[T2], b.p ) ) )
+
     def pointed_value
         return @p
         
@@ -49,7 +53,7 @@ class AutoPtr[ T ]
     
     def conversion_to( b ) when is_of_type_UntypedPtr( b )
         b.init( p.ptr )
-
+    
     def write_to_stream( stream )
         stream << p
 
@@ -278,29 +282,13 @@ class UnionPtr[ lst_defs ]
 class PtrWithCptUse[ T ]
     property is_a_PtrWithCptUse, is_a_pointer
 
-    ptr ~= UntypedPtr
+    ptr := Ptr[T]( NULL )
     
-    def init
-        ptr.init( NULL )
-    
-    def init( p ) when p.is_Null
-        ptr.init( NULL )
-    
-    def init( p ) when p.is_a_Ptr
-        ptr.init( p )
-        if ptr
-            Ptr[T](ptr)->cpt_use++
-    
-    def init( p ) when p.is_a_PtrWithCptUse
-        ptr.init( p.ptr )
-        if ptr
-            Ptr[T](ptr)->cpt_use++
-        
     def pointed_value
-        return @Ptr[T](ptr)
+        return @ptr
     
     def conversion_to( r ) when is_of_type_UntypedPtr(r)
-        r.init( ptr )
+        r.init( ptr.ptr )
         
     def conversion_to( r ) when r.is_a_Ptr
         r.init( ptr )
@@ -308,34 +296,47 @@ class PtrWithCptUse[ T ]
     def conversion_to( r ) when r.type == Bool
         r.init( ptr )
     
+    def init( p ) when p.is_Null
+        ptr.init( NULL )
+    
+    def init( p ) when p.is_a_Ptr
+        ptr.init( p )
+        if ptr
+            ptr->cpt_use++
+    
+    def init( p ) when p.is_a_PtrWithCptUse
+        ptr.init( p.ptr )
+        if ptr
+            ptr->cpt_use++
+        
     def reassign( p ) when p.is_a_Ptr
         old_ptr := ptr
         ptr = p
         if ptr
-            Ptr[T](ptr)->cpt_use++
+            ptr->cpt_use++
         if old_ptr
-            if Ptr[T](old_ptr)->cpt_use > 1
-                Ptr[T](old_ptr)->cpt_use--
+            if old_ptr->cpt_use > 1
+                old_ptr->cpt_use--
             else
-                delete Ptr[T](old_ptr)
+                delete old_ptr
         
     def reassign( p ) when p.is_a_PtrWithCptUse
         old_ptr := ptr
         ptr = p.ptr
         if ptr
-            Ptr[T](ptr)->cpt_use++
+            ptr->cpt_use++
         if old_ptr
-            if Ptr[T](old_ptr)->cpt_use > 1
-                Ptr[T](old_ptr)->cpt_use--
+            if old_ptr->cpt_use > 1
+                old_ptr->cpt_use--
             else
-                delete Ptr[T](old_ptr)
+                delete old_ptr
     
     def destroy
         if ptr
-            if Ptr[T](ptr)->cpt_use > 1
-                Ptr[T](ptr)->cpt_use--
+            if ptr->cpt_use > 1
+                ptr->cpt_use--
             else
-                delete Ptr[T](ptr)
+                delete ptr
     
     def write_to_stream( stream )
         stream << ptr

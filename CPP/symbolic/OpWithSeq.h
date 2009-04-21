@@ -43,6 +43,7 @@ struct OpWithSeq {
     int reg, ordering;
     mutable unsigned id;
     static unsigned current_id;
+    int integer_type;
 };
 
 OpWithSeq *make_OpWithSeq_rec( const struct Op *op );

@@ -10,16 +10,26 @@
 #include "OpWithSeqGenerator.h"
 #include <iostream>
 
-void CodeWriterAlt::init( const char *s, Int32 si, const char *t, Int32 ti ) {
-    if ( si )
-        basic_type = strdupp0( s, si );
+void CodeWriterAlt::init( const char *a, Int32 ai, const char *b, Int32 bi, const char *c, Int32 ci, const char *d, Int32 di ) {
+    if ( ai )
+        basic_type = strdupp0( a, ai );
     else
         basic_type = NULL;
+    
+    if ( bi )
+        basic_integer_type = strdupp0( b, bi );
+    else
+        basic_integer_type = NULL;
         
-    if ( ti )
-        basic_simd = strdupp0( t, ti );
+    if ( ci )
+        basic_simd = strdupp0( c, ci );
     else
         basic_simd = strdup( basic_type );
+        
+    if ( di )
+        basic_integer_simd = strdupp0( d, di );
+    else
+        basic_integer_simd = strdup( basic_integer_type );
     
     //
     op_to_write.init();
@@ -80,8 +90,12 @@ std::string CodeWriterAlt::invariant( Thread *th, const void *tok, Int32 nb_spac
 void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering ) {
     if ( seq->ordering >= 0 )
         return;
-    for(unsigned i=0;i<seq->children.size();++i)
-        make_OpWithSeq_simple_ordering( seq->children[i], ordering );
+    if ( seq->type == STRING_select_symbolic_NUM ) {
+        make_OpWithSeq_simple_ordering( seq->children[1], ordering );
+    } else {
+        for(unsigned i=0;i<seq->children.size();++i)
+            make_OpWithSeq_simple_ordering( seq->children[i], ordering );
+    }
     seq->ordering = ordering.size();
     ordering.push_back( seq );
 }
@@ -134,7 +148,7 @@ std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spac
     update_nb_simd_terms_rec( seq );
     
     //
-    OpWithSeqGenerator g( nb_spaces, basic_type, basic_simd );
+    OpWithSeqGenerator g( nb_spaces, basic_type, basic_integer_type, basic_simd, basic_integer_simd );
     for(unsigned i=0;i<ordering.size();++i)
         g.write_instr( ordering[i] );
     g.os << " /* " << g.nb_ops << " instructions */";

@@ -4,8 +4,8 @@
 class Map[ K, V, default_value = V() ]
     property is_a_Map
     
-    keys := Vec[K]()
-    values := Vec[V]()
+    keys   := SplittedVec[K,32]()
+    values := SplittedVec[V,32]()
     
     def select( key ) when type_of( key ) == K
         for i in 0 .. keys.size
@@ -38,7 +38,7 @@ class Map[ K, V, default_value = V() ]
     
     def __for__( block )
         for k, v in keys, values
-            block( k, v )
+            block( make_varargs( k, v ) )
         
     
     def write_to_stream( stream )
@@ -53,17 +53,20 @@ def __in__( key, map_ ) when map_.is_a_Map
 
 #~
 ~#
-class MapDef[ V, default_value = V() ]
+class MapDef[ V ]
     keys   := VarArgs()
     values := Vec[ V ]()
     
     def select( key )
         for k, cpt in keys, 0...
-            if @k == key
+            if k == key
                 return values[ cpt ]
         keys.push_unnamed( key )
-        return values.push_back( default_value )
+        return @values.push_back()
         
+    def __for__( block )
+        for k, v in keys, values
+            block( ( k, v ) )
         
         
 ##
@@ -85,6 +88,10 @@ class Set[ K, eq = equal ]
                 return i
         # creation of a new key
         return keys.push_back( key )
+        
+    def insert( varargs ) #
+        n := call_with_return( K, varargs )
+        return insert( n )
 
     def remove( key )
         for i in 0 .. keys.size

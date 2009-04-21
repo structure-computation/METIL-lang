@@ -41,6 +41,7 @@ SET( MET_FILES_EF
     EF/DisplayParaview.met
     EF/ElemList.met
     EF/Formulation.met
+    EF/InterfaceExtraction.met
     EF/InstanceParametricElement.met
     EF/Mesh.met
     EF/ParametricElement.met

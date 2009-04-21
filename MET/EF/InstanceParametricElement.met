@@ -3,21 +3,14 @@ import "SymbolicElement.met"
 #~
 
 ~#
-class InstanceParametricElement[ NE, dim, ST ]
-    static const nb_nodes := NE::points.size
-    static const sym_elt  := SymbolicElement[ NE, dim, lmtpp = false ]( "elem" )
-    static const vtk_num  := NE::vtk_num
+class InstanceParametricElement[ NE, dim, ST ] inherits ParametricElement[ NE, dim ]
+    nodes := Vec[ ST, nb_nodes ]()
     
-    class NodeIndex[ ST ]
-        num_lst ~= ST # list number
-        index   ~= ST # number in list
-
-    ind := Vec[ NodeIndex[ ST ], nb_nodes ]()
-    
-    def init( num_lst, varargs ) when num_lst.is_a_number
-        for cpt in 0 .. nb_nodes
-            ind[ cpt ].num_lst = num_lst
-            ind[ cpt ].index = varargs[ cpt ]
+    def init( c ) when c.tensor_order == 1
+        nodes.init( c )
+        
+    def get_vtk_num
+        return NE::vtk_num
     
 #~
 

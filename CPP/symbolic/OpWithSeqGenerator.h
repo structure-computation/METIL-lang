@@ -2,7 +2,7 @@
 #define OPWITHSEQGENERATOR_H
 
 struct OpWithSeqGenerator {
-    OpWithSeqGenerator( unsigned nb_sp, const char *T, const char *S ) : beg_line( nb_sp, ' ' ), T( T ), S( S ) {
+    OpWithSeqGenerator( unsigned nb_sp, const char *T, const char *TI, const char *S, const char *SI ) : beg_line( nb_sp, ' ' ), T( T ), TI( TI ), S( S ), SI( SI ) {
         num_instr = 0;
         nb_ops = 0;
         nb_reg = 0;
@@ -31,6 +31,17 @@ struct OpWithSeqGenerator {
     //         return ss.str();
     //     }
     
+    const char *ty( OpWithSeq *op ) const {
+        if ( op->integer_type ) {
+            if ( op->nb_simd_terms > 1 )
+                return SI;
+            return TI;
+        }
+        if ( op->nb_simd_terms > 1 )
+            return S;
+        return T;
+    }
+    
     void write_instr( OpWithSeq *op ) {
         if ( op->type == OpWithSeq::SEQ )
             return;
@@ -47,14 +58,14 @@ struct OpWithSeqGenerator {
         nb_ops += op->nb_instr();
         
         //
-        if ( op->type == OpWithSeq::WRITE_ADD      ) { os                                     << op->cpp_name_str << " += R" << op->children[0]->reg << "; "; return; }
-        if ( op->type == OpWithSeq::WRITE_INIT     ) { os << (op->nb_simd_terms>1?S:T) << " " << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
-        if ( op->type == OpWithSeq::WRITE_REASSIGN ) { os                                     << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
-        if ( op->type == OpWithSeq::WRITE_RET      ) { os << "return R"                                                      << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_ADD      ) { os                               << op->cpp_name_str << " += R" << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_REASSIGN ) { os                               << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_RET      ) { os << "return R"                                                << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_INIT     ) { os << ty(op->children[0]) << " " << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
         
         // we will need a register
         op->reg = find_reg();
-        os << ( op->nb_simd_terms > 1 ? S : T ) << " R" << op->reg << " = ";
+        os << ty( op ) << " R" << op->reg << " = ";
         
         //
         if ( op->type == OpWithSeq::NUMBER ) {
@@ -76,6 +87,14 @@ struct OpWithSeqGenerator {
         } else if ( op->type == STRING_mul_NUM ) {
             for(unsigned i=0;i<op->children.size();++i)
                 os << ( i ? "*R" : "R" ) << op->children[i]->reg;
+        } else if ( op->type == STRING_select_symbolic_NUM ) {
+            if ( op->children[1]->nb_simd_terms > 1 ) {
+                os << S << "(";
+                for(int i=0;i<op->children[1]->nb_simd_terms;++i)
+                    os << (i?",":"") << op->children[0]->cpp_name_str << "[R" << op->children[1]->reg << "[" << i << "]]";
+                os << ")";
+            } else
+                os << op->children[0]->cpp_name_str << "[R" << op->children[1]->reg << "]";
         } else {
             os << Nstring( op->type );
             os << "(";
@@ -90,7 +109,7 @@ struct OpWithSeqGenerator {
     
     std::ostringstream os;
     std::string beg_line;
-    const char *T, *S;
+    const char *T, *TI, *S, *SI;
     unsigned num_instr, nb_ops;
     int nb_reg;
 };

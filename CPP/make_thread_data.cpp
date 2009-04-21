@@ -57,7 +57,7 @@ void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFuncti
                     if ( pf->args[num_arg].type=="any" )
                         ftc << "    Variable *" << an << " = args[" << num_arg << "];\n";
                     else if ( pf->args[num_arg].type=="Bool" )
-                        ftc << "    Bool " << an << "( args[" << num_arg << "]->data, 1 << 7-args[" << num_arg << "]->get_bit_offset() );\n";
+                        ftc << "    Bool " << an << "( args[" << num_arg << "]->data, 1 << (7-args[" << num_arg << "]->get_bit_offset()) );\n";
                     else
                         ftc << "    " << met_name_to_class[pf->args[num_arg].type]->cpp_name << " &" << an << " = *reinterpret_cast<" << met_name_to_class[pf->args[num_arg].type]->cpp_name << " *>( args[" << num_arg << "]->data );\n";
                 }
@@ -65,7 +65,7 @@ void write_primitive_code( ostream &ftc, const map<string,vector<PrimitiveFuncti
                 if ( class_name.size() ) {
                     std::string cpp_name = met_name_to_class[class_name]->cpp_name;
                     if ( class_name=="Bool" )
-                        ftc << "    Bool self( self_var->data, 1 << 7-self_var->get_bit_offset() );\n";
+                        ftc << "    Bool self( self_var->data, 1 << (7-self_var->get_bit_offset()) );\n";
                     else
                         ftc << "    " << cpp_name << " &self = *reinterpret_cast<" << cpp_name << " *>( self_var->data );\n";
                 }
@@ -372,7 +372,7 @@ void write_register_primitive_functions( ostream &ftc, const map<string,vector<P
 
 void write_direct_conv_to_bool( std::ostream &ftc, const vector<PrimitiveClass> &primitive_classes ) {
     ftc << "int direct_conv_to_bool( Variable *v ) {\n";
-    ftc << "    if ( v->type == global_data.Bool ) return bool( Bool( v->data, 1 << 7-v->get_bit_offset() ) );\n";
+    ftc << "    if ( v->type == global_data.Bool ) return bool( Bool( v->data, 1 << (7-v->get_bit_offset()) ) );\n";
     for(unsigned i=0;i<primitive_classes.size();++i)
         if ( primitive_classes[i].met_name!="Bool" and 
              primitive_classes[i].met_name!="Def" and 

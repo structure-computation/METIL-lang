@@ -146,6 +146,13 @@ class Split
                 while cpt < str->size and ( str->select(cpt) in @separators )  cpt++
                 old_cpt = cpt
             cpt ++
+    def select( i )
+        cpt := 0
+        for j in self
+            if cpt++ == i
+                return j
+        return None
+
 def split( str, separators = [" ","\n","\t","\r"] )  return Split( str, separators )
 
 # ------------------------------------------------------------------------------------------------

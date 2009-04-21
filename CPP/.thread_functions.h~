@@ -869,8 +869,10 @@ template<int compile_mode> const void *exec_tok_def_return(const N<compile_mode>
                 Variable *v = sp - 1;
                 if ( v->type == global_data.Int32 )
                     th->return_value = *reinterpret_cast<Int32 *>( v->data );
+                else if ( v->type == global_data.Bool )
+                    th->return_value = Bool( v->data, 1 << 7-v->get_bit_offset() );
                 else {
-                    std::cerr << "TODO : th->return_value of type != Int32." << std::endl;
+                    std::cerr << "TODO : th->return_value of type " << v->type->name << "." << std::endl;
                     th->return_value = 1;
                 }
                 break;
@@ -1074,7 +1076,7 @@ template<int compile_mode,int want_while> const void *exec_tok_if_or_while(const
         }
         
         // push new scope and execute
-        //th->display_stack(tok);
+        // th->display_stack(tok);
         if ( cond or tok->offset_if_fail ) {
             OldScope *os = (OldScope *)th->info_stack.get_room_for( sizeof(OldScope) );
             os->last_named_variable = th->last_named_variable_in_current_scope;
@@ -1600,7 +1602,7 @@ template<int compile_mode,int want_or> const void *exec_tok_and_or_or(const N<co
         //         make_copy( f, wf ); ++wf->cpt_use;
         return tok->next();
     }
-    bool cond = Bool( c->data, 1 << 7-c->get_bit_offset() );
+    bool cond = Bool( c->data, 1 << (7-c->get_bit_offset()) );
     // rm bool
     if ( *c->cpt_use == 0 ) {
         assert(c->data==c->parent_data and c->type==c->parent_type);

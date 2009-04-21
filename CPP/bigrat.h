@@ -77,7 +77,7 @@ struct BigRat {
     \friend raphael.pasquier@lmt.ens-cachan.fr
 
     */
-    template<class TFLOAT,int base2,class T2,int offset2,bool owning2> void approx(const TFLOAT &val, BigInt<base2,T2,offset2,owning2> &nume, BigInt<base2,T2,offset2,owning2> &deno, int tol=4 ) {
+    template<class TFLOAT,int base2,class T2,int offset2,bool owning2> static void approx(const TFLOAT &val, BigInt<base2,T2,offset2,owning2> &nume, BigInt<base2,T2,offset2,owning2> &deno, int tol=4 ) {
         Float64 ent,v,abs_v, i_abs_v;
         BigInt<base2,T2,offset2,owning2> tmpA,tmpB;
 
@@ -414,6 +414,21 @@ template<int base,class T,int offset,bool owninga,bool owningb> BigRat<base,T,of
     BigRat<base,T,offset> res = a;
     assert(0); // TODO
     return res;
+}
+
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> floor(const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( floor( double( a ) ) );
+}
+
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> ceil (const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( ceil( double( a ) ) );
+}
+
+template<int base,class T,int offset,bool owning> BigRat<base,T,offset> round(const BigRat<base,T,offset,owning> &a) { /// hum
+    using namespace std;
+    return int( round( double( a ) ) );
 }
 
 #endif // BIGRAT_H

@@ -10,6 +10,7 @@ struct Thread;
 
 struct Ex {
     typedef Rationnal T;
+    typedef SplittedVec<Ex,8,8,true> SEX;
     
     // --------------------------
     Ex() { init(); }
@@ -26,6 +27,8 @@ struct Ex {
     
     Ex &operator+=(const Ex &c);
     Ex &operator*=(const Ex &c);
+    Ex &operator-=(const Ex &c);
+    Ex &operator/=(const Ex &c);
     
     ~Ex() { destroy(); }
     
@@ -57,18 +60,25 @@ struct Ex {
     
     Ex diff( Thread *th, const void *tok, const Ex &a ) const;
     Ex subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const;
+    Ex subs( Thread *th, const void *tok, const SEX &a, const SEX &b ) const;
     Ex subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const;
     bool depends_on( const Ex &a ) const;
     Rationnal subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const;
+    
+    void interval( Thread *th, const void *tok, const VarArgs &a, const VarArgs &beg, const VarArgs &end, Ex &res_beg, Ex &res_end ) const;
     
     Ex linearize_discontinuity_children( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const;
     
     Ex expand( Thread *th, const void *tok ) const;
     
+    int poly_deg( const Ex &var ) const;
+    int poly_deg( const VarArgs &a ) const;
+    
     void set_beg_value( T b, bool inclusive );
     void set_end_value( T e, bool inclusive );
     void set_access_cost( Float64 c );
     void set_nb_simd_terms( Int32 c );
+    void set_integer_type( Int32 c );
     
     bool beg_value_valid() const;
     bool end_value_valid() const;
@@ -131,8 +141,17 @@ Ex sinh     ( const Ex &a );
 Ex cosh     ( const Ex &a );
 Ex tanh     ( const Ex &a );
 
+Ex floor    ( const Ex &a );
+Ex ceil     ( const Ex &a );
+Ex round    ( const Ex &a );
+
+Ex roots( Thread *th, const void *tok, const Ex &f, const Ex &x );
+Ex root( Thread *th, const void *tok, const Ex &r, int n );
+
 inline Ex sqrt( const Ex &a ) { return pow( a, Rationnal(1,2) ); }
 inline Ex rsqrt( const Ex &a ) { return pow( a, Rationnal(-1,2) ); }
+
+Ex select_symbolic( const Ex &vec, const Ex &index );
 
 #define PRINT( A ) \
     std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl

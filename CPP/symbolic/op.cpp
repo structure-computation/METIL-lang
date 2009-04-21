@@ -6,12 +6,14 @@ unsigned Op::current_op = 0;
 
 void Op::init( int type_ ) {
     parents.init();
+    chroot.init();
     type = type_;
     cpt_use = 0;
     op_id = 0;
     beg_value_valid = false;
     end_value_valid = false;
     simplified = false;
+    integer_type = false;
 }
 
 void Op::destroy() {
@@ -29,6 +31,10 @@ void Op::destroy() {
             dec_ref( func_data()->children[i] );
         }
     }
+    for(unsigned i=0;i<chroot.size();++i)
+        dec_ref( chroot[ i ] );
+    chroot.destroy();
+    //
     if ( beg_value_valid )
         beg_value.destroy();
     if ( end_value_valid )
@@ -39,6 +45,8 @@ Op *Op::new_number( const Rationnal &val ) {
     Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->init( NUMBER );
     
     init_arithmetic( res->number_data()->val, val );
+    
+    res->integer_type = val.is_integer();
     
     res->set_beg_value( val, true );
     res->set_end_value( val, true );
@@ -95,6 +103,11 @@ Op *Op::new_function( int type, Op *a, Op *b ) {
         a->parents.push_back( res );
     if ( b->type != Op::NUMBER )
         b->parents.push_back( res );
+        
+    if ( type == STRING_add_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
+    if ( type == STRING_mul_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
     
     return res;
 }
@@ -471,6 +484,33 @@ void Op::tex_repr( std::ostream &os ) const {
 }
     
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+int Op::poly_deg_rec() const {
+    if ( op_id == current_op )
+        return additional_int;
+    op_id = current_op;
+    //
+    if ( type == STRING_mul_NUM ) {
+        int d0 = func_data()->children[0]->poly_deg_rec();
+        int d1 = func_data()->children[1]->poly_deg_rec();
+        additional_int = ( d0 < 0 or d1 < 0 ? -1 : d0 + d1 );
+    } else if ( type == STRING_add_NUM ) {
+        int d0 = func_data()->children[0]->poly_deg_rec();
+        int d1 = func_data()->children[1]->poly_deg_rec();
+        additional_int = ( d0 < 0 or d1 < 0 ? -1 : std::max( d0, d1 ) );
+    } else if ( type == STRING_pow_NUM and func_data()->children[1]->type == Op::NUMBER and func_data()->children[1]->number_data()->val.is_integer() and func_data()->children[1]->number_data()->val.is_pos() ) {
+        int d0 = func_data()->children[0]->poly_deg_rec();
+        additional_int = ( d0 < 0 ? -1 : d0 * int( func_data()->children[1]->number_data()->val.num ) );
+    } else if ( type == Op::NUMBER or type == Op::SYMBOL ) {
+        additional_int = 0;
+    } else {
+        additional_int = -1;
+    }
+    
+    return additional_int;
+}
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void ser_repr_rec( std::ostream &os, const Op *op ) {
     if ( op->op_id == op->current_op )
         return;
@@ -561,33 +601,26 @@ void get_sub_symbols( const Op *op, SplittedVec<const Op *,32> &symbols ) {
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-const Op *Op::find_discontinuity_rec( const Op *var ) const {
+void Op::find_discontinuities_rec( const Op *var, SimpleVector<Op *> &discontinuities ) const {
     if ( op_id == current_op )
-        return NULL;
+        return;
     op_id = current_op;
+    
     //
     if ( type > 0 ) {
-        if ( type == STRING_heaviside_NUM or type == STRING_abs_NUM or type == STRING_pos_part_NUM ) {
-            if ( not func_data()->children[0]->depends_on( var ) )
-                return NULL;
-            const Op *d = func_data()->children[0]->find_discontinuity( var ); // look deeper ( H( H(a) - 1 ) should hiv H(a) )
-            if ( d )
-                return d;
-            return this;
+        if ( ( type == STRING_heaviside_NUM or type == STRING_abs_NUM or type == STRING_pos_part_NUM ) and func_data()->children[0]->depends_on( var ) ) {
+            discontinuities.push_back_unique( func_data()->children[0] );
+            return;
         }
         // else
-        const Op *r = func_data()->children[0]->find_discontinuity_rec( var );
-        if ( r ) return r;
-        if ( func_data()->children[1] ) {
-            r = func_data()->children[1]->find_discontinuity_rec( var );
-            if ( r ) return r;
-        }
+        func_data()->children[0]->find_discontinuities_rec( var, discontinuities );
+        if ( func_data()->children[1] )
+            func_data()->children[1]->find_discontinuities_rec( var, discontinuities );
     }
-    return NULL;
 }
-const Op *Op::find_discontinuity( const Op *var ) const {
+void Op::find_discontinuities( const Op *var, SimpleVector<Op *> &discontinuities ) const {
     ++current_op;
-    return find_discontinuity_rec( var );
+    find_discontinuities_rec( var, discontinuities );
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------

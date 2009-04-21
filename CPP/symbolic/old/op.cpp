@@ -6,14 +6,14 @@
 #include "globaldata.h"
 
 Op &Op::new_number( const Rationnal &val ) {
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->cpt_use = 0; res->type = NUMBER; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(NumberData) ); res->cpt_use = 0; res->type = NUMBER; res->parents.init(); res->cleared_id = 0; res->integer_type = false;
     
     init_arithmetic( res->number_data()->val, val );
     return *res;
 }
 
 Op &Op::new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si ) {
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(SymbolData) ); res->cpt_use = 0; res->type = SYMBOL; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(SymbolData) ); res->cpt_use = 0; res->type = SYMBOL; res->parents.init(); res->cleared_id = 0; res->integer_type = false;
     
     SymbolData *ds = res->symbol_data();
     ds->cpp_name_str = strdupp0( cpp_name_str, cpp_name_si );
@@ -40,11 +40,14 @@ Op &Op::new_function( int type, Op &a ) {
         }
     }
     //
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0; res->integer_type = false;
     
     FuncData *ds = res->func_data();
     ds->children[0] = &a.inc_ref();
     ds->children[1] = NULL;
+    
+    if ( type == STRING_sub_NUM )
+        res->integer_type = a->integer_type;
     
     if ( a.type != Op::NUMBER ) a.parents.push_back( res );
     return *res;
@@ -65,7 +68,7 @@ Op &Op::new_function( int type, Op &a, Op &b ) {
         }
     }
     //
-    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0;
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->cpt_use = 0; res->type = type; res->parents.init(); res->cleared_id = 0; res->integer_type = false;
     
     FuncData *ds = res->func_data();
     ds->children[0] = &a.inc_ref();

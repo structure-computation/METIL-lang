@@ -78,7 +78,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
             for n in 1 .. nvi + 1
                 f <<< "#"
                 f <<< "def nb_children( sub_nvi ) when sub_nvi==$n"
-                f <<< "    return $(children[ nvi ].size)"
+                f <<< "    return $(children[ n ].size)"
                 for ch, cpt in children[ n ], 0...
                     ce := ParametricElement[ @ch.first, dim ]()
                     child_var_inter := Vec[ Op, ce.nvi ]( x => symbol( "child_var_inter[$x]" ) )

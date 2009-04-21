@@ -263,7 +263,7 @@ class SelectVec
             r = v
     def get_tensor_order                return selection->tensor_order
     def get_size                        return selection->size
-    def select( n )       when n.is_a_number pertinence 2
+    def select( n )       when n.tensor_order <= 0 pertinence 2
         return vec->select( selection->select(n) )
     def select( varargs ) pertinence 1  return select( varargs )
     def get_sub_types                   return vec->sub_types
@@ -272,9 +272,12 @@ class SelectVec
             block( vec->select(i) )
     def get_T
         return vec->T
+    def get_values
+        return self
 
 ## ##
-def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0  return SelectVec( self, vec )
+def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0 pertinence 3
+    return SelectVec( self, vec )
 ## ##
 def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 3
     return SelectVec( self, range( vec.begin, vec.begin + ( self.size - vec.begin ) // vec.increment, vec.increment ) )
@@ -410,6 +413,8 @@ class Concatenate
         for l in lists
             res += l.size
         return res # sum( lists.map( _0.size ) )
+    def get_values
+        return self
     def map( function ) 
         res := Concatenate()
         res.lists.init()
@@ -766,6 +771,42 @@ def map( self, function ) when ( self.tensor_order == 1 or self.is_a_String ) an
     res.va.push_unnamed( self )
     return res
 
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+
+## Ex : [1,2]+["toto","tata"] -> VecOp with refs on the two vector and operation add equivalent to ["1toto","2tata"] ##
+class VecFilter
+    static const tensor_order := 1
+    static const size_evaluation_costs_a_lot := true
+    property is_a_vector, is_a_VecFilter
+    
+    op := InternalVariable() # we don't use Def because interpreter would be confused about store_in_inst and so on
+    va := InternalVariable() # vector
+    
+    def init( function, vector )
+        op.init_using_var( function )
+        va.init_using_var( vector   )
+        
+    def get_values
+        return self
+        
+    def get_T
+        return va.T
+        
+    def __for__( block )
+        for val in @va
+            if (@op)( val )
+                block( val )
+
+
+## general definition of filter ##
+def filter( self, function ) when ( self.tensor_order == 1 or self.is_a_String ) and not self.is_an_array pertinence 0
+    res := VecFilter()
+    res.op.init_using_var( function )
+    res.va.init_using_var( self )
+    return res
+
+
+# ------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## vector with all identical values ##
 class VecCst
@@ -1317,14 +1358,17 @@ class LittleHeterogeneousArray[ tensor_order, sizes ]
         return values.get_unnamed_argument_nb( Int32(n) )
     ## ##
     def get_nb_rows
-        return sizes[0]
+        return sizes[1]
     ## ##
     def get_nb_cols
-        return sizes[1]
+        return sizes[0]
     ## ##
     def select( n ) when n.tensor_order == 1 and n.size == tensor_order pertinence 1
         s := 0; for i, j in zip( n, cum_index ) s += i * j
         return values.get_unnamed_argument_nb( s )
+    ## vraiment très **** ce cas particulier pour les matrices ##
+    def select( r, c ) when tensor_order == 2
+        return values[ r * sizes[0] + c ]
     ## ##
     def select( varargs ) when varargs.nb_named_arguments()==0 and varargs.nb_unnamed_arguments()==tensor_order pertinence 0.5 # Ex: select(1,2,3) (several arguments)
         return select( varargs )
@@ -1469,9 +1513,9 @@ class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] 
     def destroy
         if reserved
             data.free()
-    reserved ~= Int32
-    size ~= Int32
     next ~= Ptr[ SplittedVecAtom[ T, next_atomic_size, next_atomic_size, variable_atomic_size ] ]
+    size ~= Int32
+    reserved ~= Int32
     data ~= Ptr[ T ]
 
 class SplittedVecAtom[ T, atomic_size, next_atomic_size, variable_atomic_size ] when atomic_size == 0

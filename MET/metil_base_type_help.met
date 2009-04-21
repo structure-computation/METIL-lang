@@ -38,6 +38,13 @@ class AutoPtr[ T ]
     def init( v )
         p = v
         
+    def init( b ) when b.is_a_AutoPtr
+        if b.p
+            T2 := true_type(@b.p)
+            p.init( new T2( @reinterpret_cast( Ptr[T2], b.p ) ) )
+        else
+            p.init( NULL )
+
     def pointed_value
         return @p
         
@@ -49,7 +56,7 @@ class AutoPtr[ T ]
     
     def conversion_to( b ) when is_of_type_UntypedPtr( b )
         b.init( p.ptr )
-
+    
     def write_to_stream( stream )
         stream << p
 

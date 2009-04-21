@@ -14,6 +14,18 @@
 // #define A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
 #define USE_SERIES_FOR_TAYLOR
 
+inline std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {
+    Ex mo = v.real() * v.real() + v.imag() * v.imag();
+    Ex m = log( mo + eqz( mo ) ) / 2, a = atan2( v.imag(), v.real() );
+    return std::exp( Ex( p ) * std::complex<Ex>( m, a ) );
+}
+
+inline std::complex<Ex> sqrtc( const Ex &v ) {
+    Ex s = pow( abs( v ), Rationnal(1,2) );
+    Ex p = heaviside( v );
+    return std::complex<Ex>( s * p, s * ( 1 - p ) );
+}
+
 struct ExPtrCmp {
     bool operator()( const Ex &a, const Ex &b ) const {
         if ( a.op->type==Op::NUMBER and b.op->type==Op::NUMBER )
@@ -128,6 +140,10 @@ Ex &Ex::operator+=(const Ex &c) { *this = *this + c; return *this; }
 
 Ex &Ex::operator*=(const Ex &c) { *this = *this * c; return *this; }
 
+Ex &Ex::operator-=(const Ex &c) { *this = *this - c; return *this; }
+
+Ex &Ex::operator/=(const Ex &c) { *this = *this / c; return *this; }
+
 void Ex::set_beg_value( T b, bool inclusive ) {
     op->set_beg_value( b, inclusive );
 }
@@ -147,6 +163,10 @@ void Ex::set_access_cost( Float64 c ) {
 void Ex::set_nb_simd_terms( Int32 c ) {
     if ( op->type == Op::SYMBOL )
         op->symbol_data()->nb_simd_terms = c;
+}
+
+void Ex::set_integer_type( Int32 c ) {
+    op->integer_type = c;
 }
 
 bool Ex::end_value_valid() const {
@@ -843,11 +863,37 @@ Ex tanh( const Ex &a_ ) {
     if ( is_a_number( a.op ) ) return tanh_96( a.op->number_data()->val );
     return Op::new_function( STRING_tanh_NUM, a.op );
 }
+
+Ex floor( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return floor( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_floor_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
+Ex ceil( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return ceil( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_ceil_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
+Ex round( const Ex &a_ ) {
+    Ex a = a_posteriori_simplification( a_ );
+    if ( is_a_number( a.op ) ) return round( a.op->number_data()->val );
+    Op *res = Op::new_function( STRING_round_NUM, a.op );
+    res->integer_type = 1;
+    return res;
+}
+
 Ex min( const Ex &a, const Ex &b ) {
     return b - pos_part( b - a );
     //     Ex s = heaviside( b - a );
     //     return s * a + ( 1 - s ) * b;
 }
+
 Ex max( const Ex &a, const Ex &b ) {
     return a + pos_part( b - a );
     //     Ex s = heaviside( a - b );
@@ -874,6 +920,121 @@ void sort( Ex &a, Ex &b, Ex &c ) {
     b = max(b,t);    
 }
 
+Ex select_symbolic( const Ex &vec_, const Ex &index_ ) {
+    Ex vec   = a_posteriori_simplification( vec_   );
+    Ex index = a_posteriori_simplification( index_ );
+    return Op::new_function( STRING_select_symbolic_NUM, vec.op, index.op );
+}
+
+
+// ------------------------------------------------------------------------------------------------------------
+Ex roots( Thread *th, const void *tok, const Ex &f, const Ex &x ) {
+    Op *res = Op::new_function( STRING_roots_NUM, f.op, x.op );
+    
+    //
+    int deg = f.poly_deg( x );
+    if ( deg >= 0 ) {
+        SEX coeff, expressions;
+        expressions.push_back( f );
+        coeff.get_room_for( deg + 1 );
+        polynomial_expansion( th, tok, expressions, x, deg, coeff );
+        for(unsigned i=0;i<coeff.size();++i)
+            res->chroot.push_back( coeff[i].op->inc_ref() );
+    }
+    
+    //
+    return res;
+}
+
+Ex root( Thread *th, const void *tok, const Ex &r, int n ) {
+    if ( r.op->type != STRING_roots_NUM ) {
+        th->add_error( "root must take a roots(...) as first argument.", tok );
+        return 0;
+    }
+    
+    //
+    if ( r.op->chroot.size() == 1 ) {
+        return 0;
+    } else if ( r.op->chroot.size() == 2 ) {
+        return - Ex( r.op->chroot[0] ) / Ex( r.op->chroot[1] );
+    } else if ( r.op->chroot.size() == 3 ) {
+        Ex a = r.op->chroot[2], b = r.op->chroot[1], c = r.op->chroot[0];
+        Ex delta = pow( b, 2 ) - 4 * a * c;
+        Ex ea = eqz( a ), eb = eqz( b ), hd = heaviside( delta );
+        Ex sq_delta = pow( delta * hd, Rationnal( 1, 2 ) );
+        if ( n == 0 )
+            return - ( ( 1 - ea ) * ( b + sq_delta ) + ea * c ) / ( 2 * a + ea * ( b + eb ) ); // first root
+        else
+            return - (                b - sq_delta            ) / ( 2 * a + ea              ); // second one
+        //validity[ 0 ] = 1 - ea * eb;
+        //validity[ 1 ] = ( 1 - ea ) * hd;
+    } else if ( r.op->chroot.size() == 4 ) {
+        Ex z = r.op->chroot[3], ez = eqz( z );
+        Ex a = r.op->chroot[2] / ( z + ez ), b = r.op->chroot[1] / ( z + ez ), c = r.op->chroot[0] / ( z + ez );
+        
+        Ex p = 2 * pow(a,3) - 9 * a * b + 27 * c;
+        Ex delta = pow( p, 2 ) + 4 * ( 3 * b - a * a );
+        
+        using namespace std;
+        
+        // delta < 0
+        complex<Ex> u = ( - p + sqrtc( delta ) ) / Ex( 54 );
+        complex<Ex> v = ( - p - sqrtc( delta ) ) / Ex( 54 );
+        complex<Ex> j1(  Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+        complex<Ex> j2( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+        
+        
+        complex<Ex> pu = powc( u, Rationnal(1,3) );
+        complex<Ex> pv = powc( v, Rationnal(1,3) );
+        
+        std::cout << -a / 3 +      pu +      pv << std::endl;
+        std::cout << -a / 3 - j1 * pu + j2 * pv << std::endl;
+        std::cout << -a / 3 + j2 * pu - j1 * pv << std::endl;
+        
+        if ( n == 0 )
+            return real( complex<Ex>( -a/3 ) + powc( u, Rationnal(1,3) ) + powc( v, Rationnal(1,3) ) );
+        if ( n == 1 )
+            return real( complex<Ex>( -a/3 ) - j1 * powc( u, Rationnal(1,3) ) + j2 * powc( v, Rationnal(1,3) ) );
+        if ( n == 2 )
+            return real( complex<Ex>( -a/3 ) + j2 * powc( u, Rationnal(1,3) ) - j1 * powc( v, Rationnal(1,3) ) );
+        
+//         Ex delta = -2*pow(a,3)+9*a*b-27*c+
+//         std::cout << a << " " << b << " " << c << " " << z << std::endl;
+//         Ex p = b - pow(a,2) / 3;
+//         Ex q = pow(a,3) * Rationnal(2,27) - a * b / 3 + c;
+//         Ex delta = 4 * pow(p,3) + 27 * pow(q,2);
+//         std::cout << delta << std::endl;
+//         //delta >= 0
+//         //         Ex u = (-27*q+sqrt(27*delta))/2;
+//         //         Ex v = (-27*q-sqrt(27*delta))/2;
+//         //         res += heaviside( delta ) * ExVector(
+//         //             sgn(u)*pow(abs(u),1.0/3.0)+sgn(v)*pow(abs(v),1.0/3.0)-a)/3.0
+//         //         );
+//         //delta < 0
+//         std::complex<Ex> j( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+//         std::complex<Ex> v( -27 * q / 2, 0 );
+//         v += sqrtc( - Rationnal(27,4) * delta ) * std::complex<Ex>( 0, 1 );
+//         std::complex<Ex> u( powc( v, Rationnal(1,3) ) );
+//         Ex x0 = ( 2 * std::real(    u) - a ) / 3;
+//         Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
+//         Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
+//         
+//         //Ex va = 1 - ez;
+//         if ( n == 0 )
+//             return x0;
+//         //validity[ 0 ] = ( 1 - va ) * validity[ 0 ] + va;
+//         //va *= 1 - heaviside( delta );
+//         if ( n == 1 )
+//             return x1;
+//         if ( n == 2 )
+//             return x2;
+//         //validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
+//         //validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
+    }
+    
+    //
+    return Op::new_function( STRING_root_NUM, Op::new_number( n ), r.op );
+}
 
 // ------------------------------------------------------------------------------------------------------------
 void destroy_rec( Op *a ) {
@@ -934,6 +1095,11 @@ struct DiffRec {
             case STRING_abs_NUM:       MAKE_D0( ( 2 * heaviside( Ex( c0 ) ) - 1 ) * Ex( d0 ) ); break;
             case STRING_pos_part_NUM:  MAKE_D0( heaviside( Ex( c0 ) ) * Ex( d0 ) ); break;
             case STRING_exp_NUM:       MAKE_D0( Ex( d0 ) * Ex( a ) ); break;
+            case STRING_floor_NUM:     a->additional_info = zero.op->inc_ref(); break;
+            case STRING_ceil_NUM:      a->additional_info = zero.op->inc_ref(); break;
+            case STRING_round_NUM:     a->additional_info = zero.op->inc_ref(); break;
+            case STRING_select_symbolic_NUM:
+                a->additional_info = zero.op->inc_ref(); break;
             
             case STRING_sin_NUM:       MAKE_D0( Ex( d0 ) * cos( Ex( c0 ) ) ); break;
             case STRING_cos_NUM:       MAKE_D0( - Ex( d0 ) * sin( Ex( c0 ) ) ); break;
@@ -979,6 +1145,132 @@ void diff( Thread *th, const void *tok, const VarArgs &expr, const Ex &d, VarArg
 }
 
 // ------------------------------------------------------------------------------------------------------------
+struct MinMax {
+    Ex beg;
+    Ex end;
+};
+
+void get_interval_rec( Thread *th, const void *tok, Op *op, SplittedVec<MinMax,64> &v ) {
+    if ( op->op_id == Op::current_op )
+        return;
+    op->op_id = Op::current_op;
+    op->additional_info = reinterpret_cast<Op *>( v.new_elem() );
+    MinMax *min_max = reinterpret_cast<MinMax *>( op->additional_info );
+    //
+    //
+    #define up_ch_0  get_interval_rec( th, tok, op->func_data()->children[0], v )
+    #define up_ch_1  get_interval_rec( th, tok, op->func_data()->children[1], v )
+    #define mm_ch_0  reinterpret_cast<MinMax *>( op->func_data()->children[0]->additional_info )
+    #define mm_ch_1  reinterpret_cast<MinMax *>( op->func_data()->children[1]->additional_info )
+    switch ( op->type ) {
+        case Op::NUMBER:            min_max->beg = op; min_max->end = op; break;
+        case Op::SYMBOL:            min_max->beg = op; min_max->end = op; break;
+        
+        // monotonic
+        case STRING_heaviside_NUM:  up_ch_0; min_max->beg = heaviside( mm_ch_0->beg ); min_max->end = heaviside( mm_ch_0->end ); break;
+        case STRING_log_NUM:        up_ch_0; min_max->beg = log      ( mm_ch_0->beg ); min_max->end = log      ( mm_ch_0->end ); break;
+        case STRING_pos_part_NUM:   up_ch_0; min_max->beg = pos_part ( mm_ch_0->beg ); min_max->end = pos_part ( mm_ch_0->end ); break;
+        case STRING_exp_NUM:        up_ch_0; min_max->beg = exp      ( mm_ch_0->beg ); min_max->end = exp      ( mm_ch_0->end ); break;
+        case STRING_floor_NUM:      up_ch_0; min_max->beg = floor    ( mm_ch_0->beg ); min_max->end = floor    ( mm_ch_0->end ); break;
+        case STRING_ceil_NUM:       up_ch_0; min_max->beg = ceil     ( mm_ch_0->beg ); min_max->end = ceil     ( mm_ch_0->end ); break;
+        case STRING_round_NUM:      up_ch_0; min_max->beg = round    ( mm_ch_0->beg ); min_max->end = round    ( mm_ch_0->end ); break;
+        case STRING_atan_NUM:       up_ch_0; min_max->beg = atan     ( mm_ch_0->beg ); min_max->end = atan     ( mm_ch_0->end ); break;
+        //
+        case STRING_eqz_NUM:        
+            up_ch_0;
+            min_max->beg = eqz( mm_ch_0->beg ) * eqz( mm_ch_0->end );
+            min_max->end = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
+            break;
+        case STRING_add_NUM:
+            up_ch_0; up_ch_1;
+            min_max->beg = mm_ch_0->beg + mm_ch_1->beg;
+            min_max->end = mm_ch_0->end + mm_ch_1->end;
+            break;
+        case STRING_mul_NUM:
+            //             Ex same_side = heaviside( mm_ch_0->beg ) * heaviside( mm_ch_1->beg ) + heaviside( - mm_ch_0->end ) * heaviside( - mm_ch_1->end );
+            //             Ex oppo_side = heaviside( mm_ch_0->beg ) * heaviside( - mm_ch_1->end ) + heaviside( - mm_ch_0->end ) * heaviside( mm_ch_1->beg );
+            //             
+            //             Ex cen_0_neg_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( - mm_ch_1->end );
+            //             Ex cen_0_cen_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( - mm_ch_1->beg ) * heaviside( mm_ch_1->end );
+            //             Ex cen_0_pos_1 = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end ) * heaviside( mm_ch_1->beg );
+            //             
+            //             min_max->beg = 
+            //                 mm_ch_0->beg * mm_ch_1->beg * same_side + 
+            //                 mm_ch_0->end * mm_ch_1->end * oppo_side +
+            //                 mm_ch_0->end * mm_ch_1->beg * cen_0_neg_1
+            //                 min( mm_ch_0->beg * mm_ch_1->beg );
+            //             min_max->end = 
+            //                 mm_ch_0->end * mm_ch_1->end * same_side + 
+            //                 mm_ch_0->beg * mm_ch_1->beg * oppo_side +
+            //                 mm_ch_0->beg * mm_ch_1->beg * cen_0_neg_1
+            //                 ;
+            up_ch_0;
+            up_ch_1;
+            min_max->beg = min( min( min( mm_ch_0->beg * mm_ch_1->beg, mm_ch_0->beg * mm_ch_1->end ), mm_ch_0->end * mm_ch_1->beg ), mm_ch_0->end * mm_ch_1->end );
+            min_max->end = max( max( max( mm_ch_0->beg * mm_ch_1->beg, mm_ch_0->beg * mm_ch_1->end ), mm_ch_0->end * mm_ch_1->beg ), mm_ch_0->end * mm_ch_1->end );
+            break;
+        case STRING_abs_NUM:
+            up_ch_0;
+            min_max->beg = min( abs( mm_ch_0->beg ), abs( mm_ch_0->end ) );
+            min_max->end = max( abs( mm_ch_0->beg ), abs( mm_ch_0->end ) );
+            break;
+        // case STRING_sin_NUM:        break;
+        // case STRING_cos_NUM:        break;
+        // case STRING_tan_NUM:        break;
+        // case STRING_asin_NUM:       break;
+        // case STRING_acos_NUM:       break;
+        case STRING_pow_NUM: {
+            up_ch_0;
+            up_ch_1;
+            if ( mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->number_data()->val == mm_ch_1->end.op->number_data()->val ) {
+                Rationnal expo = mm_ch_1->end.op->number_data()->val;
+                std::cout << expo << std::endl;
+                if ( expo.is_even() ) {
+                    Ex opposite = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
+                    min_max->beg = ( 1 - opposite ) * min( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                    min_max->end = max( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                    break;
+                } else if ( expo.is_odd() ) {
+                    if ( expo.is_pos() ) {
+                        min_max->beg = pow( mm_ch_0->beg, expo );
+                        min_max->end = pow( mm_ch_0->end, expo );
+                    } else {
+                        min_max->beg = pow( mm_ch_0->end, expo );
+                        min_max->end = pow( mm_ch_0->beg, expo );
+                    }
+                    break;
+                }
+            }
+            Ex tmp = exp( log( Ex( op->func_data()->children[0] ) ) * Ex( op->func_data()->children[1] ) );
+            get_interval_rec( th, tok, tmp.op, v );
+            min_max->beg = reinterpret_cast<MinMax *>( tmp.op->additional_info )->beg;
+            min_max->end = reinterpret_cast<MinMax *>( tmp.op->additional_info )->end;
+            break;
+        } default:
+            th->add_error( "for now, no rules to get interval from function of type '"+std::string(Nstring(op->type))+"'.", tok );
+    }
+}
+
+void Ex::interval( Thread *th, const void *tok, const VarArgs &a, const VarArgs &beg, const VarArgs &end, Ex &res_beg, Ex &res_end ) const {
+    ++Op::current_op;
+    SplittedVec<MinMax,64> v;
+    for(unsigned i=0;i<a.nb_uargs();++i) {
+        const Op *a_op = reinterpret_cast<Ex *>(a.variables[i].data)->op;
+        a_op->op_id = Op::current_op;
+        a_op->additional_info = reinterpret_cast<Op *>( v.new_elem() );
+        reinterpret_cast<MinMax *>( a_op->additional_info )->beg = *reinterpret_cast<Ex *>( beg.variables[i].data );
+        reinterpret_cast<MinMax *>( a_op->additional_info )->end = *reinterpret_cast<Ex *>( end.variables[i].data );
+    }
+    //
+    get_interval_rec( th, tok, op, v );
+    //
+    res_beg = reinterpret_cast<MinMax *>( op->additional_info )->beg;
+    res_end = reinterpret_cast<MinMax *>( op->additional_info )->end;
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------------
 struct IdEx { Ex operator()( const Ex &ex ) const { return ex; } };
 
 template<class Func = IdEx>
@@ -1021,7 +1313,11 @@ struct SubsRec {
             case STRING_mul_NUM:       MAKE_S0S1( e0 * e1 ); break;
             case STRING_pow_NUM:       MAKE_S0S1( pow( e0, e1 ) ); break;
             case STRING_atan2_NUM:     MAKE_S0S1( atan2( e0, e1 ) ); break;
+            case STRING_select_symbolic_NUM:     MAKE_S0S1( select_symbolic( e0, e1 ) ); break;
             
+            case STRING_floor_NUM:     MAKE_S0( floor( e0 ) ); break;
+            case STRING_ceil_NUM:      MAKE_S0( ceil ( e0 ) ); break;
+            case STRING_round_NUM:     MAKE_S0( round( e0 ) ); break;
             case STRING_heaviside_NUM: MAKE_S0( heaviside( e0 ) ); break;
             case STRING_pos_part_NUM:  MAKE_S0( pos_part ( e0 ) ); break;
             case STRING_eqz_NUM:       MAKE_S0( eqz      ( e0 ) ); break;
@@ -1056,12 +1352,41 @@ Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) c
     return op->additional_info;
 }
 
+Ex Ex::subs( Thread *th, const void *tok, const SEX &a, const SEX &b ) const {
+    ++Op::current_op;
+    for(unsigned i=0;i<a.size();++i) {
+        a[i].op->op_id = Op::current_op;
+        a[i].op->additional_info = b[i].op->inc_ref();
+    }
+    SubsRec<> sr( th, tok, *this );
+    return op->additional_info;
+}
+
 Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
     ++Op::current_op;
     a.op->op_id = Op::current_op;
     a.op->additional_info = b.op->inc_ref();
     SubsRec<> sr( th, tok, *this );
     return op->additional_info;
+}
+
+// ------------------------------------------------------------------------------------------------------------
+int Ex::poly_deg( const Ex &var ) const {
+    ++Op::current_op;
+    var.op->op_id = Op::current_op;
+    var.op->additional_int = 1;
+    return op->poly_deg_rec();
+}
+
+// ------------------------------------------------------------------------------------------------------------
+int Ex::poly_deg( const VarArgs &var ) const {
+    ++Op::current_op;
+    for(unsigned i=0;i<var.nb_uargs();++i) {
+        Op *op = reinterpret_cast<Ex *>( var.uarg(i)->data)->op;
+        op->op_id = Op::current_op;
+        op->additional_int = 1;
+    }
+    return op->poly_deg_rec();
 }
 
 // ------------------------------------------------------------------------------------------------------------
@@ -1391,17 +1716,19 @@ Ex a_posteriori_simplification( const Ex &a ) {
 
 
 // ------------------------------------------------------------------------------------------------------------
-void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &beg, const Ex &var, Int32 deg_poly_max, SEX &res ) {
+void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
     #ifdef USE_SERIES_FOR_TAYLOR
         Ex tmp("tmp",3,"tmp",3);
-        Ex e = expr.subs( th, tok, var, beg + tmp );
+        Ex e = expr.subs( th, tok, var, center + tmp );
         SEX expressions; expressions.push_back( e );
         res.get_room_for( deg_poly_max + 1 );
         polynomial_expansion( th, tok, expressions, tmp, deg_poly_max, res );
+        for(unsigned i=0;i<res.size();++i)
+            res[i] = res[i].subs( th, tok, tmp, var - center );
     #else
         Rationnal r( 1 );
         for(Int32 i=0;i<=deg_poly_max;++i) {
-            Ex t = r * expr.subs( th, tok, var, beg );
+            Ex t = r * expr.subs( th, tok, var, center );
             res.push_back( t );
             if ( i < deg_poly_max ) {
                 expr = expr.diff( th, tok, var );
@@ -1532,17 +1859,6 @@ Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &exp
     //     return res;
 }
 
-std::complex<Ex> powc( const std::complex<Ex> &v, const Rationnal &p ) {
-    Ex mo = v.real() * v.real() + v.imag() * v.imag();
-    Ex m = log( mo + eqz( mo ) ) / 2, a = atan2( v.imag(), v.real() );
-    return std::exp( Ex( p ) * std::complex<Ex>( m, a ) );
-}
-
-std::complex<Ex> sqrtc( const Ex &v ) {
-    Ex s = pow( abs( v ), Rationnal(1,2) );
-    Ex p = heaviside( v );
-    return std::complex<Ex>( s * p, s * ( 1 - p ) );
-}
 
 Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validity ) {
     for(unsigned i=0;i<std::min(3u,taylor_expansion.size());++i) {
@@ -1589,115 +1905,308 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
         roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
         validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
         validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
-        
-        std::cout << Float64( x0.value() )+5 << std::endl;
-        std::cout << Float64( x1.value() )+5 << std::endl;
-        std::cout << Float64( x2.value() )+5 << std::endl;
     }
     
     return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
 }
 
-Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    const Op *disc = expr.op->find_discontinuity( var.op );
-    if ( disc ) {
-        const Op *ch = disc->func_data()->children[0];
-        Ex ex_disc( disc );
-        Ex ex_ch( ch );
-        
-        // ch = f * g
-        //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
-        if ( ch->type == STRING_mul_NUM ) {
-            Ex new_expr;
-            if ( disc->type == STRING_heaviside_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
-            }
-            else if ( disc->type == STRING_abs_NUM ) {
-                Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
-                Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
-            }
-            else if ( disc->type == STRING_pos_part_NUM ) {
-                Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
-                Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
-                new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
-            }
-            else
-                assert( 0 /* TODO */ );
-            
-            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
-        }
-        
-        // taylor_expansion
-        SEX taylor_expansion;
-        Ex mid = Rationnal( 1, 2 ) * ( beg + end );
-        Ex del = Rationnal( 1, 2 ) * ( end - beg );
-        get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
-        SEX poly_coeff; // best L2 fitting of order 7 -> order 3
-        poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
-        poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
-        poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+// Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+//     const Op *disc = expr.op->find_discontinuities( var.op );
+//     if ( disc ) {
+//         const Op *ch = disc->func_data()->children[0];
+//         Ex ex_disc( disc );
+//         Ex ex_ch( ch );
+//         
+//         // ch = f * g
+//         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
+//         if ( ch->type == STRING_mul_NUM ) {
+//             Ex new_expr;
+//             if ( disc->type == STRING_heaviside_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
+//             }
+//             else if ( disc->type == STRING_abs_NUM ) {
+//                 Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
+//                 Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
+//             }
+//             else if ( disc->type == STRING_pos_part_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
+//             }
+//             else
+//                 assert( 0 /* TODO */ );
+//             
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         
+//         // taylor_expansion
+//         #ifdef WANT_ORDER_2_FOR_DISC_INTEGRATION
+//         SEX taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         SEX poly_coeff; // best L2 fitting of order 7 -> order 3
+//         poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
+//         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
+//         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
+//         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+// 
+//         SEX roots, root_validity;
+//         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
+//         
+//         // ch = f * g (mandatory : in case of several roots, ch is factorized and then we use this optimization)
+//         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
+//         if ( ch->type == STRING_mul_NUM ) {
+//             Ex new_expr;
+//             if ( disc->type == STRING_heaviside_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) );
+//             }
+//             else if ( disc->type == STRING_abs_NUM ) {
+//                 Ex a_0 = abs( Ex( ch->func_data()->children[0] ) );
+//                 Ex a_1 = abs( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, a_0 * a_1 );
+//             }
+//             else if ( disc->type == STRING_pos_part_NUM ) {
+//                 Ex h_0 = heaviside( Ex( ch->func_data()->children[0] ) );
+//                 Ex h_1 = heaviside( Ex( ch->func_data()->children[1] ) );
+//                 new_expr = expr.subs( th, tok, ex_disc, ch * ( h_0 * h_1 + ( 1 - h_0 ) * ( 1 - h_1 ) ) );
+//             }
+//             else
+//                 assert( 0 /* TODO */ );
+//             
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         
+//         // several roots ?
+//         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
+//             Ex su = leading_coefficient;
+//             for(unsigned i=0;i<roots.size();++i)
+//                 if ( not root_validity[i].op->is_zero() )
+//                     su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
+//             Ex new_expr = expr.subs( th, tok, ex_ch, su );
+//             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         }
+//         #else // order 1
+//         SEX taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         SEX poly_coeff; // best L2 fitting of order 7 -> order 1
+//         /*
+//             a := symbol("a")
+//             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+//             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+//             p := dot( c, a ^ (0...) )
+//             q := dot( v, a ^ (0...) )
+//             del := symbol("del")
+//             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+//             for i in c
+//                 info i, r[0].diff(i)
+//             for i in c
+//                 info i, r[1].diff(i)
+//         */
+//         Ex p0 = taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * taylor_expansion[6];
+//         Ex p1 = taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * taylor_expansion[5];
+//         Ex roots[] = { -p1 / p0 };
+//         #endif
+//         
+//         // special case ( the last one ) : only one root
+//         Ex cut = mid + roots[0];
+//         Ex subs_p, subs_n;
+//         if ( disc->type == STRING_heaviside_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+//             subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
+//         }
+//         else if ( disc->type == STRING_abs_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
+//             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
+//         }
+//         else if ( disc->type == STRING_pos_part_NUM ) {
+//             subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
+//             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
+//         }
+//         else
+//             assert( 0 ); //
+//         
+//         //
+//         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+//         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+//         Ex n_beg = 1 - p_beg;
+//         Ex n_end = 1 - p_end;
+//         
+//         //
+//         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+//         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+//         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+//         Ex pe = end + ( cut - end ) * p_beg * n_end;
+//         
+//         Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
+//         Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
+//         return int_n + int_p;
+//     }
+//     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
+// }
 
-        SEX roots, root_validity;
-        Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
-        
-        // several roots ?
-        if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
-            Ex su = leading_coefficient;
-            for(unsigned i=0;i<roots.size();++i)
-                if ( not root_validity[i].op->is_zero() )
-                    su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
-            Ex new_expr = expr.subs( th, tok, ex_ch, su );
-            return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const Ex &var, const Ex &cen, const Ex &beg, const Ex &end, int level = 0 ) {
+//     // look up for a discontinuity
+//     SimpleVector<Op *> discontinuities;
+//     ++Op::current_op;
+//     for(unsigned i=0;i<taylor_expansion.size();++i)
+//         taylor_expansion[i].op->find_discontinuity_rec( var.op, discontinuities );
+    
+    // found one
+//     if ( disc ) {
+//         const Op *ch = disc->func_data()->children[0];
+//         Ex ex_disc( disc ), ex_ch( ch );
+//         std::cout << level << " " << ex_disc << std::endl;
+//         
+//         //         // taylor_expansion of child (to find the roots)
+//         //         SEX taylor_expansion;
+//         //         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         //         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         //         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, taylor_expansion );
+//         //         SEX poly_coeff; // best L2 fitting of order 7 -> order 3
+//         //         poly_coeff.push_back( taylor_expansion[0] - Rationnal( 3,35) * pow(del,4) * taylor_expansion[4] - Rationnal( 2,21) * pow(del,6) * taylor_expansion[6] );
+//         //         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
+//         //         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
+//         //         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
+//         // 
+//         //         SEX roots, root_validity;
+//         //         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
+//         //         
+//         //         // several roots ?
+//         //         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
+//         //             Ex su = leading_coefficient;
+//         //             for(unsigned i=0;i<roots.size();++i)
+//         //                 if ( not root_validity[i].op->is_zero() )
+//         //                     su *= root_validity[i] * ( var - ( mid + roots[ i ] ) - 1 ) + 1; 
+//         //             Ex new_expr = expr.subs( th, tok, ex_ch, su );
+//         //             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
+//         //         }
+//         SEX ch_taylor_expansion;
+//         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
+//         Ex del = Rationnal( 1, 2 ) * ( end - beg );
+//         get_taylor_expansion( th, tok, ex_ch, mid, var, 7, ch_taylor_expansion );
+//         /*
+//             a := symbol("a")
+//             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+//             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+//             p := dot( c, a ^ (0...) )
+//             q := dot( v, a ^ (0...) )
+//             del := symbol("del")
+//             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+//             for i in c
+//                 info i, r[0].diff(i)
+//             for i in c
+//                 info i, r[1].diff(i)
+//         */
+//         // best L2 fitting of order 7 -> order 1
+//         Ex p0 = ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6];
+//         Ex p1 = ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5];
+//         
+//         // end case : only one root
+//         SEX taylor_expansion_p, taylor_expansion_n;
+//         if ( disc->type == STRING_heaviside_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 1 ) ) );
+//             }
+//         }
+//         else if ( disc->type == STRING_abs_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, - ex_ch ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
+//             }
+//         }
+//         else if ( disc->type == STRING_pos_part_NUM ) {
+//             for(unsigned i=0;i<taylor_expansion.size();++i) {
+//                 taylor_expansion_n.push_back( taylor_expansion[i].subs( th, tok, ex_disc, Ex( 0 ) ) );
+//                 taylor_expansion_p.push_back( taylor_expansion[i].subs( th, tok, ex_disc,   ex_ch ) );
+//             }
+//         }
+//         else
+//             assert( 0 ); //
+//         
+//         //
+//         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
+//         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
+//         Ex n_beg = 1 - p_beg;
+//         Ex n_end = 1 - p_end;
+//         
+//         //
+//         Ex cut = mid - p0 / ( p1 + eqz( p1 ) );
+//         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
+//         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
+//         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
+//         Ex pe = end + ( cut - end ) * p_beg * n_end;
+//         
+//         Ex int_n = integ_discontinuities_rec( th, tok, taylor_expansion_n, var, cen, nb , ne , level + 1 );
+//         Ex int_p = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, pb , pe , level + 1 );
+//         Ex int_z = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, beg, end, level + 1 );
+//         return ( int_n + int_p ) * ( 1 - eqz( p1 ) ) + int_z * eqz( p1 );
+//     }
+    
+    
+    // else -> no discontinuities
+    Ex res( 0 );
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
+        res = res + taylor_expansion[i].subs( th, tok, var, cen ) * (
+            pow( end - cen, Ex( Rationnal( i + 1 ) ) ) -
+            pow( beg - cen, Ex( Rationnal( i + 1 ) ) )
+        ) * Rationnal( 1, i + 1 );
+    return res; 
+}
+
+Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const SEX &discontinuities, unsigned offset_in_discontinuities, const SEX &p0, const SEX &p1, const Ex &beg, const Ex &end ) {
+    if ( offset_in_discontinuities == discontinuities.size() ) {
+        // [ -deb; deb ]
+        Ex res( 0 );
+        for(Int32 i=0;i<(Int32)taylor_expansion.size();++i) {
+            res = res + taylor_expansion[i] * (
+                pow( end, Ex( Rationnal( i + 1 ) ) ) - pow( beg, Ex( Rationnal( i + 1 ) ) )
+            ) * Rationnal( 1, i + 1 );
         }
-        
-        // special case ( the last one ) : only one root
-        Ex cut = mid + roots[0];
-        Ex subs_p, subs_n;
-        if ( disc->type == STRING_heaviside_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-            subs_p = expr.subs( th, tok, ex_disc, Ex( 1 ) );
-        }
-        else if ( disc->type == STRING_abs_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, - ex_ch );
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
-        }
-        else if ( disc->type == STRING_pos_part_NUM ) {
-            subs_n = expr.subs( th, tok, ex_disc, Ex( 0 ) );
-            subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
-        }
-        else
-            assert( 0 ); //
-        
-        //
-        Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
-        Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
-        Ex n_beg = 1 - p_beg;
-        Ex n_end = 1 - p_end;
-        
-        //
-        Ex nb = beg + ( cut - beg ) * p_beg * n_end;
-        Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
-        Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
-        Ex pe = end + ( cut - end ) * p_beg * n_end;
-        
-        Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
-        Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
-        return int_n + int_p;
+        return res; 
     }
-    return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
+    
+    //
+    Ex cut = - p0[offset_in_discontinuities] / ( p1[offset_in_discontinuities] + eqz( p1[offset_in_discontinuities] ) );
+    Ex end_sup_beg = heaviside( end - beg );
+    Ex beg_ = min( beg, end );
+    Ex end_ = max( beg, end );
+    
+    //
+    Ex mon( -1 );
+    SEX neg_taylor_expansion;
+    ++Op::current_op;
+    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = mon.op;
+    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); neg_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+    Ex res = integration_disc_rec( th, tok, neg_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, beg_, max(beg_,min(end_,cut)) );
+    
+    //
+    Ex one(  1 );
+    SEX sup_taylor_expansion;
+    ++Op::current_op;
+    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = one.op;
+    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); sup_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+    res = res + integration_disc_rec( th, tok, sup_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, max(beg_,min(end_,cut)), end_ );
+    
+    return res;
 }
 
 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     if ( same_op( beg.op, end.op ) )
         return Ex( 0 );
-    //
+        
+    // add interval assumptions
     if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
         Ex old_var = var;
-        var = Ex( "tmp", 3, "tmp", 3 );
+        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
         if ( beg.known_at_compile_time() )
             var.set_beg_value( beg.value(), true );
         if ( end.known_at_compile_time() )
@@ -1705,7 +2214,76 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         expr = expr.subs( th, tok, old_var, var );
     }
     
-    return integration_with_discontinuities_rec( th, tok, expr, var, beg, end, deg_poly_max );
+    // degree of polynomial_expansion
+    Int32 pd = expr.poly_deg( var );
+    Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
+    
+    // polynomial_expansion
+    Ex mid = ( beg + end ) / 2;
+    Ex deb = ( end - beg ) / 2;
+    Ex exc("tmp",3,"tmp",3);
+    expr = expr.subs( th, tok, var, mid + exc );
+    SEX expressions, taylor_expansion;
+    expressions.push_back( expr );
+    taylor_expansion.get_room_for( deg_poly + 1 );
+    polynomial_expansion( th, tok, expressions, exc, deg_poly, taylor_expansion );
+    
+    // look up for discontinuities
+    SimpleVector<Op *> discontinuities_;
+    expr.op->find_discontinuities( exc.op, discontinuities_ );
+    if ( discontinuities_.size() ) {
+        SEX discontinuities;
+        for(unsigned i=0;i<discontinuities_.size();++i) {
+            Ex d( discontinuities_[i] );
+            for(unsigned j=0;;++j) {
+                if ( j == discontinuities.size() ) {
+                    discontinuities.push_back( d );
+                    break;
+                }
+                if ( same_ex( - d, discontinuities[ j ] ) )
+                    break;
+            }
+        }
+            
+        // cuts -> linearization of all f(a) in H( f( a ) )
+        const int nb_terms_taylor_ch = 7;
+        SEX ch_taylor_expansion;
+        ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
+        polynomial_expansion( th, tok, discontinuities, exc, nb_terms_taylor_ch - 1, ch_taylor_expansion );
+        
+        SEX p0, p1;
+        for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
+            /*
+                a := symbol("a")
+                c := Vec[Op,7]( function = x => symbol("c[$x]") )
+                v := Vec[Op,2]( function = x => symbol("v[$x]") )
+                p := dot( c, a ^ (0...) )
+                q := dot( v, a ^ (0...) )
+                del := symbol("del")
+                r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+                for i in c
+                    info i, r[0].diff(i)
+                for i in c
+                    info i, r[1].diff(i)
+            */
+            // best L2 fitting of order 7 -> order 1
+            p0.push_back( ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(deb,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(deb,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(deb,6) * ch_taylor_expansion[j+6] );
+            p1.push_back( ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(deb,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(deb,4) * ch_taylor_expansion[j+5]                                                          );
+        }
+        
+        //
+        return integration_disc_rec( th, tok, taylor_expansion, discontinuities, 0, p0, p1, -deb, deb );
+    }
+
+    //
+    Ex res( 0 );
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+        res = res + 2 * taylor_expansion[i] * (
+            pow( deb, Ex( Rationnal( i + 1 ) ) )
+        ) * Rationnal( 1, i + 1 );
+    return res; 
 }
+
+
 
 

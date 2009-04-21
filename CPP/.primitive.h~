@@ -351,6 +351,10 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     static const char *f[] = { "log", "heaviside", "pos_part", "abs", "eqz", "exp", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", NULL };
     for(unsigned i=0;f[i];++i)
         primitive_functions.push_back( PrimitiveFunction( f[i], "ret.init( "+std::string( f[i] )+"( a ) );", /*ret*/"Op" ).A("Op") );
+        
+    primitive_functions.push_back( PrimitiveFunction( "floor", "ret.init( floor( a ) );", /*ret*/"Op" ).A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "ceil" , "ret.init( ceil ( a ) );", /*ret*/"Op" ).A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "round", "ret.init( round( a ) );", /*ret*/"Op" ).A("Op") );
     
     primitive_functions.push_back( PrimitiveFunction( "known_at_compile_time", "ret = a.known_at_compile_time();", /*ret*/"Bool" ).A("Op") );
     
@@ -368,6 +372,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
 
     primitive_functions.push_back( PrimitiveFunction( "diff", "ret.init( self.diff( th, tok, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
     primitive_functions.push_back( PrimitiveFunction( "diff", "diff( th, tok, a, b, c );" ).A("VarArgs").A("Op").A("VarArgs") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "interval", "self.interval( th, tok, a, b, c, d, e, f );" ).M("Op").A("Op").A("VarArgs").A("VarArgs").A("VarArgs").A("Op").A("Op") );
     
     primitive_functions.push_back( PrimitiveFunction( "polynomial_expansion_", "polynomial_expansion( th, tok, a, b, c, d );" ).A("VarArgs").A("Op").A("Int32").A("VarArgs") );
     primitive_functions.push_back( PrimitiveFunction( "quadratic_expansion_", "quadratic_expansion( th, tok, a, b, c );" ).A("VarArgs").A("VarArgs").A("VarArgs") );
@@ -407,9 +413,21 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(a,b);" ).M("Op").A("Rationnal").A("Bool") );
     primitive_functions.push_back( PrimitiveFunction( "set_access_cost", "self.set_access_cost(a);" ).M("Op").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "set_nb_simd_terms", "self.set_nb_simd_terms(a);" ).M("Op").A("Int32") );
+    primitive_functions.push_back( PrimitiveFunction( "set_integer_type", "self.set_integer_type(a);" ).M("Op").A("Int32") );
 
     
-    primitive_functions.push_back( PrimitiveFunction( "conversion_to", "a = Float64( self.value() );" ).M("Op").A("Float64") );
+    for(unsigned i=0;i<primitive_classes.size();++i)
+        if ( arithmetic_class( primitive_classes[i] ) )
+            primitive_functions.push_back( PrimitiveFunction( "conversion_to", "init_arithmetic( a, self.value() );" ).M("Op").A( primitive_classes[i].met_name ) );
+    
+    
+    primitive_functions.push_back( PrimitiveFunction( "roots", "ret.init( roots( th, tok, self, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "root", "ret.init( root( th, tok, self, a ) );", /*ret*/"Op" ).M("Op").A("Int32") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "poly_deg", "ret = self.poly_deg( a );", /*ret*/"Int32" ).M("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "poly_deg", "ret = self.poly_deg( a );", /*ret*/"Int32" ).M("Op").A("VarArgs") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "select_symbolic", "ret.init( select_symbolic( self, a ) );", /*ret*/"Op" ).M("Op").A("Op") );
 }
 
 std::string nb_bits_in_mantissa(std::string class_name) {
@@ -453,9 +471,12 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     primitive_classes.push_back( PrimitiveClass( "CodeWriterAlt_", "CodeWriterAlt" ).avoid_reassign_using_mem_copy() );
     
     primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("CodeWriterAlt_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6,\"S\",1);" ).M("CodeWriterAlt_") );
-    primitive_functions.push_back( PrimitiveFunction( "init", "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ),*reinterpret_cast<const char **>(b->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(b->data) + 1 ));" ).A("any").A("any").M("CodeWriterAlt_").set_pertinence(1e5).
-             set_supplementary_cond( "args[0]->type == global_data.String" ) );
+    // primitive_functions.push_back( PrimitiveFunction( "init", "self.init(\"double\",6,\"S\",1,\"double\",6,\"S\",1);" ).M("CodeWriterAlt_") );
+    primitive_functions.push_back( PrimitiveFunction( "init", 
+        "self.init(*reinterpret_cast<const char **>(a->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(a->data) + 1 ),*reinterpret_cast<const char **>(b->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(b->data) + 1 ),*reinterpret_cast<const char **>(c->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(c->data) + 1 ),*reinterpret_cast<const char **>(d->data),*reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(d->data) + 1 ));" ).A("any").A("any").A("any").A("any").M("CodeWriterAlt_").
+            set_pertinence(1e5).
+            set_supplementary_cond( "args[0]->type == global_data.String and args[1]->type == global_data.String and args[2]->type == global_data.String and args[3]->type == global_data.String" )
+    );
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("CodeWriterAlt_").M("CodeWriterAlt_",/*modify*/"true") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("CodeWriterAlt_").M("CodeWriterAlt_",/*modify*/"true") );
     
@@ -477,6 +498,9 @@ void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "init", "self.init(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign(a);" ).M("Lambda").A("Lambda") );
     primitive_functions.push_back( PrimitiveFunction( "destroy", "self.destroy();" ).M("Lambda") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Lambda").A("Def") );
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Def").A("Lambda") );
 }
 
 void get_primitives_Label( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

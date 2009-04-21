@@ -94,6 +94,9 @@ int main(int argc,char **argv) {
         signal( SIGUSR1, signal_mgr );
     #endif
 
+    BigInt<32768> b( 10 );
+    std::cout << METIL_NS::pow( b, 10 ) << std::endl;
+
     // initialisation of main_thread
     main_thread = new Thread( new Scope, new ErrorList );
     AutoDecRef<Thread> adc_thread( main_thread );
@@ -206,37 +209,29 @@ int main(int argc,char **argv) {
         main_thread->interpreter_behavior.prof_entries.filename = "callgrind.out." + std::string( file_to_interpret ? file_to_interpret : "interp" );
         
     //
-    std::cout << __LINE__ << std::endl;
     SourceFile *base_sar_init_sf = global_data.get_sourcefile( "metil_base_init.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     SourceFile *sf               = global_data.get_sourcefile( file_to_interpret ? file_to_interpret : "metil_base_interprer.met", ".", main_thread->error_list, &main_thread->interpreter_behavior );
     SourceFile *base_sar_dest_sf = global_data.get_sourcefile( "metil_base_dest.met"                                             , "/", main_thread->error_list, &main_thread->interpreter_behavior );
     
-    std::cout << __LINE__ << std::endl;
     if ( base_sar_dest_sf and sf and base_sar_init_sf ) {
         main_thread->push_prev_file_to_read( base_sar_dest_sf );
         main_thread->push_prev_file_to_read( sf               );
         main_thread->push_prev_file_to_read( base_sar_init_sf );
     }
     
-    std::cout << __LINE__ << std::endl;
     #ifdef QT4_FOUND
         if ( with_qt ) {
-            std::cout << __LINE__ << std::endl;
             QApplication qapp( argc, argv );
             qapp.setQuitOnLastWindowClosed( false );
-            std::cout << __LINE__ << std::endl;
             
             main_thread->display_window_creator = new DisplayWindowCreator;
-            std::cout << __LINE__ << std::endl;
             
             MetilQtThread mqt;
             QTimer::singleShot( 0, &mqt, SLOT(start()) );
-            std::cout << __LINE__ << std::endl;
             
             qapp.exec();
         } else {
     #endif
-            std::cout << __LINE__ << std::endl;
             main_thread->display_window_creator = NULL;
             thread_loop( main_thread );
     #ifdef QT4_FOUND

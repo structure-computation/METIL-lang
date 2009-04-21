@@ -81,6 +81,12 @@ public:
         else if ( s==r ) reserve(2*r);
         vec[s++] = val;
     }
+    void push_back_unique(const T &val) {
+        for(int i=0;i<s;++i)
+            if ( vec[i] == val )
+                return;
+        push_back( val );
+    }
     /// assumes that room for val is already reserved
     void push_back_in_reserved(const T &val) { vec[s++] = val; }
     ///

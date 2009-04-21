@@ -2,6 +2,8 @@
 #define OP_H
 
 #include "splittedvec.h"
+#include "simplevector.h"
+#include "staticordyncontiguousvec.h"
 #include "config.h"
 #include <usual_strings.h>
 
@@ -53,8 +55,10 @@ struct Op {
     bool depends_on( const Op *a ) const;
     bool depends_on_rec( const Op *a ) const; // without update of current_op
 
-    const Op *find_discontinuity( const Op *var ) const;
-    const Op *find_discontinuity_rec( const Op *var ) const; // without update of current_op
+    int poly_deg_rec() const;
+    
+    void find_discontinuities( const Op *var, SimpleVector<Op *> &discontinuities ) const;
+    void find_discontinuities_rec( const Op *var, SimpleVector<Op *> &discontinuities ) const; // without update of current_op
     
     int nb_nodes() const; //
     int nb_nodes_rec() const; // without update of current_op
@@ -81,11 +85,16 @@ struct Op {
 
     // ----------------------------------
     int type;
-    SplittedVec<Op *,2,8> parents;
-    mutable bool simplified; // already simplified
+    int integer_type;
+    StaticOrDynContiguousVec<Op *,4> parents;
+    // SplittedVec<Op *,2,8> parents;
+    mutable bool simplified; // already simplified ?
     mutable Op *additional_info;
+    mutable int additional_int; // hum
     mutable unsigned op_id;
     mutable unsigned cpt_use;
+    
+    SimpleVector<Op *> chroot;
     
     bool beg_value_valid, end_value_valid, beg_value_inclusive, end_value_inclusive;
     Rationnal beg_value, end_value;

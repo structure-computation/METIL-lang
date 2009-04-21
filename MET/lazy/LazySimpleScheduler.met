@@ -30,6 +30,7 @@ class LazySimpleScheduler
                 add_expr_to_evaluate( lazy_obj )
             else
                 lazy_obj.apply_lazy_objects( add_expr_to_evaluate )
+        info expr_to_evaluate.size
         
     #
     def add_expr_to_evaluate( lazy_obj ) # when lazy_obj.is_a_PtrWithCptUse
@@ -37,10 +38,10 @@ class LazySimpleScheduler
     
     #
     def make_extra_data_rec( lazy_obj )
-        if lazy_obj->sched_id != self_id
+        if lazy_obj and lazy_obj->sched_id != self_id
             lazy_obj->sched_id = self_id
             #
-            lazy_obj->sched_info.init( &extra_data.push_back( lazy_obj ) )
+            lazy_obj->sched_info.init( extra_data.push_back( lazy_obj ) )
             
             leave := true
             if lazy_obj->children.size
@@ -121,6 +122,6 @@ class LazySimpleScheduler
     
     def display( function, fn = ".res.dot", x = true )
         write_graph( function, File( fn, "w" ) )
-        system( "dot -Tps $fn > res.ps" )
-        if x system( "gv res.ps" )
+        system( "dot -Tpdf $fn > res.pdf" )
+        if x system( "kpdf res.pdf" )
     

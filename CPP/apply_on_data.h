@@ -10,7 +10,7 @@ types := split("Unsigned8 Unsigned16 Unsigned32 Unsigned64 Int8 Int16 Int32 Int6
 for c in ( "", "const " )
     print "template<class FUNC,class SO> bool apply_on_data( Variable *v, const FUNC &func, $(c)SO &os ) {"
     for i in types
-        d := "*reinterpret_cast<$i *>(v->data)"; if i == "Bool"  d = "Bool( v->data, 1 << 7-v->get_bit_offset() )"
+        d := "*reinterpret_cast<$i *>(v->data)"; if i == "Bool"  d = "Bool( v->data, 1 << (7-v->get_bit_offset()) )"
         print "    if ( v->type == global_data.$i ) { func( $d, os ); return true; }"
     print "    return false;"
     print "}"
@@ -40,7 +40,7 @@ template<class FUNC,class SO> bool apply_on_data( Variable *v, const FUNC &func,
     if ( v->type == global_data.Float64 ) {  func( *reinterpret_cast<Float64 *>(v->data), os ); return true; }
     if ( v->type == global_data.Float96 ) {  func( *reinterpret_cast<Float96 *>(v->data), os ); return true; }
     if ( v->type == global_data.Rationnal ) {  func( *reinterpret_cast<Rationnal *>(v->data), os ); return true; }
-    if ( v->type == global_data.Bool ) { Bool b( v->data, 1 << 7-v->get_bit_offset() ); func( b, os ); return true; }
+    if ( v->type == global_data.Bool ) { Bool b( v->data, 1 << (7-v->get_bit_offset()) ); func( b, os ); return true; }
     return false;
 }
 template<class FUNC,class SO> bool apply_on_data( Variable *v1, Variable *v2, const FUNC &func, SO &os ) {
@@ -254,7 +254,7 @@ template<class FUNC,class SO> bool apply_on_data( Variable *v, const FUNC &func,
     if ( v->type == global_data.Float64 ) {  func( *reinterpret_cast<Float64 *>(v->data), os ); return true; }
     if ( v->type == global_data.Float96 ) {  func( *reinterpret_cast<Float96 *>(v->data), os ); return true; }
     if ( v->type == global_data.Rationnal ) {  func( *reinterpret_cast<Rationnal *>(v->data), os ); return true; }
-    if ( v->type == global_data.Bool ) { Bool b( v->data, 1 << 7-v->get_bit_offset() ); func( b, os ); return true; }
+    if ( v->type == global_data.Bool ) { Bool b( v->data, 1 << (7-v->get_bit_offset()) ); func( b, os ); return true; }
     return false;
 }
 template<class FUNC,class SO> bool apply_on_data( Variable *v1, Variable *v2, const FUNC &func, const SO &os ) {
