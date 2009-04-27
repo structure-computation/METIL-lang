@@ -30,7 +30,7 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     #
     def init( a ) when a.is_an_array
         init_using_default_values( self )
-        dynamic_cum_index = a
+        dynamic_cum_index = a.dynamic_cum_index
         for ind, v in self
             v.init( a[ ind ] )
             
@@ -102,7 +102,7 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     def index( varargs )                   return sum( varargs * cum_index )
     def index( n ) when n.tensor_order==1  return sum( n * cum_index ) # A[ [1,2,3] ]
         
-    def select( n ) when n.tensor_order == 1 pertinence 3
+    def select( n ) when n.tensor_order == 1 pertinence 5
         return data[ dot( n, cum_index ) ]
         
     def select( n ) when n.tensor_order == 0 pertinence 3

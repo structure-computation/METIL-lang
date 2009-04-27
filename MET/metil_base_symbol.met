@@ -57,7 +57,7 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
     prg_found := false
-    prg_list := ["okular","evince","gv"]
+    prg_list := ["gv","okular","evince"]
     for prg in prg_list
         if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
             prg_found = true
@@ -142,13 +142,13 @@ def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vec
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 1
+def tex_string( self ) when self.tensor_order == 1
     str := StringStream()
-    str <<< "$\displaystyle\\left[\\begin{array}{c}"
+    str <<< "\\left[\\begin{array}{c}"
     for i in self.values
         str << i.tex_string() <<< "\\\\"
-    str <<< "\\end{array}\\right]$"
-    launch_and_display_tex_with_str( str, filename, blocking )
+    str <<< "\\end{array}\\right]"
+    return str
 
 ## 
     display symbolic formual of variable v
