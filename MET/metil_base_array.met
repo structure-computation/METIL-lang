@@ -30,7 +30,7 @@ class Array( T, s_ = [], d = 0, ST = SizeType )
     #
     def init( a ) when a.is_an_array
         init_using_default_values( self )
-        dynamic_cum_index = a
+        dynamic_cum_index = a.dynamic_cum_index
         for ind, v in self
             v.init( a[ ind ] )
             
