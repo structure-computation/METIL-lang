@@ -62,12 +62,12 @@ class GenerateMethodForParametricElement[ TE, dim ]
             P := dot( shape_functions, pos_nodes )
             
             # interpolation variables from children ones
-            # class CH
-                # ce := MultiPtr()
-            children := Vec[ SplittedVec[ Pair[MultiPtr,Vec[Vec[Rationnal,nvi]]], 4 ], nvi + 1 ]()
-            get_children_rec_( children, 0, TE, TE::points, nvi )
-            for p in TE::points
-                children[ nvi ].push_back( &NodalElement, [ p ] )
+            class CE[ nvi ]
+                first := MultiPtr()
+                second := Vec[Vec[Rationnal,nvi]]()
+                node_nb := Vec[Int32]()
+            children := Vec[ SplittedVec[ CE[ nvi ], 4 ], nvi + 1 ]()
+            get_children_rec_( children, 0, TE, TE::points, nvi, 0..TE::points.size )
             f <<< "#"
             f <<< "def nb_children( sub_nvi ) when sub_nvi==0"
             f <<< "    return 1"
@@ -75,6 +75,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f <<< "    return child_var_inter"
             f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==0"
             f <<< "    return $TE"
+            f <<< "def node_number_child( sub_nvi, num_child ) when sub_nvi==0"
+            f <<< "    return 0 .. $nb_nodes"
             for n in 1 .. nvi + 1
                 f <<< "#"
                 f <<< "def nb_children( sub_nvi ) when sub_nvi==$n"
@@ -87,6 +89,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
                     f <<< "    return [$(join(ch_P,","))]"
                     f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
                     f <<< "    return $(@ch.first)"
+                    f <<< "def node_number_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
+                    f <<< "    return [$(join(ch.node_nb,","))]"
             
             # normal
             normal := make_normal( P, var_inter )
@@ -246,14 +250,14 @@ class GenerateMethodForParametricElement[ TE, dim ]
         # return assumed( objective.subs( shape_coeffs_flat, sol ) < 1e-6 )
 
     #
-    def get_children_rec_( children, sub_nvi, CE, po, nvi )
-        if sub_nvi < nvi
+    def get_children_rec_( children, sub_nvi, CE, po, nvi, node_nb )
+        if sub_nvi <= nvi
             for c in children[ sub_nvi ]
                 if @c.first == CE and c.second == po
                     return none
-            children[ sub_nvi ].push_back( &CE, po )
+            children[ sub_nvi ].push_back( first = &CE, second = po, node_nb = node_nb )
             for cce, cpo in CE::children
-                get_children_rec_( children, sub_nvi + 1, cce, po[cpo], nvi )
+                get_children_rec_( children, sub_nvi + 1, cce, po[cpo], nvi, node_nb[cpo] )
 
 #
 class ParametricElement[ TE, dim = Int32( TE::points[0].size ) ]
