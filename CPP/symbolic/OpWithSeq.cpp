@@ -49,6 +49,19 @@ OpWithSeq::OpWithSeq( int method, const char *name, OpWithSeq *ch ) { // WRITE_.
     add_child( ch );
 }
 
+OpWithSeq::OpWithSeq( int method, void *ptr_res, OpWithSeq *ch ) { // WRITE_...
+    init_gen();
+    switch ( method ) {
+        case STRING_add_NUM :       type = WRITE_ADD;      break;
+        case STRING_init_NUM:       type = WRITE_INIT;     break;
+        case STRING_reassign_NUM:   type = WRITE_REASSIGN; break;
+        case STRING___return___NUM: type = WRITE_RET;      break;
+        default: assert(0);
+    }
+    this->ptr_res = ptr_res;
+    add_child( ch );
+}
+
 void OpWithSeq::init_gen() {
     reg = -1;
     ordering = -1;
@@ -56,6 +69,7 @@ void OpWithSeq::init_gen() {
     access_cost = 0;
     nb_simd_terms = 0;
     integer_type = 0;
+    ptr_res = NULL;
 }
 
 OpWithSeq::~OpWithSeq() {
@@ -586,6 +600,19 @@ void update_nb_simd_terms_rec( OpWithSeq *op ) {
     }
 }
 
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering ) {
+    if ( seq->ordering >= 0 )
+        return;
+    if ( seq->type == STRING_select_symbolic_NUM ) {
+        make_OpWithSeq_simple_ordering( seq->children[1], ordering );
+    } else {
+        for(unsigned i=0;i<seq->children.size();++i)
+            make_OpWithSeq_simple_ordering( seq->children[i], ordering );
+    }
+    seq->ordering = ordering.size();
+    ordering.push_back( seq );
+}
+
 std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
     if ( op.type == OpWithSeq::SEQ ) {
         for(unsigned i=0;i<op.children.size();++i)
@@ -613,3 +640,4 @@ std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
     }
     return os;
 }
+

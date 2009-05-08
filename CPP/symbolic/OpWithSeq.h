@@ -16,6 +16,7 @@ struct OpWithSeq {
 
     OpWithSeq( int t );
     OpWithSeq( int method, const char *name, OpWithSeq *ch ); // WRITE_...
+    OpWithSeq( int method, void *ptr_res, OpWithSeq *ch ); // WRITE_...
     OpWithSeq( const char *cpp_name );
     void init_gen();
     
@@ -40,6 +41,7 @@ struct OpWithSeq {
     double access_cost;
     int nb_simd_terms;
     char *cpp_name_str;
+    void *ptr_res;
     int reg, ordering;
     mutable unsigned id;
     static unsigned current_id;
@@ -58,6 +60,7 @@ OpWithSeq *new_neg( OpWithSeq *ch );
 OpWithSeq *new_add_or_mul( int type, const std::vector<OpWithSeq *> &l );
 OpWithSeq *new_sub_or_div( int type, OpWithSeq *p, OpWithSeq *n );
 
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering );
 
 std::ostream &operator<<( std::ostream &os, const OpWithSeq &op );
 

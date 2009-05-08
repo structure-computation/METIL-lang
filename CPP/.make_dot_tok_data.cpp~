@@ -9,6 +9,7 @@
 #include "splittedvec.h"
 #include "hashset.h"
 #include "typechar.h"
+#include <string.h>
 
 #define MAKE_DOT_TOK_DATA_CPP
 #include "make_dot_tok_data.h"
@@ -54,6 +55,7 @@ TokData DotSarToDotTok::contiguous_bin_data() {
     
     //
     TokHeader th;
+    strcpy( th.md5_ctrl_sum, USUAL_STRINGS_MD5, 32 );
     th.nb_pos_types_to_rellocate = pos_types_to_rellocate.size();
     th.nb_pos_strings_to_rellocate = pos_strings_to_rellocate.size();
     th.nb_strings = strings_to_rellocate.size();

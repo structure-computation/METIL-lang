@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "hashstring.h"
+#include "md5.h"
 #include "typechar.h"
 #include "splittedvec.h"
 #include "primitive.h"
@@ -201,6 +202,12 @@ struct UsualStrings {
         i->hash_val = hash_val;
     }
     
+    std::string to_contiguous_string() const {
+        std::string res; res.resize( data.size() );
+        data.copy_binary_data_to( &res[0] );
+        return res;
+    }
+    
     static const unsigned hash_size = 1024;
     SplittedVec<ResString,128> usual_strings;
     SplittedVec<char,1024,2048> data;
@@ -341,6 +348,8 @@ int main(int argc,char **argv) {
     fh << "    return tab[num_op];\n";
     fh << "}\n";
 
+    fh << "#define USUAL_STRINGS_MD5 \"" << md5_str( usual_strings.to_contiguous_string() ) << "\"\n";
+    
     fh << "#endif // USUAL_STRINGS_H\n";
 
     // fc

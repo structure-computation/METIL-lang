@@ -55,6 +55,7 @@ TokData DotSarToDotTok::contiguous_bin_data() {
     
     //
     TokHeader th;
+    strncpy( th.md5_ctrl_sum, USUAL_STRINGS_MD5, 32 );
     th.nb_pos_types_to_rellocate = pos_types_to_rellocate.size();
     th.nb_pos_strings_to_rellocate = pos_strings_to_rellocate.size();
     th.nb_strings = strings_to_rellocate.size();

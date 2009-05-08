@@ -24,7 +24,6 @@ INCLUDE( FindThreads )
 # mpi library
 INCLUDE( FindMPI )
 CONFIGURE_FILE( metil_mpi_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_mpi_config.h )
-MESSAGE( "iz" ${MPI_FOUND} )
 IF ( MPI_FOUND )
     INCLUDE_DIRECTORIES(
         ${MPI_INCLUDE_PATH}
@@ -53,7 +52,7 @@ CONFIGURE_FILE( metil_ieee754_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/metil_ieee
 
 
 # generation using make_usual_strings.cpp
-ADD_EXECUTABLE( make_usual_strings make_usual_strings.cpp )
+ADD_EXECUTABLE( make_usual_strings make_usual_strings.cpp md5.cpp )
 GET_TARGET_PROPERTY( MAKE_USUAL_STRINGS_EXE make_usual_strings LOCATION )
 SET( MAKE_USUAL_STRINGS_OUT ${CMAKE_CURRENT_BINARY_DIR}/usual_strings.h ${CMAKE_CURRENT_BINARY_DIR}/usual_strings_cpp.h ${CMAKE_CURRENT_BINARY_DIR}/operators_hash.h )
 ADD_CUSTOM_COMMAND( OUTPUT ${MAKE_USUAL_STRINGS_OUT} COMMAND ${MAKE_USUAL_STRINGS_EXE} ARGS ${MAKE_USUAL_STRINGS_OUT} DEPENDS ${MAKE_USUAL_STRINGS_EXE} )
@@ -113,6 +112,7 @@ ADD_LIBRARY( metil_thread STATIC
     symbolic/codewriter.cpp
     symbolic/OpWithSeq.cpp
     symbolic/codewriteralt.cpp
+    symbolic/AsmWriter.cpp
     thread.cpp
     variable.cpp
     type.cpp

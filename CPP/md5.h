@@ -33,6 +33,7 @@ void MD5Transform( Unsigned32 buf[4], Unsigned32 const in[16] );
 
 void md5_cs( const char *s, unsigned si, unsigned char *digest ); /// digest.size == 16
 std::string md5_digest_to_string( unsigned char *digest );
-std::string md5_str( const char *s, unsigned si);
+std::string md5_str( const char *s, unsigned si );
+std::string md5_str( std::string s );
 
 #endif // MD5_H
