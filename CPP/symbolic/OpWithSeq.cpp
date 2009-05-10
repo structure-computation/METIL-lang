@@ -64,12 +64,15 @@ OpWithSeq::OpWithSeq( int method, void *ptr_res, OpWithSeq *ch ) { // WRITE_...
 
 void OpWithSeq::init_gen() {
     reg = -1;
+    stack = -1;
     ordering = -1;
     id = 0;
     access_cost = 0;
     nb_simd_terms = 0;
     integer_type = 0;
     ptr_res = NULL;
+    nb_times_used = 0;
+    ptr_val = NULL;
 }
 
 OpWithSeq::~OpWithSeq() {
@@ -299,6 +302,8 @@ void OpWithSeq::graphviz_rec( std::ostream &os ) const {
         os << "    node" << this << " [label=\"NEG\",color=\"" << color << "\"];\n";
     else if ( type == WRITE_ADD )
         os << "    node" << this << " [label=\"W+\",color=\"" << color << "\"];\n";
+    else if ( type == WRITE_REASSIGN )
+        os << "    node" << this << " [label=\"W\",color=\"" << color << "\"];\n";
     else if ( type == NUMBER )
         os << "    node" << this << " [label=\"" << num / den << "\",color=\"" << color << "\"];\n";
     else if ( type == SYMBOL )
@@ -576,6 +581,40 @@ void simplifications( OpWithSeq *op ) {
     inter_expr_factorisation( op, STRING_mul_NUM );
     inter_expr_factorisation( op, STRING_add_NUM );
     several_div_give_mul_inv( op );
+}
+
+void OpWithSeq::remove_parent( OpWithSeq *parent ) {
+    parents.erase( std::find( parents.begin(), parents.end(), parent ) );
+}
+
+void make_binary_ops_rec( OpWithSeq *op ) {
+    if ( op->id == OpWithSeq::current_id )
+        return;
+    op->id = OpWithSeq::current_id;
+    
+    // 
+    while ( op->children.size() > 2 ) {
+        OpWithSeq *c0 = op->children[ op->children.size() - 2 ];
+        OpWithSeq *c1 = op->children[ op->children.size() - 1 ];
+        c0->remove_parent( op );
+        c1->remove_parent( op );
+        op->children.pop_back();
+        op->children.pop_back();
+        //
+        OpWithSeq *n = new OpWithSeq( op->type );
+        n->add_child( c0 );
+        n->add_child( c1 );
+        op->add_child( n );
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        make_binary_ops_rec( op->children[i] );
+}
+
+void make_binary_ops( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    make_binary_ops_rec( op );
 }
 
 void update_cost_access_rec( OpWithSeq *op ) {

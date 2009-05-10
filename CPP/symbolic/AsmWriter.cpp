@@ -13,6 +13,7 @@
 void AsmWriter::init(  ) {
     op_to_write.init();
     nb_to_write.init();
+    associations.init();
     has_init_methods = false;
     want_float = false;
 }
@@ -40,6 +41,12 @@ void AsmWriter::add_expr( Thread *th, const void *tok, void *ptr_res, const Ex &
         ow->method = b.def_data->name;
         ow->ptr_res = ptr_res;
     }
+}
+
+void AsmWriter::add_association( Thread *th, const void *tok, const Ex &expr, void *ptr_val ) {
+    Association *as = associations.new_elem();
+    as->ex.init( expr );
+    as->ptr_val = ptr_val;
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -70,16 +77,21 @@ OpWithSeq *AsmWriter::make_seq() {
     }
     
     //
+    for(unsigned i=0;i<associations.size();++i) {
+        Op *op = associations[i].ex.op;
+        if ( op->op_id == Op::current_op )
+            reinterpret_cast<OpWithSeq *>( op->additional_info )->ptr_val = associations[i].ptr_val;
+    }
+    
+    //
     simplifications( seq );
+    make_binary_ops( seq );
     
     //
     return seq;
 }
 
 void *AsmWriter::to_code( Thread *th, const void *tok ) {
-    if ( op_to_write.size() + nb_to_write.size() == 0 )
-        return "";
-    
     //
     OpWithSeq *seq = make_seq();
     
@@ -93,17 +105,16 @@ void *AsmWriter::to_code( Thread *th, const void *tok ) {
     
     //
     OpWithSeqAsmGenerator g( OpWithSeqAsmGenerator::X86_64 );
+    g.push_header();
     for(unsigned i=0;i<ordering.size();++i)
-        g.write_instr( ordering[i] );
-    g.write_ret_instr();
+        g.write_instr( th, tok, ordering[i] );
+    g.push_footer();
     
     //
     delete seq;
     
     //
-    void *res = mmap( NULL, g.os.size(), PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE, -1, 0 );
-    g.os.copy_binary_data_to( res );
-    return res;
+    return g.add_ret_and_make_code_as_new_contiguous_data();
 }
 
 std::string AsmWriter::to_graphviz( Thread *th, const void *tok ) {
@@ -115,7 +126,7 @@ std::string AsmWriter::to_graphviz( Thread *th, const void *tok ) {
     //
     ++OpWithSeq::current_id;
     seq->graphviz_rec( ss );
-    return "graphviz pouet";
+    return ss.str();
 }
 
 
@@ -128,6 +139,7 @@ void destroy( Thread *th, const void *tok, AsmWriter &c ) {
     
     c.op_to_write.destroy();
     c.nb_to_write.destroy();
+    c.associations.destroy();
 }
     
 
