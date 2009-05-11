@@ -301,7 +301,7 @@ int main(int argc,char **argv) {
         "__property_call__","__property_call_with_return__","__property_call_partial_inst__","__property_call_partial_inst_with_return__",
         "make_little_heterogeneous_array","size","apply_functionnal","apply_functionnal_with_return","_self","apply","true","false",
         "_0","_1","_2","_3","_4","_5","_6","_7","_8","_9","_10","_11","_12","_13","_14","_15","_16","_17","_18","_19",
-        "cant_be_converted_to_bool","0_inheritance",NULL };
+        "cant_be_converted_to_bool","0_inheritance","sqrt",NULL };
     for(const char **a = additional_usual_strings; *a; ++a)
         usual_strings.append( *a );
     

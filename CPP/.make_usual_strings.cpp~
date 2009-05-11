@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "hashstring.h"
+#include "md5.h"
 #include "typechar.h"
 #include "splittedvec.h"
 #include "primitive.h"

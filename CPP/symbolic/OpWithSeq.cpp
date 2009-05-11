@@ -617,6 +617,26 @@ void make_binary_ops( OpWithSeq *op ) {
     make_binary_ops_rec( op );
 }
 
+void replace_pow_05_by_sqrt_rec( OpWithSeq *op ) {
+    if ( op->type == STRING_pow_NUM and op->children[1]->type == OpWithSeq::NUMBER ) {
+        if ( op->children[1]->num == 1 and op->children[1]->den == 2 ) {
+            op->type = STRING_sqrt_NUM;
+            op->children[1]->remove_parent( op );
+            op->children.pop_back();
+            return;
+        }
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        replace_pow_05_by_sqrt_rec( op->children[i] );
+}
+
+void replace_pow_05_by_sqrt( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    replace_pow_05_by_sqrt_rec( op );
+}
+
 void update_cost_access_rec( OpWithSeq *op ) {
     if ( op->id == OpWithSeq::current_id )
         return;

@@ -63,6 +63,7 @@ void simplifications( OpWithSeq *op );
 void make_binary_ops( OpWithSeq *op );
 void update_cost_access_rec( OpWithSeq *op );
 void update_nb_simd_terms_rec( OpWithSeq *op );
+void replace_pow_05_by_sqrt( OpWithSeq *seq );
 
 bool same( const OpWithSeq *a, const OpWithSeq *b );
 

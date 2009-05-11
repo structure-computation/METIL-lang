@@ -40,8 +40,14 @@ char *find_path( const char *nf, const char *current_directory ) {
         return res;
     }
     
-    struct stat stat_file;
     unsigned lnf = strlen( nf );
+    
+    // if absolute directory
+    if ( nf[0] == '/' )
+        return strdupp0( nf, lnf );
+    
+    //
+    struct stat stat_file;
     
     // look in current_directory
     unsigned lc = strlen( current_directory );

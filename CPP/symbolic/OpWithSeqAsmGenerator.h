@@ -28,7 +28,7 @@ struct OpWithSeqAsmGenerator {
 
     void push_footer() {
         #ifdef DEBUG_ASM
-            std::cout << "    stack_size=" << stack.size() * T_size << std::endl;
+            std::cout << "    ; stack size = " << stack.size() * T_size << std::endl;
         #endif
         
         *stack_size = stack.size() * T_size;
@@ -54,19 +54,21 @@ struct OpWithSeqAsmGenerator {
     }
     
     int get_free_reg( OpWithSeq *op ) {
+        int forbidden_register = -1;
         // if there's already a free reg in children of op
-        if ( op->type == STRING_add_NUM or op->type == STRING_mul_NUM ) {
+        if ( op->type == STRING_sub_NUM or op->type == STRING_div_NUM ) {
+            if ( not regs[ op->children[0]->reg ] )
+                return op->children[0]->reg;
+            forbidden_register = op->children[1]->reg;
+        } else if ( op->children.size() >= 1 ) {
             for(unsigned i=0;i<op->children.size();++i)
                 if ( not regs[ op->children[i]->reg ] )
                     return op->children[i]->reg;
-        } else if ( op->children.size() >= 1 ) { // sub, div, ...
-            if ( not regs[ op->children[0]->reg ] )
-                return op->children[0]->reg;
         }
     
         // if there's already a free reg
         for(unsigned i=0;i<nb_regs;++i)
-            if ( not regs[ i ] )
+            if ( regs[ i ] == NULL and i != forbidden_register )
                 return i;
         
         // else, if there's already a reg saved in stack
@@ -77,8 +79,10 @@ struct OpWithSeqAsmGenerator {
                 best_reg = i;
             }
         }
-        if ( best_reg >= 0 ) 
+        if ( best_reg >= 0 )  {
+            regs[ best_reg ]->reg = -1;
             return best_reg;
+        }
         
         // else, select a given register to be saved in stack
         best_parent_date = regs[ 0 ]->min_parent_date();
@@ -103,10 +107,10 @@ struct OpWithSeqAsmGenerator {
         if ( op->type == OpWithSeq::SEQ )
             return;
         
-            
+        
         ++num_instr;
         nb_ops += op->nb_instr();
-
+        
         // free operands with only one remaining parent
         for(unsigned i=0;i<op->children.size();++i) {
             if ( ++op->children[i]->nb_times_used == op->children[i]->parents.size() ) {
@@ -133,7 +137,16 @@ struct OpWithSeqAsmGenerator {
         }
         
         #ifdef DEBUG_ASM
-            std::cout << "    ; " << Nstring( op->type ) << std::endl;
+            if ( op->type == OpWithSeq::INV )
+                std::cout << "    ; INV" << std::endl;
+            else if ( op->type == OpWithSeq::NEG )
+                std::cout << "    ; NEG" << std::endl;
+            else if ( op->type == OpWithSeq::NUMBER )
+                std::cout << "    ; " << op->num / op->den << std::endl;
+            else if ( op->type == OpWithSeq::SYMBOL )
+                std::cout << "    ; " << op->cpp_name_str << std::endl;
+            else
+                std::cout << "    ; " << Nstring( op->type ) << std::endl;
         #endif
         
         // find a free register
@@ -190,11 +203,16 @@ struct OpWithSeqAsmGenerator {
 //             for(unsigned i=0;i<op->children.size();++i)
 //                 os << ( i ? ",R" : "R" ) << op->children[i]->reg;
 //             os << ")";
+        } else if ( op->type == STRING_pow_NUM ) {
+            write_pow_instr( op );
+        } else if ( op->type == STRING_sqrt_NUM ) {
+            write_self_sse2_op_xmm( op->reg, op->children[ 0 ], 0x51 );
         } else {
             std::cout << "TODO: " << Nstring( op->type ) << std::endl;
             assert( 0 );
         }
     }
+    
     void *add_ret_and_make_code_as_new_contiguous_data() const {
         //
         unsigned code_size = os.size();
@@ -219,6 +237,16 @@ struct OpWithSeqAsmGenerator {
     
     SplittedVec<OpWithSeq *,1024,1024> stack;
 private:
+    void write_pow_instr( OpWithSeq *op ) {
+        assert( 0 );
+//         if ( op->children[1]->type == OpWithSeq::NUMBER ) {
+//             if ( op->children[1]->num == 1 and op->children[1]->den == 2 ) { // sqrt
+//                 return;
+//             }
+//         }
+    }
+    
+    
     void write_assign_number_to_offset_from_stack_pointer( int offset_in_stack, Float64 val ) {
         #ifdef DEBUG_ASM
             std::cout << "    mov   rax" << ", " << val << std::endl;
@@ -419,6 +447,7 @@ private:
                 case 0x59: std::cout << "    mul"; break;
                 case 0x5c: std::cout << "    sub"; break;
                 case 0x5e: std::cout << "    div"; break;
+                case 0x51: std::cout << "    sqrt"; break;
             }
             std::cout << "sd xmm" << reg << ", ";
             if ( ch->reg >= 0 ) std::cout << "xmm" << ch->reg << std::endl;
