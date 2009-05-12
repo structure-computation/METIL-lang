@@ -276,7 +276,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         assert( 0, "TODO" )
     
      # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "vertex_nodal", symm = false ) when interpolation_type == "vertex_nodal"
+    def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type == "vertex_nodal"
         nb_vertex_nodes := 0
         for i in 0.. nb_nodes
             if node_number_is_a_vertex( i )

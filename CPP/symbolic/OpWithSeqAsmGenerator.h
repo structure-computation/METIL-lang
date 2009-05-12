@@ -3,7 +3,7 @@
 
 #include "splittedvec.h"
 #include <sys/mman.h>
-#define DEBUG_ASM
+// #define DEBUG_ASM
 
 struct OpWithSeqAsmGenerator {
     enum AsmType {
@@ -53,17 +53,18 @@ struct OpWithSeqAsmGenerator {
         return room_in_stack;
     }
     
-    int get_free_reg( OpWithSeq *op ) {
-        int forbidden_register = -1;
+    int get_free_reg( OpWithSeq *op, int forbidden_register = -1 ) {
         // if there's already a free reg in children of op
-        if ( op->type == STRING_sub_NUM or op->type == STRING_div_NUM ) {
-            if ( not regs[ op->children[0]->reg ] )
-                return op->children[0]->reg;
-            forbidden_register = op->children[1]->reg;
-        } else if ( op->children.size() >= 1 ) {
-            for(unsigned i=0;i<op->children.size();++i)
-                if ( not regs[ op->children[i]->reg ] )
-                    return op->children[i]->reg;
+        if ( op ) {
+            if ( op->type == STRING_sub_NUM or op->type == STRING_div_NUM ) {
+                if ( not regs[ op->children[0]->reg ] )
+                    return op->children[0]->reg;
+                forbidden_register = op->children[1]->reg;
+            } else if ( op->children.size() >= 1 ) {
+                for(unsigned i=0;i<op->children.size();++i)
+                    if ( not regs[ op->children[i]->reg ] )
+                        return op->children[i]->reg;
+            }
         }
     
         // if there's already a free reg
@@ -137,12 +138,10 @@ struct OpWithSeqAsmGenerator {
         }
         
         #ifdef DEBUG_ASM
-            if ( op->type == OpWithSeq::INV )
-                std::cout << "    ; INV" << std::endl;
-            else if ( op->type == OpWithSeq::NEG )
-                std::cout << "    ; NEG" << std::endl;
-            else if ( op->type == OpWithSeq::NUMBER )
+            if ( op->type == OpWithSeq::NUMBER )
                 std::cout << "    ; " << op->num / op->den << std::endl;
+            if ( op->type == OpWithSeq::NUMBER_M1 )
+                std::cout << "    ; ~( 1L << 63 )" << std::endl;
             else if ( op->type == OpWithSeq::SYMBOL )
                 std::cout << "    ; " << op->cpp_name_str << std::endl;
             else
@@ -160,12 +159,12 @@ struct OpWithSeqAsmGenerator {
             int room_in_stack = get_free_room_in_stack();
             write_assign_number_to_offset_from_stack_pointer( room_in_stack * T_size, op->num / op->den );
             write_assign_to_reg_from_offset_from_stack_pointer( op->reg, room_in_stack * T_size );
+        } else if ( op->type == OpWithSeq::NUMBER_M1 ) {
+            int room_in_stack = get_free_room_in_stack();
+            write_assign_number_M1_to_offset_from_stack_pointer( room_in_stack * T_size );
+            write_assign_to_reg_from_offset_from_stack_pointer( op->reg, room_in_stack * T_size );
         } else if ( op->type == OpWithSeq::SYMBOL ) {
             th->add_error( "There's a remaining non associated symbol (named '" + std::string( op->cpp_name_str ) + "') in expression.", tok );
-//         } else if ( op->type == OpWithSeq::INV ) {
-//             os << "1/R" << op->children[0]->reg;
-//         } else if ( op->type == OpWithSeq::NEG ) {
-//             os << "-R" << op->children[0]->reg;
         } else if ( op->type == STRING_add_NUM or op->type == STRING_mul_NUM ) {
             unsigned char sse2_op = ( op->type == STRING_add_NUM ? 0x58 : 0x59 );
             for(unsigned i=0;;++i) {
@@ -186,8 +185,7 @@ struct OpWithSeqAsmGenerator {
             }
         } else if ( op->type == STRING_sub_NUM or op->type == STRING_div_NUM ) {
             unsigned char sse2_op = ( op->type == STRING_sub_NUM ? 0x5c : 0x5e );
-            if ( op->children[ 0 ]->reg != op->reg ) // -> not a self_op
-                write_save_op_in_xmm  ( op->reg, op->children[ 0 ] );
+            write_save_op_in_xmm( op->reg, op->children[ 0 ] ); // if necessary
             write_self_sse2_op_xmm( op->reg, op->children[ 1 ], sse2_op );
 //         } else if ( op->type == STRING_select_symbolic_NUM ) {
 //             if ( op->children[1]->nb_simd_terms > 1 ) {
@@ -197,16 +195,19 @@ struct OpWithSeqAsmGenerator {
 //                 os << ")";
 //             } else
 //                 os << op->children[0]->cpp_name_str << "[R" << op->children[1]->reg << "]";
-//         } else {
-//             os << Nstring( op->type );
-//             os << "(";
-//             for(unsigned i=0;i<op->children.size();++i)
-//                 os << ( i ? ",R" : "R" ) << op->children[i]->reg;
-//             os << ")";
         } else if ( op->type == STRING_pow_NUM ) {
             write_pow_instr( op );
         } else if ( op->type == STRING_sqrt_NUM ) {
-            write_self_sse2_op_xmm( op->reg, op->children[ 0 ], 0x51 );
+            write_self_sse2_op_xmm( op->reg, op->children[ 0 ], 0x51 ); // particular case : op->reg does not have to be initialized
+        } else if ( op->type == STRING_heaviside_NUM ) {
+            write_heaviside_or_eqz( op->reg, op, 5 ); // >= 0
+        } else if ( op->type == STRING_eqz_NUM ) {
+            write_heaviside_or_eqz( op->reg, op, 0 ); // == 0
+        } else if ( op->type == STRING_pos_part_NUM ) {
+            write_pos_part( op->reg, op ); // x_+
+        } else if ( op->type == STRING_abs_NUM ) {
+            write_save_op_in_xmm( op->reg, op->children[ 0 ] );
+            write_andsd( op->reg, op->children[ 1 ] );
         } else {
             std::cout << "TODO: " << Nstring( op->type ) << std::endl;
             assert( 0 );
@@ -238,18 +239,105 @@ struct OpWithSeqAsmGenerator {
     SplittedVec<OpWithSeq *,1024,1024> stack;
 private:
     void write_pow_instr( OpWithSeq *op ) {
+        std::cout << "TODO : pow(x,y)... in asm" << std::endl;
         assert( 0 );
-//         if ( op->children[1]->type == OpWithSeq::NUMBER ) {
-//             if ( op->children[1]->num == 1 and op->children[1]->den == 2 ) { // sqrt
-//                 return;
-//             }
-//         }
     }
     
+    void write_heaviside_or_eqz( int reg, OpWithSeq *op, unsigned char cmp_op ) {
+        write_save_op_in_xmm( reg, op->children[ 0 ] );
+        write_cmpsd( reg, op->children[1], cmp_op );
+        write_andsd( reg, op->children[2] );
+    }
+    
+    void write_pos_part( int reg, OpWithSeq *op ) {
+        write_save_op_in_xmm( reg, op->children[ 0 ] );
+        OpWithSeq *ch = op->children[ 1 ];
+        //
+        #ifdef DEBUG_ASM
+            std::cout << "    maxsd   xmm" << reg << ", " << ch->asm_str() << std::endl;
+        #endif
+        os.push_back( 0xf2 );
+        if ( reg >= 8 or ch->reg >= 8 )
+            os.push_back( 0x40 | 4 * ( reg >= 8 ) | ( ch->reg >= 8 ) );
+        os.push_back( 0x0f );
+        os.push_back( 0x5f );
+        if ( ch->reg >= 0 ) {
+            os.push_back( 0xc0 | 8 * ( reg % 8 ) | ( ch->reg % 8 ) );
+        } else {
+            assert( ch->stack >= 0 );
+            os.push_back( 0x84 | 8 * ( reg % 8 ) );
+            os.push_back( 0x24 );
+            *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
+        }
+    }
+    
+    void write_cmpsd( int reg, OpWithSeq *ch, unsigned char cmp_op ) {
+        #ifdef DEBUG_ASM
+            std::cout << "    cmpsd   xmm" << reg << ", " << ch->asm_str() << ", " << int(cmp_op) << std::endl;
+        #endif
+        os.push_back( 0xf2 );
+        if ( reg >= 8 or ch->reg >= 8 )
+            os.push_back( 0x40 | 4 * ( reg >= 8 ) | ( ch->reg >= 8 ) );
+        os.push_back( 0x0f );
+        os.push_back( 0xc2 );
+        if ( ch->reg >= 0 ) {
+            os.push_back( 0xc0 | 8 * ( reg % 8 ) | ( ch->reg % 8 ) );
+        } else {
+            assert( ch->stack >= 0 );
+            os.push_back( 0x84 | 8 * ( reg % 8 ) );
+            os.push_back( 0x24 );
+            *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
+        }
+        os.push_back( cmp_op );
+    }
+    
+    void write_andsd( int reg, OpWithSeq *ch ) {
+        if ( ch->reg < 0 and ch->stack & 1 ) {
+            int n_reg = get_free_reg( NULL, reg );
+            write_save_op_in_xmm( n_reg, ch );
+            ch->reg = n_reg;
+        }
+        
+        //
+        #ifdef DEBUG_ASM
+            std::cout << "    andpd   xmm" << reg << ", " << ch->asm_str() << std::endl;
+        #endif
+        
+        //
+        os.push_back( 0x66 );
+        if ( reg >= 8 or ch->reg >= 8 )
+            os.push_back( 0x40 | 4 * ( reg >= 8 ) | ( ch->reg >= 8 ) );
+        os.push_back( 0x0f );
+        os.push_back( 0x54 );
+        if ( ch->reg >= 0 ) {
+            os.push_back( 0xc0 | 8 * ( reg % 8 ) | ( ch->reg % 8 ) );
+        } else {
+            assert( ch->stack >= 0 );
+            os.push_back( 0x84 | 8 * ( reg % 8 ) );
+            os.push_back( 0x24 );
+            *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
+        }
+    }
+    
+    void write_assign_number_M1_to_offset_from_stack_pointer( int offset_in_stack ) {
+        #ifdef DEBUG_ASM
+            std::cout << "    mov   rax, ~( 1L << 63 )" << std::endl;
+            std::cout << "    mov   [ rsp + " << offset_in_stack << " ], rax" << std::endl;
+        #endif
+        os.push_back( 0x48 );
+        os.push_back( 0xb8 );
+        *reinterpret_cast<long long *>( os.get_room_for( 8 ) ) = ~( 1L << 63 );
+        
+        os.push_back( 0x48 );
+        os.push_back( 0x89 );
+        os.push_back( 0x84 );
+        os.push_back( 0x24 );
+        *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = offset_in_stack;
+    }
     
     void write_assign_number_to_offset_from_stack_pointer( int offset_in_stack, Float64 val ) {
         #ifdef DEBUG_ASM
-            std::cout << "    mov   rax" << ", " << val << std::endl;
+            std::cout << "    mov   rax, " << val << std::endl;
             std::cout << "    mov   [ rsp + " << offset_in_stack << " ], rax" << std::endl;
         #endif
         os.push_back( 0x48 );
@@ -434,6 +522,9 @@ private:
     }
     
     void write_save_op_in_xmm( int reg, OpWithSeq *ch ) {
+        if ( reg == ch->reg )
+            return;
+        //
         if ( ch->reg >= 0 )
             write_copy_xmm_regs( reg, ch->reg );
         else

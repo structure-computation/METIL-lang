@@ -84,9 +84,10 @@ OpWithSeq *AsmWriter::make_seq() {
     }
     
     //
+    asm_simplifications_prep( seq );
     simplifications( seq );
     make_binary_ops( seq );
-    replace_pow_05_by_sqrt( seq );
+    asm_simplifications_post( seq );
     
     //
     return seq;

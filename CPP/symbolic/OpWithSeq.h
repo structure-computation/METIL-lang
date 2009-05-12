@@ -13,6 +13,7 @@ struct OpWithSeq {
     static const int SEQ            = -14; //
     static const int INV            = -20; // 1 / a
     static const int NEG            = -21; // - a
+    static const int NUMBER_M1      = -22; // ~( 1 << 63 ) in a long long word
 
     OpWithSeq( int t );
     OpWithSeq( int method, const char *name, OpWithSeq *ch ); // WRITE_...
@@ -21,6 +22,8 @@ struct OpWithSeq {
     void init_gen();
     
     static OpWithSeq *new_number( const Rationnal &n );
+    static OpWithSeq *new_number( double n );
+    static OpWithSeq *new_number_M1();
     static void clear_number_set();
     
     ~OpWithSeq();
@@ -34,6 +37,8 @@ struct OpWithSeq {
     void graphviz_rec( std::ostream &ss ) const;
     bool has_couple( const OpWithSeq *a, const OpWithSeq *b ) const;
     void remove_parent( OpWithSeq *parent );
+    bool eq_nb( double val ) const { return type == NUMBER and num / den == val; }
+    std::string asm_str() const;
     
     int min_parent_date() const {
         assert( parents.size() );
@@ -63,7 +68,8 @@ void simplifications( OpWithSeq *op );
 void make_binary_ops( OpWithSeq *op );
 void update_cost_access_rec( OpWithSeq *op );
 void update_nb_simd_terms_rec( OpWithSeq *op );
-void replace_pow_05_by_sqrt( OpWithSeq *seq );
+void asm_simplifications_prep( OpWithSeq *seq );
+void asm_simplifications_post( OpWithSeq *seq );
 
 bool same( const OpWithSeq *a, const OpWithSeq *b );
 
@@ -71,6 +77,7 @@ OpWithSeq *new_inv( OpWithSeq *ch );
 OpWithSeq *new_neg( OpWithSeq *ch );
 OpWithSeq *new_add_or_mul( int type, const std::vector<OpWithSeq *> &l );
 OpWithSeq *new_sub_or_div( int type, OpWithSeq *p, OpWithSeq *n );
+OpWithSeq *new_pow( OpWithSeq *m, double e );
 
 void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering );
 

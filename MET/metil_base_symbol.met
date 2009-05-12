@@ -804,3 +804,72 @@ def quadratic_expansion( expr, variables ) when expr.tensor_order <= 0
     return vec
 
 
+#~
+    sa := symbol("sa")
+    sb := symbol("sb")
+    
+    b := Float64( 0 )
+    # c := Float64( 0 )
+    # d := Float64( 0 )
+    
+    pa := Float64( -100 )
+    pb := Float64( 5 )
+    
+    expr := Op( 1 )
+    for i in 0 .. 5
+        expr *= i / 10 - sa
+    info expr
+    # expr = abs( sa )
+    
+    g := AsmWriter()
+    g.add_association( sa, &pa )
+    g.add_association( sb, &pb )
+    
+    g.add( &b, expr, reassign )
+    # g.display_graphviz()
+    
+    code := g.to_code()
+    
+    code.execute()
+    
+    info b, Float64( expr.subs( sa, pa ) )
+    # info c
+    # info d
+~#
+class AsmWriter
+    class Code
+        p := UntypedPtr( NULL )
+        
+        def destroy
+            p.free()
+        
+        def execute
+            exec_untyped_ptr_function( p )
+    
+    aw ~= AsmWriter_
+    
+    def init()
+        aw.init()
+    
+    def add( ptr_res, expr, method )
+        aw.add_expr( UntypedPtr(ptr_res), Op(expr), method )
+        return self
+
+    def add_association( op_symbol, pointer )
+        aw.add_association( op_symbol, UntypedPtr(pointer) )
+        return self
+
+    def to_code
+        return Code( p = aw.to_code() )
+        
+    def graphviz_string()
+        return aw.to_graphviz()
+
+    def display_graphviz( f = ".res" )
+        o := File("$f.dot","w")
+        o <<< "digraph toto {"
+        o <<< graphviz_string()
+        o <<< "}"
+        o.close()
+        
+        system( "dot -Tpdf $f.dot > $f.pdf; okular $f.pdf" )
