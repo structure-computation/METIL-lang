@@ -87,18 +87,6 @@ std::string CodeWriterAlt::invariant( Thread *th, const void *tok, Int32 nb_spac
 
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering ) {
-    if ( seq->ordering >= 0 )
-        return;
-    if ( seq->type == STRING_select_symbolic_NUM ) {
-        make_OpWithSeq_simple_ordering( seq->children[1], ordering );
-    } else {
-        for(unsigned i=0;i<seq->children.size();++i)
-            make_OpWithSeq_simple_ordering( seq->children[i], ordering );
-    }
-    seq->ordering = ordering.size();
-    ordering.push_back( seq );
-}
 
 OpWithSeq *CodeWriterAlt::make_seq() {
     OpWithSeq::clear_number_set();

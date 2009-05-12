@@ -490,6 +490,28 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     primitive_functions.push_back( PrimitiveFunction( "to_graphviz", "if ( return_var ) { std::string s=self.to_graphviz(th,tok); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "invariant", "if ( return_var ) { std::string s=self.invariant(th,tok,a,b); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_").A("Int32").A("VarArgs") );
 }
+    
+void get_primitives_AsmWriter( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
+    primitive_classes.push_back( PrimitiveClass( "AsmWriter_", "AsmWriter" ).avoid_reassign_using_mem_copy() );
+    
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init();" ).M("AsmWriter_",/*modify*/"true") );
+    primitive_functions.push_back( PrimitiveFunction( "init", "self.init( a );" ).A("AsmWriter_").M("AsmWriter_",/*modify*/"true") );
+    primitive_functions.push_back( PrimitiveFunction( "destroy", "destroy( th, tok, self );" ).M("AsmWriter_") );
+    primitive_functions.push_back( PrimitiveFunction( "reassign", "self.reassign( th, tok, a );" ).A("AsmWriter_").M("AsmWriter_",/*modify*/"true") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "add_expr", "self.add_expr( th, tok, a, b, c );" ).M("AsmWriter_",/*modify*/"true").
+        A("UntypedPtr").
+        A("Op").
+        A("Def")
+    );
+    primitive_functions.push_back( PrimitiveFunction( "add_association", "self.add_association( th, tok, a, b );" ).M("AsmWriter_",/*modify*/"true").
+        A("Op").
+        A("UntypedPtr")
+    );
+    
+    primitive_functions.push_back( PrimitiveFunction( "to_code", "ret = self.to_code( th, tok );", /*ret*/"UntypedPtr" ).M("AsmWriter_") );
+    primitive_functions.push_back( PrimitiveFunction( "to_graphviz", "if ( return_var ) { std::string s=self.to_graphviz(th,tok); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("AsmWriter_") );
+}
 
 void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
     primitive_classes.push_back( PrimitiveClass( "Lambda", "Lambda" ) );
@@ -651,6 +673,7 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     get_primitives_Symbol( primitive_classes, primitive_functions );
     get_primitives_CodeWriter( primitive_classes, primitive_functions );
     get_primitives_CodeWriterAlt( primitive_classes, primitive_functions );
+    get_primitives_AsmWriter( primitive_classes, primitive_functions );
     get_primitives_Lambda( primitive_classes, primitive_functions );
     get_primitives_Label( primitive_classes, primitive_functions );
     get_primitives_CompiledFunctionSet( primitive_classes, primitive_functions );

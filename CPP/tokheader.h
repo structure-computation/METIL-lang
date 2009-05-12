@@ -19,6 +19,7 @@
 /**
  */
 struct TokHeader {
+    char md5_ctrl_sum[ 32 ];
     unsigned nb_pos_types_to_rellocate;
     unsigned nb_pos_strings_to_rellocate;
     unsigned nb_strings;

@@ -49,13 +49,30 @@ OpWithSeq::OpWithSeq( int method, const char *name, OpWithSeq *ch ) { // WRITE_.
     add_child( ch );
 }
 
+OpWithSeq::OpWithSeq( int method, void *ptr_res, OpWithSeq *ch ) { // WRITE_...
+    init_gen();
+    switch ( method ) {
+        case STRING_add_NUM :       type = WRITE_ADD;      break;
+        case STRING_init_NUM:       type = WRITE_INIT;     break;
+        case STRING_reassign_NUM:   type = WRITE_REASSIGN; break;
+        case STRING___return___NUM: type = WRITE_RET;      break;
+        default: assert(0);
+    }
+    this->ptr_res = ptr_res;
+    add_child( ch );
+}
+
 void OpWithSeq::init_gen() {
     reg = -1;
+    stack = -1;
     ordering = -1;
     id = 0;
     access_cost = 0;
     nb_simd_terms = 0;
     integer_type = 0;
+    ptr_res = NULL;
+    nb_times_used = 0;
+    ptr_val = NULL;
 }
 
 OpWithSeq::~OpWithSeq() {
@@ -285,6 +302,8 @@ void OpWithSeq::graphviz_rec( std::ostream &os ) const {
         os << "    node" << this << " [label=\"NEG\",color=\"" << color << "\"];\n";
     else if ( type == WRITE_ADD )
         os << "    node" << this << " [label=\"W+\",color=\"" << color << "\"];\n";
+    else if ( type == WRITE_REASSIGN )
+        os << "    node" << this << " [label=\"W\",color=\"" << color << "\"];\n";
     else if ( type == NUMBER )
         os << "    node" << this << " [label=\"" << num / den << "\",color=\"" << color << "\"];\n";
     else if ( type == SYMBOL )
@@ -564,6 +583,60 @@ void simplifications( OpWithSeq *op ) {
     several_div_give_mul_inv( op );
 }
 
+void OpWithSeq::remove_parent( OpWithSeq *parent ) {
+    parents.erase( std::find( parents.begin(), parents.end(), parent ) );
+}
+
+void make_binary_ops_rec( OpWithSeq *op ) {
+    if ( op->id == OpWithSeq::current_id )
+        return;
+    op->id = OpWithSeq::current_id;
+    
+    // 
+    while ( op->children.size() > 2 ) {
+        OpWithSeq *c0 = op->children[ op->children.size() - 2 ];
+        OpWithSeq *c1 = op->children[ op->children.size() - 1 ];
+        c0->remove_parent( op );
+        c1->remove_parent( op );
+        op->children.pop_back();
+        op->children.pop_back();
+        //
+        OpWithSeq *n = new OpWithSeq( op->type );
+        n->add_child( c0 );
+        n->add_child( c1 );
+        op->add_child( n );
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        make_binary_ops_rec( op->children[i] );
+}
+
+void make_binary_ops( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    make_binary_ops_rec( op );
+}
+
+void replace_pow_05_by_sqrt_rec( OpWithSeq *op ) {
+    if ( op->type == STRING_pow_NUM and op->children[1]->type == OpWithSeq::NUMBER ) {
+        if ( op->children[1]->num == 1 and op->children[1]->den == 2 ) {
+            op->type = STRING_sqrt_NUM;
+            op->children[1]->remove_parent( op );
+            op->children.pop_back();
+            return;
+        }
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        replace_pow_05_by_sqrt_rec( op->children[i] );
+}
+
+void replace_pow_05_by_sqrt( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    replace_pow_05_by_sqrt_rec( op );
+}
+
 void update_cost_access_rec( OpWithSeq *op ) {
     if ( op->id == OpWithSeq::current_id )
         return;
@@ -584,6 +657,19 @@ void update_nb_simd_terms_rec( OpWithSeq *op ) {
         update_nb_simd_terms_rec( op->children[i] );
         op->nb_simd_terms = std::max( op->nb_simd_terms, op->children[i]->nb_simd_terms );
     }
+}
+
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering ) {
+    if ( seq->ordering >= 0 )
+        return;
+    if ( seq->type == STRING_select_symbolic_NUM ) {
+        make_OpWithSeq_simple_ordering( seq->children[1], ordering );
+    } else {
+        for(unsigned i=0;i<seq->children.size();++i)
+            make_OpWithSeq_simple_ordering( seq->children[i], ordering );
+    }
+    seq->ordering = ordering.size();
+    ordering.push_back( seq );
 }
 
 std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
@@ -613,3 +699,4 @@ std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
     }
     return os;
 }
+

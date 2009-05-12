@@ -351,6 +351,10 @@ std::string md5_str( const char *s, unsigned si ) {
     return md5_digest_to_string( digest );
 }
 
+std::string md5_str( std::string s ) {
+    return md5_str( &s[0], s.size() );
+}
+
 #endif
 
 
