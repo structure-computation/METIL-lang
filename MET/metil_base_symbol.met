@@ -153,16 +153,15 @@ def tex_string( self ) when self.tensor_order == 1
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 2
+def tex_string( self ) when self.tensor_order == 2
     str := StringStream()
-    str <<< "$\displaystyle\\left[\\begin{array}{$("c"*self.nb_cols)}"
+    str <<< "\\left[\\begin{array}{$("c"*self.nb_cols)}"
     for r in 0 .. self.nb_rows
         for c in 0 .. self.nb_cols
             str << self[r,c].tex_string() <<< "&" * ( c != self.nb_cols-1 )
         str <<< "\\\\" * ( r != self.nb_rows-1 )
-    str <<< "\\end{array}\\right]$"
-    # info str.str
-    launch_and_display_tex_with_str( str, filename, blocking )
+    str <<< "\\end{array}\\right]"
+    return str
 
 # -----------------------------------------------------------------------------------
 ## differenciation ( toto.diff(tata) ) ##
