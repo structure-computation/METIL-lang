@@ -3,7 +3,7 @@
 
 #include "splittedvec.h"
 #include <sys/mman.h>
-// #define DEBUG_ASM
+#define DEBUG_ASM
 
 struct OpWithSeqAsmGenerator {
     enum AsmType {
@@ -108,7 +108,6 @@ struct OpWithSeqAsmGenerator {
         if ( op->type == OpWithSeq::SEQ )
             return;
         
-        
         ++num_instr;
         nb_ops += op->nb_instr();
         
@@ -129,18 +128,21 @@ struct OpWithSeqAsmGenerator {
         }
         if ( op->type == OpWithSeq::WRITE_ADD      ) {
             assert( 0 /*TODO*/ );
+            return;
         }
         if ( op->type == OpWithSeq::WRITE_RET      ) {
             assert( 0 /*TODO*/ );
+            return;
         }
         if ( op->type == OpWithSeq::WRITE_INIT     ) {
             assert( 0 /*TODO*/ );
+            return;
         }
         
         #ifdef DEBUG_ASM
             if ( op->type == OpWithSeq::NUMBER )
                 std::cout << "    ; " << op->num / op->den << std::endl;
-            if ( op->type == OpWithSeq::NUMBER_M1 )
+            else if ( op->type == OpWithSeq::NUMBER_M1 )
                 std::cout << "    ; ~( 1L << 63 )" << std::endl;
             else if ( op->type == OpWithSeq::SYMBOL )
                 std::cout << "    ; " << op->cpp_name_str << std::endl;
@@ -187,14 +189,8 @@ struct OpWithSeqAsmGenerator {
             unsigned char sse2_op = ( op->type == STRING_sub_NUM ? 0x5c : 0x5e );
             write_save_op_in_xmm( op->reg, op->children[ 0 ] ); // if necessary
             write_self_sse2_op_xmm( op->reg, op->children[ 1 ], sse2_op );
-//         } else if ( op->type == STRING_select_symbolic_NUM ) {
-//             if ( op->children[1]->nb_simd_terms > 1 ) {
-//                 os << S << "(";
-//                 for(int i=0;i<op->children[1]->nb_simd_terms;++i)
-//                     os << (i?",":"") << op->children[0]->cpp_name_str << "[R" << op->children[1]->reg << "[" << i << "]]";
-//                 os << ")";
-//             } else
-//                 os << op->children[0]->cpp_name_str << "[R" << op->children[1]->reg << "]";
+        } else if ( op->type == STRING_select_symbolic_NUM ) {
+            write_select_symbolic( op->reg, op );
         } else if ( op->type == STRING_pow_NUM ) {
             write_pow_instr( op );
         } else if ( op->type == STRING_sqrt_NUM ) {
@@ -241,6 +237,35 @@ private:
     void write_pow_instr( OpWithSeq *op ) {
         std::cout << "TODO : pow(x,y)... in asm" << std::endl;
         assert( 0 );
+    }
+    
+    void write_select_symbolic( int reg, OpWithSeq *op ) {
+        assert( op->children[0]->ptr_val );
+        assert( op->children[1]->type == Op::NUMBER );
+        #ifdef DEBUG_ASM
+            std::cout << "    mov   rax, " << op->children[0]->ptr_val << std::endl;
+            if ( op->children[1]->type == Op::NUMBER )
+                std::cout << "    add   rax, " << op->children[1]->val() * T_size << std::endl;
+            std::cout << "    mov   xmm" << reg << ", [ rax ]" << std::endl;
+        #endif
+        os.push_back( 0x48 );
+        os.push_back( 0xb8 );
+        *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = op->children[0]->ptr_val;
+        
+        if ( op->children[1]->type == Op::NUMBER ) {
+            os.push_back( 0x48 );
+            os.push_back( 0x05 );
+            *reinterpret_cast<size_t *>( os.get_room_for( sizeof(size_t) ) ) = size_t(op->children[1]->val()) * T_size;
+        } else {
+            assert( 0 );
+        }
+        
+        os.push_back( 0xf2 );
+        if ( reg >= 8 )
+            os.push_back( 0x44 );
+        os.push_back( 0x0f );
+        os.push_back( 0x10 );
+        os.push_back( 0x00 + 8 * ( reg % 8 ) );
     }
     
     void write_heaviside_or_eqz( int reg, OpWithSeq *op, unsigned char cmp_op ) {

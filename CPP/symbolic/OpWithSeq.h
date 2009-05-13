@@ -79,7 +79,7 @@ OpWithSeq *new_add_or_mul( int type, const std::vector<OpWithSeq *> &l );
 OpWithSeq *new_sub_or_div( int type, OpWithSeq *p, OpWithSeq *n );
 OpWithSeq *new_pow( OpWithSeq *m, double e );
 
-void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering );
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering, bool want_asm = false );
 
 std::ostream &operator<<( std::ostream &os, const OpWithSeq &op );
 

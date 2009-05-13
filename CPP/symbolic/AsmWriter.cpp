@@ -99,7 +99,7 @@ void *AsmWriter::to_code( Thread *th, const void *tok ) {
     
     //
     std::vector<OpWithSeq *> ordering;
-    make_OpWithSeq_simple_ordering( seq, ordering );
+    make_OpWithSeq_simple_ordering( seq, ordering, true );
     
     //
     ++OpWithSeq::current_id;

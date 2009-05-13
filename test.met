@@ -37,9 +37,3 @@
 
 # d1 := DisplayWindow_( 2, fu )
 # d2 := DisplayWindow_( 2, fu )
-a := symbol("a")
-b := symbol("b")
-
-info integration( abs( a - 4 ) + 5 * heaviside( 5 - a ), a, -10, 10 )
-
-

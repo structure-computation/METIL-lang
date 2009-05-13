@@ -57,7 +57,7 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
     prg_found := false
-    prg_list := ["gv","okular","evince"]
+    prg_list := ["okular","gv","evince"]
     for prg in prg_list
         if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
             prg_found = true

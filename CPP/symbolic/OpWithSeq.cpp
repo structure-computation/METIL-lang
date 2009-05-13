@@ -744,14 +744,15 @@ void update_nb_simd_terms_rec( OpWithSeq *op ) {
     }
 }
 
-void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering ) {
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering, bool want_asm ) {
     if ( seq->ordering >= 0 )
         return;
     if ( seq->type == STRING_select_symbolic_NUM ) {
-        make_OpWithSeq_simple_ordering( seq->children[1], ordering );
+        if ( not want_asm )
+           make_OpWithSeq_simple_ordering( seq->children[1], ordering, want_asm );
     } else {
         for(unsigned i=0;i<seq->children.size();++i)
-            make_OpWithSeq_simple_ordering( seq->children[i], ordering );
+            make_OpWithSeq_simple_ordering( seq->children[i], ordering, want_asm );
     }
     seq->ordering = ordering.size();
     ordering.push_back( seq );
