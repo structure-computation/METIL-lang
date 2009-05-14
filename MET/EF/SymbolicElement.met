@@ -13,7 +13,7 @@ class SymbolicElementAncestor
     virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 ) abstract
     virtual def projection_with_normals( normals, point, nb_iterations = 1 )          abstract
     virtual def get_shape_functions                                                   abstract
-    virtual def get_shape_functions                                                   abstract
+    virtual def get_shape_functions_vertex                                            abstract
     virtual def get_name                                                              abstract
     virtual def get_nb_dim                                                            abstract
     virtual def get_nb_nodes_                                                         abstract
@@ -513,4 +513,15 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if node_number_is_a_vertex( i )
                 cpt_vertex_nodes++
         return node_numbers_to_vertex_node_numbers
+        
+    def projection_on_base_pol( expr, p )
+        base := Vec[ Op ]()
+        for order in 0 .. (p+1)
+            for comb in ConstantSumList( sum = order, list_size = nvi )
+                base.push_back( product( var_inter ^ comb ) )
+        c := Vec[ Op, base.size]( function = x => symbol("c[$x]") )
+        pol := dot( c, base )
+        r := integration( ( expr - pol ) ^ 2, false )
+        res := dot( newton_raphson_minimize_iteration( r, c ), base )
+        return res
         
