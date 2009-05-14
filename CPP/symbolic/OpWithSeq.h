@@ -61,6 +61,7 @@ struct OpWithSeq {
     mutable unsigned id;
     static unsigned current_id;
     int integer_type;
+    int nstring_type;
 };
 
 OpWithSeq *make_OpWithSeq_rec( const struct Op *op );

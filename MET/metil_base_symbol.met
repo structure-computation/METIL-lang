@@ -856,7 +856,7 @@ class AsmWriter
         return self
 
     def add_association( op_symbol, pointer )
-        aw.add_association( op_symbol, UntypedPtr(pointer) )
+        aw.add_association( op_symbol, UntypedPtr(pointer), pointer.T )
         return self
 
     def to_code

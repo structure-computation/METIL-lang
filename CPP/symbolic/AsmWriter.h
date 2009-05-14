@@ -19,7 +19,7 @@ struct AsmWriter {
     void reassign( Thread *th, const void *tok, AsmWriter &c );
     
     void add_expr( Thread *th, const void *tok, void *ptr_res, const Ex &expr, Definition &b );
-    void add_association( Thread *th, const void *tok, const Ex &expr, void *ptr_val );
+    void add_association( Thread *th, const void *tok, const Ex &expr, void *ptr_val, Definition &b );
     
     void *to_code( Thread *th, const void *tok );
     std::string to_graphviz( Thread *th, const void *tok );
@@ -39,6 +39,7 @@ struct AsmWriter {
     struct Association {
         Ex ex;
         void *ptr_val;
+        int nstring_type;
     };
     
     SplittedVec<OpToWrite    ,32> op_to_write;

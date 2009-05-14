@@ -504,9 +504,10 @@ void get_primitives_AsmWriter( std::vector<PrimitiveClass> &primitive_classes, s
         A("Op").
         A("Def")
     );
-    primitive_functions.push_back( PrimitiveFunction( "add_association", "self.add_association( th, tok, a, b );" ).M("AsmWriter_",/*modify*/"true").
+    primitive_functions.push_back( PrimitiveFunction( "add_association", "self.add_association( th, tok, a, b, c );" ).M("AsmWriter_",/*modify*/"true").
         A("Op").
-        A("UntypedPtr")
+        A("UntypedPtr").
+        A("Def")
     );
     
     primitive_functions.push_back( PrimitiveFunction( "to_code", "ret = self.to_code( th, tok );", /*ret*/"UntypedPtr" ).M("AsmWriter_") );

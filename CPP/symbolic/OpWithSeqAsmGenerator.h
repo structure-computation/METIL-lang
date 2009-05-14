@@ -3,7 +3,7 @@
 
 #include "splittedvec.h"
 #include <sys/mman.h>
-#define DEBUG_ASM
+// #define DEBUG_ASM
 
 struct OpWithSeqAsmGenerator {
     enum AsmType {
@@ -241,31 +241,69 @@ private:
     
     void write_select_symbolic( int reg, OpWithSeq *op ) {
         assert( op->children[0]->ptr_val );
-        assert( op->children[1]->type == Op::NUMBER );
+        assert( op->children[1]->type == Op::NUMBER or op->children[1]->ptr_val );
         #ifdef DEBUG_ASM
             std::cout << "    mov   rax, " << op->children[0]->ptr_val << std::endl;
-            if ( op->children[1]->type == Op::NUMBER )
+            if ( op->children[1]->type == Op::NUMBER ) {
                 std::cout << "    add   rax, " << op->children[1]->val() * T_size << std::endl;
-            std::cout << "    mov   xmm" << reg << ", [ rax ]" << std::endl;
+                std::cout << "    movsd xmm" << reg << ", [ rax ]" << std::endl;
+            } else {
+                std::cout << "    push  rbx" << std::endl;
+                std::cout << "    mov   rbx, " << op->children[1]->ptr_val << std::endl;
+                std::cout << "    mov   ebx, [ rbx ]" << std::endl;
+                std::cout << "    movsd xmm" << reg << ", [ rax + 8 * rbx ]" << std::endl;
+                std::cout << "    pop   rbx" << std::endl;
+            }
         #endif
+        // mov rax, ...
         os.push_back( 0x48 );
-        os.push_back( 0xb8 );
+        os.push_back( 0xc7 );
+        os.push_back( 0xc0 );
         *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = op->children[0]->ptr_val;
         
         if ( op->children[1]->type == Op::NUMBER ) {
+            // add rax, ...
             os.push_back( 0x48 );
             os.push_back( 0x05 );
             *reinterpret_cast<size_t *>( os.get_room_for( sizeof(size_t) ) ) = size_t(op->children[1]->val()) * T_size;
+            
+            // mov xmm., [ rax ]
+            os.push_back( 0xf2 );
+            if ( reg >= 8 )
+                os.push_back( 0x44 );
+            os.push_back( 0x0f );
+            os.push_back( 0x10 );
+            os.push_back( 0x00 + 8 * ( reg % 8 ) );
         } else {
-            assert( 0 );
+            assert( op->children[1]->ptr_val );
+            assert( op->children[1]->nstring_type == STRING_Int32_NUM );
+            
+            // push rbx
+            os.push_back( 0x53 );
+            
+            // mov rbx, ...
+            os.push_back( 0x48 );
+            os.push_back( 0xc7 );
+            os.push_back( 0xc3 );
+            *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = op->children[1]->ptr_val;
+            
+            // mov ebx, [ rbx ]
+            os.push_back( 0x8b );
+            os.push_back( 0x1b );
+            
+            // mov xmm., [ rax + 8 * rbx ]
+            os.push_back( 0xf2 );
+            if ( reg >= 8 )
+                os.push_back( 0x44 );
+            os.push_back( 0x0f );
+            os.push_back( 0x10 );
+            os.push_back( 0x04 + 8 * ( reg % 8 ) );
+            os.push_back( 0xd8 );
+            
+            // pop rbx
+            os.push_back( 0x5b );
         }
         
-        os.push_back( 0xf2 );
-        if ( reg >= 8 )
-            os.push_back( 0x44 );
-        os.push_back( 0x0f );
-        os.push_back( 0x10 );
-        os.push_back( 0x00 + 8 * ( reg % 8 ) );
     }
     
     void write_heaviside_or_eqz( int reg, OpWithSeq *op, unsigned char cmp_op ) {

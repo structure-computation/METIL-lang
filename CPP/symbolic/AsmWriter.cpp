@@ -43,10 +43,11 @@ void AsmWriter::add_expr( Thread *th, const void *tok, void *ptr_res, const Ex &
     }
 }
 
-void AsmWriter::add_association( Thread *th, const void *tok, const Ex &expr, void *ptr_val ) {
+void AsmWriter::add_association( Thread *th, const void *tok, const Ex &expr, void *ptr_val, Definition &b ) {
     Association *as = associations.new_elem();
     as->ex.init( expr );
     as->ptr_val = ptr_val;
+    as->nstring_type = b.def_data->name.v;
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -79,8 +80,10 @@ OpWithSeq *AsmWriter::make_seq() {
     //
     for(unsigned i=0;i<associations.size();++i) {
         Op *op = associations[i].ex.op;
-        if ( op->op_id == Op::current_op )
-            reinterpret_cast<OpWithSeq *>( op->additional_info )->ptr_val = associations[i].ptr_val;
+        if ( op->op_id == Op::current_op ) {
+            reinterpret_cast<OpWithSeq *>( op->additional_info )->ptr_val      = associations[i].ptr_val;
+            reinterpret_cast<OpWithSeq *>( op->additional_info )->nstring_type = associations[i].nstring_type;
+        }
     }
     
     //

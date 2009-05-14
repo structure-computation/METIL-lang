@@ -504,6 +504,10 @@ void get_primitives_AsmWriter( std::vector<PrimitiveClass> &primitive_classes, s
         A("Op").
         A("Def")
     );
+    primitive_functions.push_back( PrimitiveFunction( "add_association", "self.add_association( th, tok, a, b );" ).M("AsmWriter_",/*modify*/"true").
+        A("Op").
+        A("UntypedPtr")
+    );
     
     primitive_functions.push_back( PrimitiveFunction( "to_code", "ret = self.to_code( th, tok );", /*ret*/"UntypedPtr" ).M("AsmWriter_") );
     primitive_functions.push_back( PrimitiveFunction( "to_graphviz", "if ( return_var ) { std::string s=self.to_graphviz(th,tok); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("AsmWriter_") );
