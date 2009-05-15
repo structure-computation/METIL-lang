@@ -163,6 +163,21 @@ class GenerateMethodForParametricElement[ TE, dim ]
         if dim != nvi + 1
             return Void
         #
+        if dim == 2
+            V := Vec[Op,dim]([
+                - P[1].diff( var_inter[0] ),
+                P[0].diff( var_inter[0] )
+            ])
+            V /= norm_2( V )
+            return V
+        # 
+        if dim == 3
+            V1 := P.diff( var_inter[0] )
+            V2 := P.diff( var_inter[1] )
+            V := Vec[Op]( vect_prod( V1, V2 ) )
+            V /= norm_2( V )
+            return V
+        #
         normal := Vec[Op,dim]( x => symbol("N_$x") )
         normal_eqs := Vec[Op]()
         mat := Mat[ Op, Gen[dim,dim] ]()
