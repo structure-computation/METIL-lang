@@ -57,13 +57,26 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
     prg_found := false
+    
+    #
+    nb := " &" * (not blocking)
+    if system( "okular $filename.eps $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
+    if system( "epstopdf $filename.eps && kpdf $filename.pdf $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
+    if system( "gv $filename.eps $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
     prg_list := ["okular","gv","evince"]
-    for prg in prg_list
-        if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
-            prg_found = true
-            break
-    if not prg_found
-        stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
+    stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
+    # for prg in prg_list
+        # if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
+            # prg_found = true
+            # break
+    # if not prg_found
+        # stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
 
 #~
 ~#
