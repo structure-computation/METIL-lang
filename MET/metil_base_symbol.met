@@ -818,36 +818,36 @@ def quadratic_expansion( expr, variables ) when expr.tensor_order <= 0
 
 
 #~
-    sa := symbol("sa")
-    sb := symbol("sb")
-    
-    b := Float64( 0 )
-    # c := Float64( 0 )
-    # d := Float64( 0 )
-    
-    pa := Float64( -100 )
-    pb := Float64( 5 )
-    
-    expr := Op( 1 )
-    for i in 0 .. 5
-        expr *= i / 10 - sa
-    info expr
-    # expr = abs( sa )
-    
-    g := AsmWriter()
-    g.add_association( sa, &pa )
-    g.add_association( sb, &pb )
-    
-    g.add( &b, expr, reassign )
-    # g.display_graphviz()
-    
-    code := g.to_code()
-    
-    code.execute()
-    
-    info b, Float64( expr.subs( sa, pa ) )
-    # info c
-    # info d
+sa := symbol("sa")
+sb := symbol("sb")
+
+b := Float64( 0 )
+# c := Float64( 0 )
+# d := Float64( 0 )
+
+pa := Float64( -100 )
+pb := Float64( 5 )
+
+expr := Op( 1 )
+for i in 0 .. 5
+    expr *= i / 10 - sa
+info expr
+# expr = abs( sa )
+
+g := AsmWriter()
+g.add_association( sa, &pa )
+g.add_association( sb, &pb )
+
+g.add( &b, expr, reassign )
+# g.display_graphviz()
+
+code := g.to_code()
+
+code.execute()
+
+info b, Float64( expr.subs( sa, pa ) )
+# info c
+# info d
 ~#
 class AsmWriter
     class Code

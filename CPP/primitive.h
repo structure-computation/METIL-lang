@@ -524,6 +524,8 @@ void get_primitives_Lambda( std::vector<PrimitiveClass> &primitive_classes, std:
     
     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Lambda").A("Def") );
     primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).A("Def").A("Lambda") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "equal", "ret = false;", /*res*/"Bool" ).M("Lambda").A("Lambda") );
 }
 
 void get_primitives_Label( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {

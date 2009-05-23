@@ -1,4 +1,5 @@
 import "ParametricElement.met"
+import "mechanical_tensors.met"
 
 #~
 ~#
@@ -8,7 +9,7 @@ class SymbolicElementAncestor
     virtual def div( expr )                                                           abstract
     virtual def var_inter_for_pos( p, nb_iterations = 1 )                             abstract
     virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )                abstract
-    virtual def var_inter_is_inside( vi, tolerance = 0 )                              abstract        
+    virtual def var_inter_is_inside( vi, tolerance = 0 )                              abstract
     virtual def extrusion_with_normals( normals, alpha )                              abstract
     virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 ) abstract
     virtual def projection_with_normals( normals, point, nb_iterations = 1 )          abstract
@@ -430,17 +431,20 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     ~#
     virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
-        return Vec[ Op ](
-            newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true )
-        )
+        if nvi == dim
+            return Vec[ Op ]( newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true ) )
+        return Vec[ Op ]( newton_raphson_minimize_iteration( dot( d, d ), var_inter, assume_matrix_is_factorizable = true ) )
 
     #~
         returns a symbolic function = 1 if position p is inside self
         meaning that p is a vector of size e.dim
     ~#
-    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
+    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0, z_tolerance = 1e-2 )
         vi := var_inter_for_pos( p, nb_iterations )
-        return var_inter_is_inside( vi, tolerance )
+        if nvi == dim
+            return var_inter_is_inside( vi, tolerance )
+        d := p - pos.subs( var_inter, vi )
+        return var_inter_is_inside( vi, tolerance ) * ( dot( d, d ) < z_tolerance ^ 2 * measure ^ ( 2 / nvi ) )
         
     #
     virtual def var_inter_is_inside( vi, tolerance = 0 )

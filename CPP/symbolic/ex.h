@@ -102,8 +102,8 @@ Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, co
 Ex a_posteriori_simplification( const Ex &a );
 Ex add_a_posteriori_simplification( const Ex &a );
 
-void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res );
-void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res );
+void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res, Ex center = 0 );
+void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res, Ex center = 0 );
 
 void quadratic_expansion( Thread *th, const void *tok, const SEX &expressions, const SEX &variables, SEX &res );
 void quadratic_expansion( Thread *th, const void *tok, const VarArgs &expressions, const VarArgs &vars, VarArgs &res );
@@ -150,6 +150,8 @@ Ex root( Thread *th, const void *tok, const Ex &r, int n );
 
 inline Ex sqrt( const Ex &a ) { return pow( a, Rationnal(1,2) ); }
 inline Ex rsqrt( const Ex &a ) { return pow( a, Rationnal(-1,2) ); }
+
+inline Ex sgn( const Ex &a ) { return 2 * heaviside( a ) - 1; }
 
 Ex select_symbolic( const Ex &vec, const Ex &index );
 

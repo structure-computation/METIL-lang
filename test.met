@@ -37,3 +37,23 @@
 
 # d1 := DisplayWindow_( 2, fu )
 # d2 := DisplayWindow_( 2, fu )
+a := symbol("a")
+beg := symbol("beg")
+end := symbol("end")
+cut := symbol("cut")
+# res := integration( heaviside( a - cut ), a, beg, end )
+# info res.subs( [beg end cut], [0 1 0.1] )
+# info res.subs( [beg end cut], [0 1 0.9] )
+# info res.subs( [beg end cut], [1 0 0.1] )
+# info res.subs( [beg end cut], [1 0 0.9] )
+
+info integration( heaviside( a - cut ), a, 0, 1 ).subs( cut, -1.1 )
+
+# info res.subs( [beg end cut], [0, 1, -1.1] )
+# info res.subs( [beg end cut], [1, 0, -1.1] )
+
+# info res.subs( [beg end cut], [0 1 1.1] )
+# info res.subs( [beg end cut], [1 0 1.1] )
+
+
+

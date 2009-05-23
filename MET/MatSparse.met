@@ -380,7 +380,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
 
 
 #
-def chol( m, incomp = false ) when m.is_a_MatSparse
+def chol( m, incomp = false ) when m.is_a_MatSparse pertinence 10
     return CholMatSparse[ m.T, m.br, m.bc, m.nr, m.nc, m.ST, incomp ]( m )
 
 #
