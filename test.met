@@ -41,19 +41,31 @@ a := symbol("a")
 beg := symbol("beg")
 end := symbol("end")
 cut := symbol("cut")
-# res := integration( heaviside( a - cut ), a, beg, end )
-# info res.subs( [beg end cut], [0 1 0.1] )
-# info res.subs( [beg end cut], [0 1 0.9] )
-# info res.subs( [beg end cut], [1 0 0.1] )
-# info res.subs( [beg end cut], [1 0 0.9] )
 
-info integration( heaviside( a - cut ), a, 0, 1 ).subs( cut, -1.1 )
+res := integration( heaviside( a - cut ), a, beg, end )
+info res.subs( [beg end cut], [0 1 0.1] )
+info res.subs( [beg end cut], [0 1 0.9] )
+info res.subs( [beg end cut], [0 1 0] )
+info res.subs( [beg end cut], [0 1 1] )
+info res.subs( [beg end cut], [1 0 0.1] )
+info res.subs( [beg end cut], [1 0 0.9] )
+info res.subs( [beg end cut], [1 0 0] )
+info res.subs( [beg end cut], [1 0 1] )
+# e := integration( heaviside( cut - a ), a, 0, 1 )
+# info e.subs( cut, -1.1 )
+# info e.subs( cut, -0.1 )
+# info e.subs( cut,  0.1 )
+# info e.subs( cut,  0.9 )
+# info e.subs( cut,  1.1 )
 
 # info res.subs( [beg end cut], [0, 1, -1.1] )
 # info res.subs( [beg end cut], [1, 0, -1.1] )
 
 # info res.subs( [beg end cut], [0 1 1.1] )
 # info res.subs( [beg end cut], [1 0 1.1] )
+# info integration( heaviside( a - 0.1 ), a, 0, 1 )
+# import "EF/std_elements.met"
 
-
+# e := SymbolicElement[Triangle]()
+# info e.integration( heaviside( 0.5 - e.var_inter[0] ), false )
 

@@ -2365,8 +2365,9 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             // best L2 fitting of order 7 -> order 1
             Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
             Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
-            cut_pos.push_back( mid - a / ( b + eqz( b ) ) );
-            cut_val.push_back( 1 - eqz( b ) );
+            Ex cp = mid - a / ( b + eqz( b ) );
+            cut_pos.push_back( cp );
+            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - sgn( cp - beg ) * sgn( cp - end ) ) / 2 );
         }
         cut_pos.push_back( end ); cut_val.push_back( 1 );
         
@@ -2379,11 +2380,12 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             for(unsigned num_cut_1=num_cut_0+1;num_cut_1<cut_pos.size();++num_cut_1) {
                 Ex mid_cut = ( cut_pos[ num_cut_1 ] + cut_pos[ num_cut_0 ] ) / 2;
                 Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
-                //
-                Ex nothing_between = 1;
-                for(unsigned b=0;b<cut_pos.size();++b)
+                // 
+                Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
+                for(unsigned b=1;b+1<cut_pos.size();++b)
                     if ( b != num_cut_0 and b != num_cut_1 )
-                        nothing_between = nothing_between * ( 1 + sgn( cut_pos[ num_cut_0 ] - cut_pos[ b ] ) * sgn( cut_pos[ num_cut_1 ] - cut_pos[ b ] ) ) / 2;
+                        valid = valid * ( 1 + sgn( cut_pos[ b ] - cut_pos[ num_cut_0 ] ) * sgn( cut_pos[ b ] - cut_pos[ num_cut_1 ] ) ) / 2;
+                        
                 //
                 SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
                 //
@@ -2392,14 +2394,14 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
                         pow( off_cut, Ex( Rationnal( i + 1 ) ) )
                     ) * Rationnal( 1, i + 1 );
-                std::cout << nothing_between << " ; " << cut_pos[num_cut_0] << " " << cut_pos[num_cut_1] << " " << tmp << std::endl;
-                res += tmp * cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ] * nothing_between;
+                // std::cout << valid << " ; " << cut_pos[num_cut_0] << " " << cut_pos[num_cut_1] << " " << tmp << " " << cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ] << std::endl;
+                res += tmp * valid;
             }
         }
         return res;
     }
     
-    // polynomial_expansion
+    // else -> simple polynomial_expansion
     polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
     
     //
