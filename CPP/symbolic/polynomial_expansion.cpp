@@ -213,11 +213,12 @@ struct PolynomialExpansion {
     SplittedVec<Ex,2048,2048,true> tmp_vec;
 };
 
-void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res ) {
+void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, const Ex &var, int order, SEX &res, Ex center ) {
     PolynomialExpansion pe( th, tok, order );
     //
     Ex *r = pe.tmp_vec.get_room_for( order + 1 );
     var.op->additional_info = reinterpret_cast<Op *>( r );
+    r[0] = center;
     r[1] = pe.one;
     var.op->op_id = ++Op::current_op;
     //
@@ -231,14 +232,14 @@ void polynomial_expansion( Thread *th, const void *tok, const SEX &expressions, 
             res[c] = reinterpret_cast<Ex *>( expressions[n].op->additional_info )[i].op;
 }
 
-void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res ) {
+void polynomial_expansion( Thread *th, const void *tok, const VarArgs &expressions, const Ex &var, int order, VarArgs &res, Ex center ) {
     assert( res.nb_uargs() >= ( order + 1 ) * expressions.nb_uargs() );
     SEX sex_expressions;
     for(unsigned i=0;i<expressions.nb_uargs();++i)
         sex_expressions.push_back( *reinterpret_cast<Ex *>(expressions.uarg(i)->data) );
     //
     SEX sex_res; sex_res.get_room_for( res.nb_uargs() );
-    polynomial_expansion( th, tok, sex_expressions, var, order, sex_res );
+    polynomial_expansion( th, tok, sex_expressions, var, order, sex_res, center );
     for(unsigned i=0;i<res.nb_uargs();++i)
         *reinterpret_cast<Ex *>(res.uarg(i)->data) = sex_res[ i ];
 }

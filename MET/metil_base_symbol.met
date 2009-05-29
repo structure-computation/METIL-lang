@@ -19,7 +19,7 @@ def display_graphviz( self, lst )
     f <<< "}"
     f.close()
     
-    system( "dot -Tpdf res.dot > res.eps; okular res.pdf" )
+    system( "dot -Tpdf res.dot > res.pdf; okular res.pdf" )
 
 #~ 
     display symbolic graph of variable v
@@ -57,13 +57,26 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
     prg_found := false
-    prg_list := ["okular","evince","gv"]
-    for prg in prg_list
-        if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
-            prg_found = true
-            break
-    if not prg_found
-        stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
+    
+    #
+    nb := " &" * (not blocking)
+    if system( "okular $filename.eps $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
+    if system( "epstopdf $filename.eps && kpdf $filename.pdf $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
+    if system( "gv $filename.eps $nb" ) == 0 #  > /dev/null 2> /dev/null
+        return none
+    #
+    prg_list := ["okular","gv","evince"]
+    stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
+    # for prg in prg_list
+        # if system( "$prg $filename.eps" + " &" * (not blocking) ) == 0 #  > /dev/null 2> /dev/null
+            # prg_found = true
+            # break
+    # if not prg_found
+        # stderr <<< "Pb to display a .eps file (file was $filename.eps and $prg_list have been tested)."
 
 #~
 ~#
@@ -142,27 +155,26 @@ def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vec
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 1
+def tex_string( self ) when self.tensor_order == 1
     str := StringStream()
-    str <<< "$\displaystyle\\left[\\begin{array}{c}"
+    str <<< "\\left[\\begin{array}{c}"
     for i in self.values
         str << i.tex_string() <<< "\\\\"
-    str <<< "\\end{array}\\right]$"
-    launch_and_display_tex_with_str( str, filename, blocking )
+    str <<< "\\end{array}\\right]"
+    return str
 
 ## 
     display symbolic formual of variable v
 ##
-def display_tex( self, filename="tmp", blocking = false ) when self.tensor_order == 2
+def tex_string( self ) when self.tensor_order == 2
     str := StringStream()
-    str <<< "$\displaystyle\\left[\\begin{array}{$("c"*self.nb_cols)}"
+    str <<< "\\left[\\begin{array}{$("c"*self.nb_cols)}"
     for r in 0 .. self.nb_rows
         for c in 0 .. self.nb_cols
             str << self[r,c].tex_string() <<< "&" * ( c != self.nb_cols-1 )
         str <<< "\\\\" * ( r != self.nb_rows-1 )
-    str <<< "\\end{array}\\right]$"
-    # info str.str
-    launch_and_display_tex_with_str( str, filename, blocking )
+    str <<< "\\end{array}\\right]"
+    return str
 
 # -----------------------------------------------------------------------------------
 ## differenciation ( toto.diff(tata) ) ##
@@ -805,3 +817,72 @@ def quadratic_expansion( expr, variables ) when expr.tensor_order <= 0
     return vec
 
 
+#~
+sa := symbol("sa")
+sb := symbol("sb")
+
+b := Float64( 0 )
+# c := Float64( 0 )
+# d := Float64( 0 )
+
+pa := Float64( -100 )
+pb := Float64( 5 )
+
+expr := Op( 1 )
+for i in 0 .. 5
+    expr *= i / 10 - sa
+info expr
+# expr = abs( sa )
+
+g := AsmWriter()
+g.add_association( sa, &pa )
+g.add_association( sb, &pb )
+
+g.add( &b, expr, reassign )
+# g.display_graphviz()
+
+code := g.to_code()
+
+code.execute()
+
+info b, Float64( expr.subs( sa, pa ) )
+# info c
+# info d
+~#
+class AsmWriter
+    class Code
+        p := UntypedPtr( NULL )
+        
+        def destroy
+            p.free()
+        
+        def execute
+            exec_untyped_ptr_function( p )
+    
+    aw ~= AsmWriter_
+    
+    def init()
+        aw.init()
+    
+    def add( ptr_res, expr, method )
+        aw.add_expr( UntypedPtr(ptr_res), Op(expr), method )
+        return self
+
+    def add_association( op_symbol, pointer )
+        aw.add_association( op_symbol, UntypedPtr(pointer), pointer.T )
+        return self
+
+    def to_code
+        return Code( p = aw.to_code() )
+        
+    def graphviz_string()
+        return aw.to_graphviz()
+
+    def display_graphviz( f = ".res" )
+        o := File("$f.dot","w")
+        o <<< "digraph toto {"
+        o <<< graphviz_string()
+        o <<< "}"
+        o.close()
+        
+        system( "dot -Tpdf $f.dot > $f.pdf; okular $f.pdf" )

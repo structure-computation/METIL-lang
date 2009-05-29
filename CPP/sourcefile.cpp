@@ -97,8 +97,14 @@ void SourceFile::get_binary_data(ErrorList *error_list,const InterpreterBehavior
             free( tok_data );
             tok_data = NULL;
         }
-        else
-            tok_data->rellocate();
+        else {
+            if ( strncmp( tok_data->md5_ctrl_sum, USUAL_STRINGS_MD5, 32 ) == 0 )
+                tok_data->rellocate();
+            else {
+                std::cout << "!= md5" << std::endl;
+                tok_data = NULL;
+            }
+        }
         
         if ( f )
             fclose( f );

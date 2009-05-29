@@ -2199,7 +2199,7 @@ Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansio
     return res;
 }
 
-Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+Ex integration_( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
     if ( same_op( beg.op, end.op ) )
         return Ex( 0 );
         
@@ -2284,6 +2284,132 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     return res; 
 }
 
+SEX subs( Thread *th, const void *tok, const SEX &v, const Ex &from, const Ex &to, Int32 inc = 1 ) {
+    SEX res;
+    //
+    ++Op::current_op;
+    from.op->op_id = Op::current_op;
+    from.op->additional_info = to.op;
+    for(unsigned i=0;i<v.size(); i += inc ) {
+        SubsRec<> sr( th, tok, v[i] );
+        res.push_back( v[i].op->additional_info );
+    }
+    return res;
+}
 
+Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+    if ( same_op( beg.op, end.op ) )
+        return Ex( 0 );
 
+    // add interval assumptions
+    if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
+        Ex old_var = var;
+        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
+        if ( beg.known_at_compile_time() )
+            var.set_beg_value( beg.value(), true );
+        if ( end.known_at_compile_time() )
+            var.set_end_value( end.value(), true );
+        expr = expr.subs( th, tok, old_var, var );
+    }
+    
+    //
+    Ex mid = ( beg + end ) / 2;
+    Ex off = ( end - beg ) / 2;
+    
+    // degree of polynomial_expansion
+    Int32 pd = expr.poly_deg( var );
+    Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
+    SEX expressions, taylor_expansion;
+    expressions.push_back( expr );
+    taylor_expansion.get_room_for( deg_poly + 1 );
+    
+    // look up for discontinuities
+    SimpleVector<Op *> discontinuities_;
+    expr.op->find_discontinuities( var.op, discontinuities_ );
+    if ( discontinuities_.size() ) {
+        SEX discontinuities;
+        for(unsigned i=0;i<discontinuities_.size();++i) {
+            Ex d( discontinuities_[i] );
+            for(unsigned j=0;;++j) {
+                if ( j == discontinuities.size() ) {
+                    discontinuities.push_back( d );
+                    break;
+                }
+                if ( same_ex( - d, discontinuities[ j ] ) )
+                    break;
+            }
+        }
+        
+        // cuts -> linearization of all f(a) in H( f( a ) )
+        const int nb_terms_taylor_ch = 7;
+        SEX ch_taylor_expansion;
+        ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
+        polynomial_expansion( th, tok, discontinuities, var, nb_terms_taylor_ch - 1, ch_taylor_expansion, mid );
+        
+        SEX cut_pos, cut_val;
+        cut_pos.push_back( beg ); cut_val.push_back( 1 );
+        for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
+            /*
+                a := symbol("a")
+                c := Vec[Op,7]( function = x => symbol("c[$x]") )
+                v := Vec[Op,2]( function = x => symbol("v[$x]") )
+                p := dot( c, a ^ (0...) )
+                q := dot( v, a ^ (0...) )
+                del := symbol("del")
+                r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+                for i in c
+                    info i, r[0].diff(i)
+                for i in c
+                    info i, r[1].diff(i)
+            */
+            // best L2 fitting of order 7 -> order 1
+            Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
+            Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
+            Ex cp = mid - a / ( b + eqz( b ) );
+            cut_pos.push_back( cp );
+            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - sgn( cp - beg ) * sgn( cp - end ) ) / 2 );
+        }
+        cut_pos.push_back( end ); cut_val.push_back( 1 );
+        
+        // polynomial_expansion
+        polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, var );
+        
+        //
+        Ex res;
+        for(unsigned num_cut_0=0;num_cut_0<cut_pos.size();++num_cut_0) {
+            for(unsigned num_cut_1=num_cut_0+1;num_cut_1<cut_pos.size();++num_cut_1) {
+                Ex mid_cut = ( cut_pos[ num_cut_1 ] + cut_pos[ num_cut_0 ] ) / 2;
+                Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
+                // 
+                Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
+                for(unsigned b=1;b+1<cut_pos.size();++b)
+                    if ( b != num_cut_0 and b != num_cut_1 )
+                        valid = valid * ( 1 + sgn( cut_pos[ b ] - cut_pos[ num_cut_0 ] ) * sgn( cut_pos[ b ] - cut_pos[ num_cut_1 ] ) ) / 2;
+                        
+                //
+                SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
+                //
+                Ex tmp;
+                for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+                    tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
+                        pow( off_cut, Ex( Rationnal( i + 1 ) ) )
+                    ) * Rationnal( 1, i + 1 );
+                // std::cout << valid << " ; " << cut_pos[num_cut_0] << " " << cut_pos[num_cut_1] << " " << tmp << " " << cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ] << std::endl;
+                res += tmp * valid;
+            }
+        }
+        return res;
+    }
+    
+    // else -> simple polynomial_expansion
+    polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+    
+    //
+    Ex res( 0 );
+    for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+        res = res + 2 * taylor_expansion[i] * (
+            pow( off, Ex( Rationnal( i + 1 ) ) )
+        ) * Rationnal( 1, i + 1 );
+    return res; 
+}
 

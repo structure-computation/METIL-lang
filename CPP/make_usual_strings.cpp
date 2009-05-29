@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include "hashstring.h"
+#include "md5.h"
 #include "typechar.h"
 #include "splittedvec.h"
 #include "primitive.h"
@@ -201,6 +202,12 @@ struct UsualStrings {
         i->hash_val = hash_val;
     }
     
+    std::string to_contiguous_string() const {
+        std::string res; res.resize( data.size() );
+        data.copy_binary_data_to( &res[0] );
+        return res;
+    }
+    
     static const unsigned hash_size = 1024;
     SplittedVec<ResString,128> usual_strings;
     SplittedVec<char,1024,2048> data;
@@ -294,7 +301,7 @@ int main(int argc,char **argv) {
         "__property_call__","__property_call_with_return__","__property_call_partial_inst__","__property_call_partial_inst_with_return__",
         "make_little_heterogeneous_array","size","apply_functionnal","apply_functionnal_with_return","_self","apply","true","false",
         "_0","_1","_2","_3","_4","_5","_6","_7","_8","_9","_10","_11","_12","_13","_14","_15","_16","_17","_18","_19",
-        "cant_be_converted_to_bool","0_inheritance",NULL };
+        "cant_be_converted_to_bool","0_inheritance","sqrt",NULL };
     for(const char **a = additional_usual_strings; *a; ++a)
         usual_strings.append( *a );
     
@@ -341,6 +348,8 @@ int main(int argc,char **argv) {
     fh << "    return tab[num_op];\n";
     fh << "}\n";
 
+    fh << "#define USUAL_STRINGS_MD5 \"" << md5_str( usual_strings.to_contiguous_string() ) << "\"\n";
+    
     fh << "#endif // USUAL_STRINGS_H\n";
 
     // fc

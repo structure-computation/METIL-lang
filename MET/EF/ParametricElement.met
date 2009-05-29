@@ -18,21 +18,26 @@ class GenerateMethodForParametricElement[ TE, dim ]
             nvi := 0
             if nb_nodes
                 nvi = TE::points[0].size
+            nb_vertex_nodes := 0
+            for num_node in 0 .. nb_nodes
+                if TE::node_number_is_a_vertex( num_node )
+                    nb_vertex_nodes++
             
             #
             f := File( filename, "w" )
             # basic constants
             f <<< "static const nvi := $nvi"
             f <<< "static const nb_nodes := $nb_nodes"
+            f <<< "static const nb_vertex_nodes := $nb_vertex_nodes"
         
             # symbols
             var_inter := Vec[ Op, nvi      ]( function = symbol( "var_inter[$_0]", greek_letter(6+_0) ) )
             val       := Vec[ Op, nb_nodes ]( function = symbol( "val[$_0]"      , "N_{$_0}"          ) )
+            val_vertex := Vec[ Op, nb_vertex_nodes ]( function = symbol( "val_vertex[$_0]"      , "N_{$_0}" ) )
             pos_nodes := Vec[ Vec[ Op, dim ], nb_nodes ]()
             for num_node in 0 .. nb_nodes
                 for d in 0 .. dim
                     pos_nodes[num_node][d] = symbol( "pos_nodes[$num_node][$d]", "P_{$num_node}^{$d)}" )
-            
             
             # center_of_var_inter
             cvi := var_inter.map( self.integration( _0, var_inter, 1 ) / self.integration( 1, var_inter, 1 ) )
@@ -41,11 +46,18 @@ class GenerateMethodForParametricElement[ TE, dim ]
             # find shape functions
             base            := Vec[ Op ]()
             shape_functions := Vec[ Op, nb_nodes ]()
+            shape_functions_vertex := Vec[ Op, nb_vertex_nodes ]()
             for order in 0...
                 for comb in ConstantSumList( sum = order, list_size = nvi )
                     base.push_back( product( var_inter ^ comb ) )
                 if base.size >= nb_nodes
                     if construct_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, val, shape_functions, base )
+                        break
+            for order in 0...
+                for comb in ConstantSumList( sum = order, list_size = nvi )
+                    base.push_back( product( var_inter ^ comb ) )
+                if base.size >= nb_nodes
+                    if construct_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, val_vertex, shape_functions_vertex, base )
                         break
             
             # interpolation
@@ -58,16 +70,26 @@ class GenerateMethodForParametricElement[ TE, dim ]
             else
                 f << "    return " <<< interp
             
+            # interpolation_vertex
+            f <<< "#"
+            f <<< "def interpolation_vertex( var_inter, val_vertex )"
+            interp_vertex := dot( shape_functions_vertex, val_vertex )
+            if assumed( interp_vertex == 0 )
+                f <<< "    if val_vertex.tensor_order==1 and val_vertex.size  return val_vertex[ 0 ]"
+                f <<< "    return 0"
+            else
+                f << "    return " <<< interp_vertex
+            
             # pos
             P := dot( shape_functions, pos_nodes )
             
             # interpolation variables from children ones
-            # class CH
-                # ce := MultiPtr()
-            children := Vec[ SplittedVec[ Pair[MultiPtr,Vec[Vec[Rationnal,nvi]]], 4 ], nvi + 1 ]()
-            get_children_rec_( children, 0, TE, TE::points, nvi )
-            for p in TE::points
-                children[ nvi ].push_back( &NodalElement, [ p ] )
+            class CE[ nvi ]
+                first := MultiPtr()
+                second := Vec[Vec[Rationnal,nvi]]()
+                node_nb := Vec[Int32]()
+            children := Vec[ SplittedVec[ CE[ nvi ], 4 ], nvi + 1 ]()
+            get_children_rec_( children, 0, TE, TE::points, nvi, 0..TE::points.size )
             f <<< "#"
             f <<< "def nb_children( sub_nvi ) when sub_nvi==0"
             f <<< "    return 1"
@@ -75,6 +97,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f <<< "    return child_var_inter"
             f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==0"
             f <<< "    return $TE"
+            f <<< "def node_number_child( sub_nvi, num_child ) when sub_nvi==0"
+            f <<< "    return 0 .. $nb_nodes"
             for n in 1 .. nvi + 1
                 f <<< "#"
                 f <<< "def nb_children( sub_nvi ) when sub_nvi==$n"
@@ -87,6 +111,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
                     f <<< "    return [$(join(ch_P,","))]"
                     f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
                     f <<< "    return $(@ch.first)"
+                    f <<< "def node_number_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
+                    f <<< "    return [$(join(ch.node_nb,","))]"
             
             # normal
             normal := make_normal( P, var_inter )
@@ -136,6 +162,21 @@ class GenerateMethodForParametricElement[ TE, dim ]
         nvi := var_inter.size
         if dim != nvi + 1
             return Void
+        #
+        if dim == 2
+            V := Vec[Op,dim]([
+                - P[1].diff( var_inter[0] ),
+                P[0].diff( var_inter[0] )
+            ])
+            V /= norm_2( V )
+            return V
+        # 
+        if dim == 3
+            V1 := P.diff( var_inter[0] )
+            V2 := P.diff( var_inter[1] )
+            V := Vec[Op]( vect_prod( V1, V2 ) )
+            V /= norm_2( V )
+            return V
         #
         normal := Vec[Op,dim]( x => symbol("N_$x") )
         normal_eqs := Vec[Op]()
@@ -211,6 +252,29 @@ class GenerateMethodForParametricElement[ TE, dim ]
             shape_functions[ n ] = shape_function
         return assumed( sum_objective < 1e-6 )
         
+    #
+    def construct_shape_function_vertex_using_current_base_( nb_nodes, pos_nodes, var_inter, val, shape_functions_vertex, base )
+        if not var_inter.size
+            return true
+        # 
+        sum_objective := Op( 0 )
+        bs := base.size
+        l := 0
+        for n in 0 .. nb_nodes
+            if TE::node_number_is_a_vertex( n )
+                shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+                shape_function := dot( shape_coeffs, base )
+                #
+                objective := Op( 0 )
+                for m in 0 .. nb_nodes
+                    if TE::node_number_is_a_vertex( m )
+                        objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+                sol := newton_raphson_minimize_iteration( objective, shape_coeffs )
+                shape_function = shape_function.subs( shape_coeffs, sol )
+                sum_objective += abs( objective.subs( shape_coeffs, sol ) )
+                shape_functions_vertex[ l++ ] = shape_function
+        return assumed( sum_objective < 1e-6 )
+        
         #
         # bs := base.size
         # shape_coeffs := Vec[ Vec[Op,bs], nb_nodes ]()
@@ -246,14 +310,14 @@ class GenerateMethodForParametricElement[ TE, dim ]
         # return assumed( objective.subs( shape_coeffs_flat, sol ) < 1e-6 )
 
     #
-    def get_children_rec_( children, sub_nvi, CE, po, nvi )
-        if sub_nvi < nvi
+    def get_children_rec_( children, sub_nvi, CE, po, nvi, node_nb )
+        if sub_nvi <= nvi
             for c in children[ sub_nvi ]
                 if @c.first == CE and c.second == po
                     return none
-            children[ sub_nvi ].push_back( &CE, po )
+            children[ sub_nvi ].push_back( first = &CE, second = po, node_nb = node_nb )
             for cce, cpo in CE::children
-                get_children_rec_( children, sub_nvi + 1, cce, po[cpo], nvi )
+                get_children_rec_( children, sub_nvi + 1, cce, po[cpo], nvi, node_nb[cpo] )
 
 #
 class ParametricElement[ TE, dim = Int32( TE::points[0].size ) ]

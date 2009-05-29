@@ -1,4 +1,5 @@
 import "ParametricElement.met"
+import "mechanical_tensors.met"
 
 #~
 ~#
@@ -8,11 +9,12 @@ class SymbolicElementAncestor
     virtual def div( expr )                                                           abstract
     virtual def var_inter_for_pos( p, nb_iterations = 1 )                             abstract
     virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )                abstract
-    virtual def var_inter_is_inside( vi, tolerance = 0 )                              abstract        
+    virtual def var_inter_is_inside( vi, tolerance = 0 )                              abstract
     virtual def extrusion_with_normals( normals, alpha )                              abstract
     virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 ) abstract
     virtual def projection_with_normals( normals, point, nb_iterations = 1 )          abstract
     virtual def get_shape_functions                                                   abstract
+    virtual def get_shape_functions_vertex                                            abstract
     virtual def get_name                                                              abstract
     virtual def get_nb_dim                                                            abstract
     virtual def get_nb_nodes_                                                         abstract
@@ -26,6 +28,7 @@ class SymbolicElementAncestor
 class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAncestor
     static const pe       := ParametricElement[ TE, dim ]()
     static const nb_nodes := pe.nb_nodes
+    static const nb_vertex_nodes := pe.nb_vertex_nodes
     static const nvi      := pe.nvi # nb interpolation variables
     
     pos_nodes := Vec[ Vec[ Op, dim ], nb_nodes ]()
@@ -39,6 +42,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     num_child        := -1 # if self is a child elem
     sub_nvi          := -1 # if self is a child elem
     tex_symbol_pos   := ""
+    node_numbers_to_node_numbers_in_parent_cpp := Vec[Int32]()
     
     # interval for integration
     def get_interval_var_inter
@@ -81,15 +85,18 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     virtual def children( sub_nvi )
         if sub_nvi > nvi
             return []
-        if _children[ sub_nvi ].size == 0
-            if sub_nvi
-                for num_child in 0 .. pe.nb_children( sub_nvi )
-                    ns := new SymbolicElement[ pe.type_child( sub_nvi, num_child ), dim ]( name_elem )
+        if _children[ 0 ].size == 0
+            _children[ 0 ] = [ this ]
+            for local_sub_nvi in 1 .. nvi + 1
+                for num_child in 0 .. pe.nb_children( local_sub_nvi )
+                    TC := pe.type_child( local_sub_nvi, num_child )
+                    ns := new SymbolicElement[ TC, dim ](
+                        name_elem, 
+                        node_numbers_to_node_numbers_in_parent_cpp = node_numbers_to_node_numbers_in_parent_cpp[ pe.node_number_child( local_sub_nvi, num_child ) ]
+                    )
                     ns->num_child = num_child
-                    ns->sub_nvi   = sub_nvi
-                    _children[ sub_nvi ].push_back( ns )
-            else
-                _children[ 0 ] = [ this ]
+                    ns->sub_nvi   = local_sub_nvi
+                    _children[ local_sub_nvi ].push_back( ns )
         return _children[ sub_nvi ]
         
     #
@@ -98,13 +105,14 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return symbol( "$name_elem.node($num_node)->pos[$d]", tex_symbol_pos + "_{$num_node}^{$(letters[d])}" )
         
     #
-    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P" )
+    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P", node_numbers_to_node_numbers_in_parent_cpp = range(nb_nodes).map( TE::corr_cpp ) )
         init_using_default_values( self )
         self.tex_symbol_pos = tex_symbol_pos
         self.name_elem = name_elem
+        self.node_numbers_to_node_numbers_in_parent_cpp = node_numbers_to_node_numbers_in_parent_cpp[ 0 .. nb_nodes ]
         for num_node in 0 .. nb_nodes
             for d in 0 .. dim
-                pos_nodes[num_node][d] = pos_symbol_function( num_node, d )
+                pos_nodes[num_node][d] = pos_symbol_function( node_numbers_to_node_numbers_in_parent_cpp[ num_node ], d )
         #
         var_inter.init( x => symbol("var_inter[$x]",greek_letter(6+x)) )
         
@@ -114,6 +122,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return pe.interpolation( var_inter, pos_nodes )
     
     def interpolation( val_on_nodes ) return pe.interpolation( var_inter, val_on_nodes )
+    def interpolation_vertex( val_on_vertex_nodes ) return pe.interpolation_vertex( var_inter, val_on_vertex_nodes )
     def get_normal                    return pe.normal( var_inter, pos_nodes )
     def get_measure                   return pe.measure( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
@@ -236,7 +245,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 if name.type != String
                     s = name( i )
                 else
-                    s = symbol("$name_elem.node($i)->$name","$name^{N$i}") # $name_elem.ind[$i].index
+                    s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
             return pe.interpolation( var_inter, vec )
@@ -246,7 +255,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             for i in 0 .. nb_nodes
                 for j in 0 .. d
                     s := Op()
-                    s = symbol("$name_elem.node($i)->$name[$j]","$name^{N$i}_{$j}") # $name_elem.ind[$i].index
+                    s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
                     sym.push_back( s )
                     vec[i][j] = s
             return Vec[Op,d]( pe.interpolation( var_inter, vec ) )
@@ -259,7 +268,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                         if symm and k > j
                             continue
                         s := Op()
-                        s = symbol("$name_elem.node($i)->$name($j,$k)","$name^{N$i}_{$j,$k}") # $name_elem.ind[$i].index
+                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
                         sym.push_back( s )
                         mat[i][j,k] = s
                 if symm
@@ -267,6 +276,61 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                         for k in j+1 .. nb_dim[1]
                             mat[i][j,k] = mat[i][k,j]
             return TR( pe.interpolation( var_inter, mat ) )
+        assert( 0, "TODO" )
+    
+     # helper function -> give a new "field" based on "canonical" interpolation
+    def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type == "vertex_nodal"
+        nb_vertex_nodes := 0
+        for i in 0.. nb_nodes
+            if node_number_is_a_vertex( i )
+                nb_vertex_nodes++
+        if nb_dim.size == 0
+            vec := Vec[ Op, nb_vertex_nodes ]()
+            l := 0
+            for i in 0 .. nb_nodes
+                if node_number_is_a_vertex( i )
+                    s := Op()
+                    if name.type != String
+                        s = name( i )
+                    else
+                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
+                    sym.push_back( s )
+                    vec[l] = s
+                    l++
+            return pe.interpolation_vertex( var_inter, vec )
+        if nb_dim.size == 1
+            d := nb_dim[0]
+            vec := Vec[ Vec[Op,d], nb_vertex_nodes ]()
+            l := 0
+            for i in 0 .. nb_nodes
+                if node_number_is_a_vertex( i )
+                    for j in 0 .. d
+                        s := Op()
+                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
+                        sym.push_back( s )
+                        vec[l][j] = s
+                    l++
+            return Vec[Op,d]( pe.interpolation_vertex( var_inter, vec ) )
+        if nb_dim.size == 2
+            TR := [ Mat[Op,Gen[nb_dim[0],nb_dim[1]]], Mat[Op,Sym[nb_dim[0]]] ][ symm ]
+            mat := Vec[ TR, nb_vertex_nodes ]()
+            l := 0
+            for i in 0 .. nb_nodes
+                if node_number_is_a_vertex( i )
+                    for j in 0 .. nb_dim[0]
+                        for k in 0 .. nb_dim[1]
+                            if symm and k > j
+                                continue
+                            s := Op()
+                            s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
+                            sym.push_back( s )
+                            mat[l][j,k] = s
+                    if symm
+                        for j in 0 .. nb_dim[0]
+                            for k in j+1 .. nb_dim[1]
+                                mat[l][j,k] = mat[l][k,j]
+                    l++
+            return TR( pe.interpolation_vertex( var_inter, mat ) )
         assert( 0, "TODO" )
     
     # helper function -> give a new "field" based on "canonical" interpolation
@@ -318,9 +382,9 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             for ind, val in indices_and_values_of( val_on_nodes[ num_node ] )
                 if ind.size
                     j_ind := join( ind, "," )
-                    val = symbol( "$met_name[$num_node]($j_ind)", "$(tex_name)_{$j_ind}^{$num_node}" )
+                    val = symbol( "$met_name[$(node_numbers_to_node_numbers_in_parent_cpp[num_node])]($j_ind)", "$(tex_name)_{$j_ind}^{$num_node}" )
                 else
-                    val = symbol( "$met_name[$num_node]", "$(tex_name)^{$num_node}" )
+                    val = symbol( "$met_name[$(node_numbers_to_node_numbers_in_parent_cpp[num_node])]", "$(tex_name)^{$(node_numbers_to_node_numbers_in_parent_cpp[num_node])}" )
                 res.sym.push_back( val )
         # interpolation
         res.val = interpolation( val_on_nodes )
@@ -367,17 +431,20 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     ~#
     virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
-        return Vec[ Op ](
-            newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true )
-        )
+        if nvi == dim
+            return Vec[ Op ]( newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true ) )
+        return Vec[ Op ]( newton_raphson_minimize_iteration( dot( d, d ), var_inter, assume_matrix_is_factorizable = true ) )
 
     #~
         returns a symbolic function = 1 if position p is inside self
         meaning that p is a vector of size e.dim
     ~#
-    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )
+    virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0, z_tolerance = 1e-2 )
         vi := var_inter_for_pos( p, nb_iterations )
-        return var_inter_is_inside( vi, tolerance )
+        if nvi == dim
+            return var_inter_is_inside( vi, tolerance )
+        d := p - pos.subs( var_inter, vi )
+        return var_inter_is_inside( vi, tolerance ) * ( dot( d, d ) < z_tolerance ^ 2 * measure ^ ( 2 / nvi ) )
         
     #
     virtual def var_inter_is_inside( vi, tolerance = 0 )
@@ -407,7 +474,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         vi := var_inter_with_normals( normals, point, nb_iterations )
         return extrusion_with_normals( normals, 0 ).subs( var_inter, vi[ 0 .. var_inter.size ] )
     
-    #
+    # return shape functions for nb_nodes
     virtual def get_shape_functions
         res := Vec[ Op, nb_nodes ]()
         for i in 0 .. nb_nodes
@@ -415,6 +482,14 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             res[ i ] = interpolation( val_on_nodes )
         return res
         
+    # return shape functions for nb_vertex_nodes
+    virtual def get_shape_functions_vertex
+        res := Vec[ Op, nb_vertex_nodes ]()
+        for i in 0 .. nb_vertex_nodes
+            val_on_vertex_nodes := Vec[ Op, nb_vertex_nodes ]( function = _0 == i )
+            res[ i ] = interpolation_vertex( val_on_vertex_nodes )
+        return res
+    
     # return a function != 0 if self and e may have a common area
     def area_intersection( e, mul_by_jac = true )
         return integration( e.point_is_inside( pos ), mul_by_jac )
@@ -427,4 +502,30 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def corr_cpp( num_node )
         return TE::corr_cpp( num_node )
         
+    def get_vertex_node_numbers_to_node_numbers_in_parent_cpp
+        vertex_node_numbers_to_node_numbers_in_parent_cpp := Vec[ Int32 ]()
+        for i in 0 .. nb_nodes
+            if node_number_is_a_vertex( i )
+                vertex_node_numbers_to_node_numbers_in_parent_cpp.push_back( node_numbers_to_node_numbers_in_parent_cpp[i] )
+        return vertex_node_numbers_to_node_numbers_in_parent_cpp
+        
+    def get_node_numbers_to_vertex_node_numbers
+        node_numbers_to_vertex_node_numbers := Vec[ Int32 ]()
+        cpt_vertex_nodes := 0
+        for i in 0 .. nb_nodes
+            node_numbers_to_vertex_node_numbers.push_back( cpt_vertex_nodes )
+            if node_number_is_a_vertex( i )
+                cpt_vertex_nodes++
+        return node_numbers_to_vertex_node_numbers
+        
+    def projection_on_base_pol( expr, p )
+        base := Vec[ Op ]()
+        for order in 0 .. (p+1)
+            for comb in ConstantSumList( sum = order, list_size = nvi )
+                base.push_back( product( var_inter ^ comb ) )
+        c := Vec[ Op, base.size]( function = x => symbol("c[$x]") )
+        pol := dot( c, base )
+        r := integration( ( expr - pol ) ^ 2, false )
+        res := dot( newton_raphson_minimize_iteration( r, c ), base )
+        return res
         

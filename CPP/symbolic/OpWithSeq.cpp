@@ -11,20 +11,36 @@
 unsigned OpWithSeq::current_id = 0;
 
 static std::map<double,OpWithSeq *> numbers;
+static OpWithSeq *number_M1 = NULL;
 
 void OpWithSeq::clear_number_set() {
     numbers.clear();
 }
 
+OpWithSeq *OpWithSeq::new_number( double n ) {
+    OpWithSeq *&r = numbers[ n ];
+    if ( not r ) {
+        r = new OpWithSeq( OpWithSeq::NUMBER );
+        r->init_gen();
+        r->num = n;
+        r->den = 1;
+    }
+    return r;
+}
 OpWithSeq *OpWithSeq::new_number( const Rationnal &n ) {
     OpWithSeq *&r = numbers[ double( n ) ];
     if ( not r ) {
         r = new OpWithSeq( OpWithSeq::NUMBER );
-        r->init_gen();
         r->num = n.num;
         r->den = n.den;
     }
     return r;
+}
+
+OpWithSeq *OpWithSeq::new_number_M1() {
+    if ( not number_M1 )
+        number_M1 = new OpWithSeq( OpWithSeq::NUMBER_M1 );
+    return number_M1;
 }
 
 OpWithSeq::OpWithSeq( int t ) : type( t ) {
@@ -49,13 +65,30 @@ OpWithSeq::OpWithSeq( int method, const char *name, OpWithSeq *ch ) { // WRITE_.
     add_child( ch );
 }
 
+OpWithSeq::OpWithSeq( int method, void *ptr_res, OpWithSeq *ch ) { // WRITE_...
+    init_gen();
+    switch ( method ) {
+        case STRING_add_NUM :       type = WRITE_ADD;      break;
+        case STRING_init_NUM:       type = WRITE_INIT;     break;
+        case STRING_reassign_NUM:   type = WRITE_REASSIGN; break;
+        case STRING___return___NUM: type = WRITE_RET;      break;
+        default: assert(0);
+    }
+    this->ptr_res = ptr_res;
+    add_child( ch );
+}
+
 void OpWithSeq::init_gen() {
     reg = -1;
+    stack = -1;
     ordering = -1;
     id = 0;
     access_cost = 0;
     nb_simd_terms = 0;
     integer_type = 0;
+    ptr_res = NULL;
+    nb_times_used = 0;
+    ptr_val = NULL;
 }
 
 OpWithSeq::~OpWithSeq() {
@@ -65,6 +98,15 @@ OpWithSeq::~OpWithSeq() {
         if ( ch->parents.size() == 0 and ch->type != NUMBER )
             delete ch;
     }
+}
+
+std::string OpWithSeq::asm_str() const {
+    std::ostringstream ss;
+    if ( reg >= 0 )
+        ss << "xmm" << reg;
+    else
+        ss << "[ rsp + " << stack << " ]";
+    return ss.str();
 }
 
 void OpWithSeq::add_child( OpWithSeq *c ) {
@@ -285,6 +327,8 @@ void OpWithSeq::graphviz_rec( std::ostream &os ) const {
         os << "    node" << this << " [label=\"NEG\",color=\"" << color << "\"];\n";
     else if ( type == WRITE_ADD )
         os << "    node" << this << " [label=\"W+\",color=\"" << color << "\"];\n";
+    else if ( type == WRITE_REASSIGN )
+        os << "    node" << this << " [label=\"W\",color=\"" << color << "\"];\n";
     else if ( type == NUMBER )
         os << "    node" << this << " [label=\"" << num / den << "\",color=\"" << color << "\"];\n";
     else if ( type == SYMBOL )
@@ -564,6 +608,120 @@ void simplifications( OpWithSeq *op ) {
     several_div_give_mul_inv( op );
 }
 
+void OpWithSeq::remove_parent( OpWithSeq *parent ) {
+    parents.erase( std::find( parents.begin(), parents.end(), parent ) );
+}
+
+void make_binary_ops_rec( OpWithSeq *op ) {
+    if ( op->id == OpWithSeq::current_id )
+        return;
+    op->id = OpWithSeq::current_id;
+    
+    // 
+    while ( op->children.size() > 2 ) {
+        OpWithSeq *c0 = op->children[ op->children.size() - 2 ];
+        OpWithSeq *c1 = op->children[ op->children.size() - 1 ];
+        c0->remove_parent( op );
+        c1->remove_parent( op );
+        op->children.pop_back();
+        op->children.pop_back();
+        //
+        OpWithSeq *n = new OpWithSeq( op->type );
+        n->add_child( c0 );
+        n->add_child( c1 );
+        op->add_child( n );
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        make_binary_ops_rec( op->children[i] );
+}
+
+void make_binary_ops( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    make_binary_ops_rec( op );
+}
+
+OpWithSeq *new_pow( OpWithSeq *m, double e ) {
+    if ( e == 1 )
+        return m;
+    //
+    if ( int( e ) == e ) {
+        OpWithSeq *res = new OpWithSeq( STRING_mul_NUM );
+        for(int i=0;i<abs( e );++i)
+            res->add_child( m );
+        if ( e < 0 )
+            res = new_inv( res );
+        return res;
+    }
+    //
+    OpWithSeq *res = new OpWithSeq( STRING_pow_NUM );
+    res->add_child( m );
+    res->add_child( OpWithSeq::new_number( e ) );
+    return res;
+}
+
+void asm_simplifications_prep_rec( OpWithSeq *op ) {
+    if ( op->id == OpWithSeq::current_id )
+        return;
+    op->id = OpWithSeq::current_id;
+    
+    if ( op->type == STRING_pow_NUM and op->children[1]->type == OpWithSeq::NUMBER ) {
+        double v = op->children[1]->val();
+        int n = int( 2 * v );
+        if ( n == 2 * v and ( n & 1 ) ) { // ^ n/2
+            OpWithSeq *ch = new_pow( op->children[0], 2 * v );
+            //
+            op->type = STRING_sqrt_NUM;
+            op->children[0]->remove_parent( op );
+            op->children[1]->remove_parent( op );
+            op->children.clear();
+            op->add_child( ch );
+        }
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        asm_simplifications_prep_rec( op->children[i] );
+}
+
+void asm_simplifications_prep( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    asm_simplifications_prep_rec( op );
+}
+
+void asm_simplifications_post_rec( OpWithSeq *op ) {
+    if ( op->id == OpWithSeq::current_id )
+        return;
+    op->id = OpWithSeq::current_id;
+    
+    if ( op->type == OpWithSeq::INV ) {
+        op->type = STRING_div_NUM;
+        op->add_child( OpWithSeq::new_number( Rationnal( 1 ) ) );
+        std::swap( op->children[0], op->children[1] );
+    } else if ( op->type == OpWithSeq::NEG ) {
+        op->type = STRING_sub_NUM;
+        op->add_child( OpWithSeq::new_number( Rationnal( 0 ) ) );
+        std::swap( op->children[0], op->children[1] );
+    } else if ( op->type == STRING_heaviside_NUM or op->type == STRING_eqz_NUM ) {
+        op->add_child( OpWithSeq::new_number( Rationnal( 0 ) ) );
+        op->add_child( OpWithSeq::new_number( Rationnal( 1 ) ) );
+    } else if ( op->type == STRING_pos_part_NUM ) {
+        op->add_child( OpWithSeq::new_number( Rationnal( 0 ) ) );
+    } else if ( op->type == STRING_abs_NUM ) {
+        op->add_child( OpWithSeq::new_number_M1() );
+    }
+    
+    // recursivity
+    for(unsigned i=0;i<op->children.size();++i)
+        asm_simplifications_post_rec( op->children[i] );
+}
+
+void asm_simplifications_post( OpWithSeq *op ) {
+    ++OpWithSeq::current_id;
+    asm_simplifications_post_rec( op );
+}
+
 void update_cost_access_rec( OpWithSeq *op ) {
     if ( op->id == OpWithSeq::current_id )
         return;
@@ -584,6 +742,20 @@ void update_nb_simd_terms_rec( OpWithSeq *op ) {
         update_nb_simd_terms_rec( op->children[i] );
         op->nb_simd_terms = std::max( op->nb_simd_terms, op->children[i]->nb_simd_terms );
     }
+}
+
+void make_OpWithSeq_simple_ordering( OpWithSeq *seq, std::vector<OpWithSeq *> &ordering, bool want_asm ) {
+    if ( seq->ordering >= 0 )
+        return;
+    if ( seq->type == STRING_select_symbolic_NUM ) {
+        if ( not want_asm )
+           make_OpWithSeq_simple_ordering( seq->children[1], ordering, want_asm );
+    } else {
+        for(unsigned i=0;i<seq->children.size();++i)
+            make_OpWithSeq_simple_ordering( seq->children[i], ordering, want_asm );
+    }
+    seq->ordering = ordering.size();
+    ordering.push_back( seq );
 }
 
 std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
@@ -613,3 +785,4 @@ std::ostream &operator<<( std::ostream &os, const OpWithSeq &op ) {
     }
     return os;
 }
+

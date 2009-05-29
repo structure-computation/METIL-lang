@@ -124,6 +124,8 @@ def __in__( key, set_ ) when set_.is_a_Set
 class Pair[ T0, T1 ]
     first := T0()
     second := T1()
+    def equal( m )
+        return first == m.first and second == m.second
     def init( a, b )
         first.init( a )
         second.init( b )

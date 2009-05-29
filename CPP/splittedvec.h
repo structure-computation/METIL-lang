@@ -322,7 +322,7 @@ public:
                 op( static_cast<ItemWithData<1> *>(t)->data[i], tt );
     }
 
-    void copy_binary_data_to( char *res ) {
+    void copy_binary_data_to( char *res ) const {
         memcpy( res, first_item.data, first_item.size * sizeof(T) );
         res += first_item.size * sizeof(T);
         for(Item *t=first_item.next; t; t=t->next ) {
