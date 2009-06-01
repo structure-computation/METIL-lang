@@ -2383,7 +2383,7 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                 Ex nothing_between = 1;
                 for(unsigned b=0;b<cut_pos.size();++b)
                     if ( b != num_cut_0 and b != num_cut_1 )
-                        nothing_between = nothing_between * ( 1 + sgn( cut_pos[ num_cut_0 ] - cut_pos[ b ] ) * sgn( cut_pos[ num_cut_1 ] - cut_pos[ b ] ) ) / 2;
+                        nothing_between = nothing_between * ( 1 + sgn( cut_p os[ num_cut_0 ] - cut_pos[ b ] ) * sgn( cut_pos[ num_cut_1 ] - cut_pos[ b ] ) ) / 2;
                 //
                 SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
                 //
