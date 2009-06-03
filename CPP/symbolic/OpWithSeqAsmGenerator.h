@@ -75,7 +75,7 @@ struct OpWithSeqAsmGenerator {
         // else, if there's already a reg saved in stack
         int best_parent_date = -1, best_reg = -1;
         for(unsigned i=0;i<nb_regs;++i) {
-            if ( regs[ i ]->stack >= 0 and best_parent_date < regs[ i ]->min_parent_date() ) {
+            if ( regs[ i ] and regs[ i ]->stack >= 0 and best_parent_date < regs[ i ]->min_parent_date() ) {
                 best_parent_date = regs[ i ]->min_parent_date();
                 best_reg = i;
             }
@@ -89,7 +89,7 @@ struct OpWithSeqAsmGenerator {
         best_parent_date = regs[ 0 ]->min_parent_date();
         best_reg = 0;
         for(unsigned i=1;i<nb_regs;++i) {
-            if ( best_parent_date < regs[ i ]->min_parent_date() ) {
+            if ( regs[ i ] and best_parent_date < regs[ i ]->min_parent_date() ) {
                 best_parent_date = regs[ i ]->min_parent_date();
                 best_reg = i;
             }
