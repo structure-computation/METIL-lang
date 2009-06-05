@@ -2302,13 +2302,11 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         return Ex( 0 );
 
     // add interval assumptions
-    if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
+    if ( beg.known_at_compile_time() and end.known_at_compile_time() ) {
         Ex old_var = var;
         var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-        if ( beg.known_at_compile_time() )
-            var.set_beg_value( beg.value(), true );
-        if ( end.known_at_compile_time() )
-            var.set_end_value( end.value(), true );
+        var.set_beg_value( std::min( beg.value(), end.value() ), true );
+        var.set_end_value( std::max( beg.value(), end.value() ), true );
         expr = expr.subs( th, tok, old_var, var );
     }
     
