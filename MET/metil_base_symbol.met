@@ -430,6 +430,19 @@ class CodeWriterAlt
 def assumed( cond ) when is_of_type_Op( cond )
     return known_at_compile_time( cond ) and cond.value()
     
+# return true if cond is known_at_compile_time and is true
+def assumed( cond ) when cond.is_a_VecOp and @cond.op == equal
+    if cond.va[0].size != cond.va[1].size
+        return false
+    #
+    for i in cond
+        if not known_at_compile_time( i )
+            return false
+        if not i.value()
+            return false
+    return true
+    
+    
 # ------------------------------------------------- INTEGRATION ------------------------------------------------- 
     
     

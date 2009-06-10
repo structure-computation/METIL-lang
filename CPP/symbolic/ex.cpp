@@ -2344,6 +2344,8 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
         polynomial_expansion( th, tok, discontinuities, var, nb_terms_taylor_ch - 1, ch_taylor_expansion, mid );
         
+        Ex end_supeq_beg = ( end >= beg );
+        
         SEX cut_pos, cut_val;
         cut_pos.push_back( beg ); cut_val.push_back( 1 );
         for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
@@ -2365,7 +2367,8 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
             Ex cp = mid - a / ( b + eqz( b ) );
             cut_pos.push_back( cp );
-            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - sgn( cp - beg ) * sgn( cp - end ) ) / 2 );
+            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - ( end >= cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp >= end ) ) );
+            // cut_val.push_back( ( 1 - eqz( b ) ) * heaviside( cp - beg ) * heaviside( end - cp ) );
         }
         cut_pos.push_back( end ); cut_val.push_back( 1 );
         
@@ -2380,10 +2383,14 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                 Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
                 // 
                 Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
-                for(unsigned b=1;b+1<cut_pos.size();++b)
-                    if ( b != num_cut_0 and b != num_cut_1 )
-                        valid = valid * ( 1 + sgn( cut_pos[ b ] - cut_pos[ num_cut_0 ] ) * sgn( cut_pos[ b ] - cut_pos[ num_cut_1 ] ) ) / 2;
-                // nothing_between = nothing_between * ( 1 + sgn( cut_p os[ num_cut_0 ] - cut_pos[ b ] ) * sgn( cut_pos[ num_cut_1 ] - cut_pos[ b ] ) ) / 2;
+                for(unsigned b=1;b+1<cut_pos.size();++b) {
+                    if ( b != num_cut_0 and b != num_cut_1 ) {
+                        valid = valid * (
+                            ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
+                            ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
+                        );
+                    }
+                }
                 //
                 SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
                 //
@@ -2392,7 +2399,7 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
                         pow( off_cut, Ex( Rationnal( i + 1 ) ) )
                     ) * Rationnal( 1, i + 1 );
-                // std::cout << valid << " ; " << cut_pos[num_cut_0] << " " << cut_pos[num_cut_1] << " " << tmp << " " << cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ] << std::endl;
+                // std::cout << "valid=" << valid << " cp0=" << cut_pos[num_cut_0] << " cp1=" << cut_pos[num_cut_1] << " tmp=" << tmp << " num_cut_0=" << num_cut_0 << " num_cut_1=" << num_cut_1 << std::endl;
                 res += tmp * valid;
             }
         }

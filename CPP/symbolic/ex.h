@@ -158,4 +158,9 @@ Ex select_symbolic( const Ex &vec, const Ex &index );
 #define PRINT( A ) \
     std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl
 
+inline Ex operator>=( const Ex &a, const Ex &b ) { return heaviside( a - b ); }
+inline Ex operator> ( const Ex &a, const Ex &b ) { return 1 - heaviside( b - a ); }
+inline Ex operator<=( const Ex &a, const Ex &b ) { return heaviside( b - a ); }
+inline Ex operator< ( const Ex &a, const Ex &b ) { return 1 - heaviside( a - b ); }
+
 #endif // EX_H

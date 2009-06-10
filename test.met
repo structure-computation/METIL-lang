@@ -73,13 +73,15 @@
 
 # d1 := DisplayWindow_( 2, fu )
 # d2 := DisplayWindow_( 2, fu )
-# a := symbol("a")
-# beg := symbol("beg")
-# end := symbol("end")
-# cut := symbol("cut")
+a := symbol("a")
+beg := symbol("beg")
+end := symbol("end")
+cut0 := symbol("c_0")
+cut1 := symbol("c_1")
 
-# res := integration( heaviside( a - cut ), a, beg, end )
-# info res.subs( [beg end cut], [0 1 0.1] )
+res := integration( heaviside( a - cut0 ) * heaviside( a - cut1 ), a, 0, 1 )
+info res.subs( [cut0 cut1], [1.5, 1.5] )
+
 # info res.subs( [beg end cut], [0 1 0.9] )
 # info res.subs( [beg end cut], [0 1 0] )
 # info res.subs( [beg end cut], [0 1 1] )
@@ -100,8 +102,35 @@
 # info res.subs( [beg end cut], [0 1 1.1] )
 # info res.subs( [beg end cut], [1 0 1.1] )
 # info integration( heaviside( a - 0.1 ), a, 0, 1 )
+
+
+
 # import "EF/std_elements.met"
 
-# e := SymbolicElement[Triangle]()
-# info e.integration( heaviside( 0.5 - e.var_inter[0] ), false )
+# e1 := SymbolicElement[Triangle]()
+# e2 := SymbolicElement[Triangle]()
+
+# e1.pos_nodes = [
+    # [0 0],
+    # [1 0],
+    # [0 1]
+# ]
+
+# x := symbol("x")
+# # x = 0.1
+# e2.pos_nodes = [
+    # [x+0 0],
+    # [x+1 0],
+    # [x+0 1]
+# ]
+
+# # v0 := symbol("\\eta")
+# # v0.set_beg_value( 0.0, false )
+# # v0.set_end_value( 1.0, false )
+# # integration( e2.point_is_inside( e1.pos ).subs( e1.var_inter[0], v0 ), e1.var_inter[1], 0, 1 - v0 ).display_tex()
+
+# r := e1.integration( e2.point_is_inside( e1.pos ) )
+# plot( (-100..200)/100, r )
+
+
 
