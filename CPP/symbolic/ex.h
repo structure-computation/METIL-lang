@@ -162,5 +162,9 @@ inline Ex operator>=( const Ex &a, const Ex &b ) { return heaviside( a - b ); }
 inline Ex operator> ( const Ex &a, const Ex &b ) { return 1 - heaviside( b - a ); }
 inline Ex operator<=( const Ex &a, const Ex &b ) { return heaviside( b - a ); }
 inline Ex operator< ( const Ex &a, const Ex &b ) { return 1 - heaviside( a - b ); }
+inline Ex operator==( const Ex &a, const Ex &b ) { return eqz( a - b ); }
+inline Ex operator!=( const Ex &a, const Ex &b ) { return 1 - eqz( a - b ); }
+
+inline bool assumed( const Ex &a ) { return a.known_at_compile_time() and a.value(); }
 
 #endif // EX_H

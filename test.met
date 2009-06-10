@@ -74,13 +74,22 @@
 # d1 := DisplayWindow_( 2, fu )
 # d2 := DisplayWindow_( 2, fu )
 a := symbol("a")
+b := symbol("b")
 beg := symbol("beg")
 end := symbol("end")
 cut0 := symbol("c_0")
 cut1 := symbol("c_1")
+cut2 := symbol("c_2")
 
-res := integration( heaviside( a - cut0 ) * heaviside( a - cut1 ), a, 0, 1 )
-info res.subs( [cut0 cut1], [1.5, 1.5] )
+res := integration( heaviside( a - 1 ) * heaviside( 2 * a - 2 ), a, 0, 3 )
+info res
+
+# info res.subs( [cut0 cut1 cut2], [0.4, 0.5, 0.4] )
+# info res.subs( [cut0 cut1 cut2], [0.5, 0.5, 0.5] )
+# info res.subs( [cut0 cut1 cut2], [0.0, 0.0, 0.0] )
+# info res.subs( [cut0 cut1 cut2], [1.0, 1.0, 1.0] )
+# plot( (-100..300)/100, res )
+# res.display_tex( false )
 
 # info res.subs( [beg end cut], [0 1 0.9] )
 # info res.subs( [beg end cut], [0 1 0] )
@@ -105,32 +114,56 @@ info res.subs( [cut0 cut1], [1.5, 1.5] )
 
 
 
-# import "EF/std_elements.met"
+import "EF/std_elements.met"
 
-# e1 := SymbolicElement[Triangle]()
-# e2 := SymbolicElement[Triangle]()
+def f
+    e1 := SymbolicElement[Triangle]()
+    e2 := SymbolicElement[Triangle]()
+    
+    e1.pos_nodes = [
+        [0 0],
+        [1 0],
+        [0 1]
+    ]
+    
+    x := symbol("x")
+    # x = -0.45
+    e2.pos_nodes = [
+        [x+0, x+0],
+        [x+1, x+0],
+        [x+0, x+1]
+    ]
+    
+    # v0 := symbol("\\eta")
+    # v0.set_beg_value( 0.0, false )
+    # v0.set_end_value( 1.0, false )
+    # integration( e2.point_is_inside( e1.pos ).subs( e1.var_inter[0], v0 ), e1.var_inter[1], 0, 1 - v0 ).display_tex()
+    
+    # [ e1.point_is_inside( e1.pos ) e2.point_is_inside( e1.pos ) ].display_tex()
+    
+    r := e1.integration( e2.point_is_inside( e1.pos ), false )
+    plot( (-100..200)/100, r )
+    # info r
 
-# e1.pos_nodes = [
-    # [0 0],
-    # [1 0],
-    # [0 1]
-# ]
 
-# x := symbol("x")
-# # x = 0.1
-# e2.pos_nodes = [
-    # [x+0 0],
-    # [x+1 0],
-    # [x+0 1]
-# ]
+f()
+# eta := symbol("\\eta")
+# eta.set_beg_value( 0.0, false )
+# eta.set_end_value( 1.0, false )
 
-# # v0 := symbol("\\eta")
-# # v0.set_beg_value( 0.0, false )
-# # v0.set_end_value( 1.0, false )
-# # integration( e2.point_is_inside( e1.pos ).subs( e1.var_inter[0], v0 ), e1.var_inter[1], 0, 1 - v0 ).display_tex()
+# info ( 1 - eta ).beg_value_valid()
+# info ( 1 - eta ).end_value_valid()
 
-# r := e1.integration( e2.point_is_inside( e1.pos ) )
-# plot( (-100..200)/100, r )
+# info ( 1 - eta ).beg_value_valid()
+# info ( 1 - eta ).end_value_valid()
 
+# x := 0.0
+# eta := symbol("\\eta")
+# # eta.set_beg_value( 0.0, false )
+# # eta.set_end_value( 1.0, false )
 
+# res := (1-heaviside(-1-(x-eta))*heaviside(-x)-heaviside(x)*heaviside(1+x-eta))*(1+x-eta)*heaviside(eta-x)*heaviside(1+x-eta)+(heaviside(-1-(x-eta))*(1-heaviside(x))+heaviside(1+x-eta)*(1-heaviside(-x)))*(1-eta)*heaviside(eta-x)*heaviside(x+1.0/2.0*(1-eta))-(1-heaviside(-1-(x-eta))*heaviside(-x)-heaviside(x)*heaviside(1+x-eta))*x*heaviside(x)*heaviside(eta-x)
 
+# res.display_tex()
+# integration( res, eta, 0, 1 ).display_tex()
+# plot( (0..101)/100, res )

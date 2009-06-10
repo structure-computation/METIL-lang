@@ -212,26 +212,36 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     
     # integration
     def integration( expr, mul_by_jac = true, order_diff = 5 )
+        my_var_inter := Vec[Op]()
+        for v in var_inter
+            my_var_inter.push_back( symbol( String( v.tex_string() ) + "^k" ) )
         #
-        my_var_inter := Vec[Op,nvi]( function = symbol( String( var_inter[ _0 ] ) + "^k" ) )
         subs_b := Vec[Op]()
         subs_e := Vec[Op]()
-        for i in ( 0 .. nvi ).reversed
-            b := Op(interval_var_inter[i][0]).subs( subs_b, subs_e )
-            e := Op(interval_var_inter[i][1]).subs( subs_b, subs_e )
-            if known_at_compile_time( b )
-                my_var_inter[i].set_beg_value( Rationnal( b ), false )
-            if known_at_compile_time( e )
-                my_var_inter[i].set_end_value( Rationnal( e ), false )
+        for i in 0 .. var_inter.size
+            b := Op( pe.interval_var_inter( my_var_inter )[ i ][ 0 ] )
+            e := Op( pe.interval_var_inter( my_var_inter )[ i ][ 1 ] )
+            if b.beg_value_valid()
+                my_var_inter[i].set_beg_value( b.beg_value(), false )
+            if e.end_value_valid()
+                my_var_inter[i].set_end_value( e.end_value(), false )
             subs_b.push_back( var_inter   [i] )
             subs_e.push_back( my_var_inter[i] )
         #
         res := scalar_conversion( Op, expr ).subs( subs_b, subs_e )
         if mul_by_jac
             res *= get_jac()
-        interval_var_inter := pe.interval_var_inter( var_inter ) 
+        #
+        interval_var_inter := pe.interval_var_inter( my_var_inter ) 
         for i in ( 0 .. nvi ).reversed
-            res = integration( res, my_var_inter[i], Op(interval_var_inter[i][0]).subs( subs_b, subs_e ), Op(interval_var_inter[i][1]).subs( subs_b, subs_e ), order_diff )
+            res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
+            
+        # res = integration( res, my_var_inter[1], interval_var_inter[1][0], interval_var_inter[1][1], order_diff )
+        # res.display_tex()
+        # tmp := res
+        # res = 0
+        # for i in 0..101
+            # res += tmp.subs( my_var_inter[0], interval_var_inter[0][0] + ( interval_var_inter[0][1] - interval_var_inter[0][0] ) * i / 100 )
         return res
 
     # numerical integration

@@ -2303,11 +2303,16 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
 
     // add interval assumptions
     if ( beg.known_at_compile_time() and end.known_at_compile_time() ) {
-        Ex old_var = var;
-        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-        var.set_beg_value( std::min( beg.value(), end.value() ), true );
-        var.set_end_value( std::max( beg.value(), end.value() ), true );
-        expr = expr.subs( th, tok, old_var, var );
+        Rationnal b = std::min( beg.value(), end.value() );
+        Rationnal e = std::max( beg.value(), end.value() );
+        //
+        if ( var.beg_value() < b or var.end_value() > e ) {
+            Ex old_var = var;
+            var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
+            var.set_beg_value( std::max( b, var.beg_value() ), false );
+            var.set_end_value( std::min( e, var.end_value() ), false );
+            expr = expr.subs( th, tok, old_var, var );
+        }
     }
     
     //
@@ -2366,9 +2371,19 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
             Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
             Ex cp = mid - a / ( b + eqz( b ) );
-            cut_pos.push_back( cp );
-            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - ( end >= cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp >= end ) ) );
-            // cut_val.push_back( ( 1 - eqz( b ) ) * heaviside( cp - beg ) * heaviside( end - cp ) );
+            Ex va = ( 1 - eqz( b ) ) * ( 1 - ( end > cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp > end ) );
+            for(unsigned c=0;;++c) {
+                if ( c == cut_pos.size() ) {
+                    std::cout << "cut " << cp << std::endl;
+                    cut_pos.push_back( cp );
+                    cut_val.push_back( va );
+                    break;
+                }
+                if ( assumed( cut_pos[ c ] == cp ) ) {
+                    cut_val[ c ] += ( 1 - cut_val[ c ] ) * va;
+                    break;
+                }
+            }
         }
         cut_pos.push_back( end ); cut_val.push_back( 1 );
         
@@ -2400,6 +2415,10 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                         pow( off_cut, Ex( Rationnal( i + 1 ) ) )
                     ) * Rationnal( 1, i + 1 );
                 // std::cout << "valid=" << valid << " cp0=" << cut_pos[num_cut_0] << " cp1=" << cut_pos[num_cut_1] << " tmp=" << tmp << " num_cut_0=" << num_cut_0 << " num_cut_1=" << num_cut_1 << std::endl;
+                //
+                if ( num_cut_0 != 0 and num_cut_1 + 1 != cut_pos.size() )
+                    valid *= sgn( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) * sgn( end - beg );
+                //
                 res += tmp * valid;
             }
         }
