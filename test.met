@@ -129,9 +129,9 @@ def f
     x := symbol("x")
     # x = -0.45
     e2.pos_nodes = [
-        [x+0, x+0],
-        [x+1, x+0],
-        [x+0, x+1]
+        [x+0, 0],
+        [x+1, 0],
+        [x+0, 1]
     ]
     
     # v0 := symbol("\\eta")

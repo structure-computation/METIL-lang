@@ -2306,11 +2306,18 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         Rationnal b = std::min( beg.value(), end.value() );
         Rationnal e = std::max( beg.value(), end.value() );
         //
-        if ( var.beg_value() < b or var.end_value() > e ) {
+        if ( var.beg_value_valid()==false or var.beg_value() < b or var.end_value_valid()==false or var.end_value() > e ) {
             Ex old_var = var;
             var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-            var.set_beg_value( std::max( b, var.beg_value() ), false );
-            var.set_end_value( std::min( e, var.end_value() ), false );
+            if ( var.beg_value_valid() )
+                var.set_beg_value( std::max( b, var.beg_value() ), false );
+            else
+                var.set_beg_value( b, false );
+            //
+            if ( var.end_value_valid() )
+                var.set_end_value( std::min( e, var.end_value() ), false );
+            else
+                var.set_end_value( e, false );
             expr = expr.subs( th, tok, old_var, var );
         }
     }
@@ -2374,7 +2381,6 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             Ex va = ( 1 - eqz( b ) ) * ( 1 - ( end > cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp > end ) );
             for(unsigned c=0;;++c) {
                 if ( c == cut_pos.size() ) {
-                    std::cout << "cut " << cp << std::endl;
                     cut_pos.push_back( cp );
                     cut_val.push_back( va );
                     break;
