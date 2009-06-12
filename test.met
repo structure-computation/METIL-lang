@@ -73,16 +73,16 @@
 
 # d1 := DisplayWindow_( 2, fu )
 # d2 := DisplayWindow_( 2, fu )
-a := symbol("a")
-b := symbol("b")
-beg := symbol("beg")
-end := symbol("end")
-cut0 := symbol("c_0")
-cut1 := symbol("c_1")
-cut2 := symbol("c_2")
+# a := symbol("a")
+# b := symbol("b")
+# beg := symbol("beg")
+# end := symbol("end")
+# cut0 := symbol("c_0")
+# cut1 := symbol("c_1")
+# cut2 := symbol("c_2")
 
-res := integration( heaviside( a - 1 ) * heaviside( 2 * a - 2 ), a, 0, 3 )
-info res
+# res := integration( heaviside( e - 1 ) * heaviside( 2 * a - 2 ), a, 0, 3 )
+# info res
 
 # info res.subs( [cut0 cut1 cut2], [0.4, 0.5, 0.4] )
 # info res.subs( [cut0 cut1 cut2], [0.5, 0.5, 0.5] )
@@ -116,22 +116,27 @@ info res
 
 import "EF/std_elements.met"
 
+# e := SymbolicElement[Triangle_6]()
+
+# e.integration( 1 ).display_tex()
+
+
 def f
     e1 := SymbolicElement[Triangle]()
     e2 := SymbolicElement[Triangle]()
     
     e1.pos_nodes = [
         [0 0],
-        [1 0],
-        [0 1]
+        [0 1],
+        [1 0]
     ]
     
     x := symbol("x")
-    # x = -0.45
+    # x = 0.45
     e2.pos_nodes = [
         [x+0, 0],
-        [x+1, 0],
-        [x+0, 1]
+        [x+0, 1],
+        [x+1, 0]
     ]
     
     # v0 := symbol("\\eta")
@@ -141,12 +146,46 @@ def f
     
     # [ e1.point_is_inside( e1.pos ) e2.point_is_inside( e1.pos ) ].display_tex()
     
+    
+    # vi := e2.var_inter_for_pos( e1.pos )
+    # r := e2.var_inter_is_inside( e1.pos )
+    # vi.display_tex()
     r := e1.integration( e2.point_is_inside( e1.pos ), false )
+    # r := e1.bestial_num_integration( e2.point_is_inside( e1.pos ), false, 10 )
     plot( (-100..200)/100, r )
     # info r
 
+def g
+    e := SymbolicElement[Triangle]()
+    
+    e.pos_nodes = [
+        [1 0],
+        [1 1],
+        [0 1]
+    ]
+    
+    x := symbol("x")
+    a := symbol("a")
+    r := e.integration( heaviside( a * e.pos[0] - x ), false )
+    plot( (-1000..2000)/1000, r.subs( a, 1 ) )
+    # info r
 
-f()
+def h
+    eta := symbol("\\eta")
+    x := symbol("x")
+    a := symbol("a")
+    r :=  (1-heaviside(-(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))*(1-heaviside(-1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))-heaviside(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))*(1-heaviside(1.0/2.0*(1-eta)+(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))))*(1-eqz(a))*(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))*heaviside(a*(1-1.0/2.0*(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))-x)+(heaviside(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))*(1-heaviside(1.0/2.0*(1-eta)+(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))+heaviside(-(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))*(1-heaviside(-1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))))*(1-eta)*heaviside(a*(1-1.0/2.0*(1-eta))-x)+(1-heaviside(-(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))*(1-heaviside(-1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))-heaviside(1.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))*(1-heaviside(1.0/2.0*(1-eta)+(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))))*(1-eqz(a))*(1.0/2.0*(1-eta)+(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a))*heaviside(a*(1-1.0/2.0*(3.0/2.0*(1-eta)-(a*(1-1.0/2.0*(1-eta))-x)/(eqz(a)-a)))-x)
+
+    r = integration( r, eta, 0, 1 )
+    plot( (-1000..2000)/1000, r.subs( a, 1 ) )
+    
+    # pl := PyLabPlot()
+    # pl.plot( (-1000..2000)/1000, r.subs( [a x], [1 0.49] ) )
+    # pl.plot( (-1000..2000)/1000, r.subs( [a x], [1 0.51] ) )
+    # pl.plot( (-1000..2000)/1000, r.subs( [a x], [1 0.60] ) )
+    # pl.show()
+
+g()
 # eta := symbol("\\eta")
 # eta.set_beg_value( 0.0, false )
 # eta.set_end_value( 1.0, false )
@@ -167,3 +206,13 @@ f()
 # res.display_tex()
 # integration( res, eta, 0, 1 ).display_tex()
 # plot( (0..101)/100, res )
+
+# v := VarArgs()
+# v.push_unnamed( 0 .. 5 )
+# v.push_unnamed( 0 .. 10 )
+
+# for i in rectilinear( v )
+    # info i
+
+
+

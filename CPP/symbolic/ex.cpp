@@ -2407,8 +2407,11 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                 for(unsigned b=1;b+1<cut_pos.size();++b) {
                     if ( b != num_cut_0 and b != num_cut_1 ) {
                         valid = valid * (
-                            ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
-                            ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
+                            cut_val[ b ] * (
+                                ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
+                                ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
+                            ) +
+                            1 - cut_val[ b ]
                         );
                     }
                 }
