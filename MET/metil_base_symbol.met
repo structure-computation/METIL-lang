@@ -897,6 +897,12 @@ class AsmWriter
             cpt += 1
         return self
 
+    def add_association( mat_symbol, pointer ) when mat_symbol.tensor_order == 2
+        for i in 0 .. mat_symbol.nb_rows
+            for j in 0 .. mat_symbol.nb_cols
+                add_association( mat_symbol[i,j], &(@pointer)[i,j] )
+        return self
+
     def to_code
         return Code( p = aw.to_code() )
         

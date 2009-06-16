@@ -123,7 +123,7 @@ struct OpWithSeqAsmGenerator {
         
         //
         if ( op->type == OpWithSeq::WRITE_REASSIGN ) {
-            write_save_xmm_in_memory( op->children[0]->reg, op->ptr_res );
+            write_save_xmm_in_memory( op->children[0], op->ptr_res );
             return;
         }
         if ( op->type == OpWithSeq::WRITE_ADD      ) {
@@ -502,22 +502,52 @@ private:
     }
     
     
-    void write_save_xmm_in_memory( int reg, void *ptr_res ) {
+    void write_save_xmm_in_memory( OpWithSeq *ch, void *ptr_res ) {
         #ifdef DEBUG_ASM
             std::cout << "    mov   rax, " << ptr_res << std::endl;
-            std::cout << "    movsd [ rax ], xmm" << reg << std::endl;
+            if ( ch->reg >= 0 ) {
+                std::cout << "    movsd [ rax ], xmm" << reg << std::endl;
+            } else if ( ch->stack >= 0 ) {
+                std::cout << "    movsd [ rsp - 8 ], xmm0"<< std::endl;
+                std::cout << "    movsd xmm0, [ rsp + " << ch->stack * T_size << " ]"<< std::endl;
+                std::cout << "    movsd [ rax ], xmm0" << std::endl;
+                std::cout << "    movsd xmm0, [ rsp - 8 ]"<< std::endl;
+            } else
+                assert( 0 );
         #endif
         
+        // mov rax, ptr_re
         os.push_back( 0x48 );
         os.push_back( 0xb8 );
         *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = ptr_res;
         
-        os.push_back( 0xf2 );
-        if ( reg >= 8 )
+        //
+        if ( ch->reg >= 0 ) {
+            // movsd [ rax ], xmm.
+            os.push_back( 0xf2 );
+            if ( ch->reg >= 8 )
+                os.push_back( 0x44 );
+            os.push_back( 0x0f );
+            os.push_back( 0x11 );
+            os.push_back( 8 * ( ch->reg % 8 ) );
+        }
+        else if ( ch->stack >= 0 ) {
+            // movsd [ rsp - 8 ], xmm0
+            os.push_back( 0xf2 ); os.push_back( 0x0f ); os.push_back( 0x11 ); os.push_back( 0x44 ); os.push_back( 0x24 ); os.push_back( 0xf8 );
+            // movsd xmm0, [ rsp + ch->stack * T_size ]
+            os.push_back( 0xf2 ); os.push_back( 0x0f ); os.push_back( 0x10 ); os.push_back( 0x84 ); os.push_back( 0x24 );
+            *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
+            // movsd [ rax ], xmm0
+            os.push_back( 0xf2 ); os.push_back( 0x0f ); os.push_back( 0x11 ); os.push_back( 0x00 );
+            // movsd xmm0, [ rsp - 8 ]
+            os.push_back( 0xf2 );
+            os.push_back( 0x0f );
+            os.push_back( 0x10 );
             os.push_back( 0x44 );
-        os.push_back( 0x0f );
-        os.push_back( 0x11 );
-        os.push_back( 8 * ( reg % 8 ) );
+            os.push_back( 0x24 );
+            os.push_back( 0xf8 );
+        }
+        
     }
     
     void write_save_xmm_in_stack_plus_offset( int reg, int offset ) {
