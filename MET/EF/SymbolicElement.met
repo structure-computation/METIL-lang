@@ -283,6 +283,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
+            # info vec
             return pe.interpolation( var_inter, vec )
         if nb_dim.size == 1
             d := nb_dim[0]
@@ -397,7 +398,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         assert( 0, "TODO" )
         
     # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
+    def new_variable( name, interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
         wanted_interpolation := interpolation_type[ 0 .. interpolation_type.size - "_minus_1".size ]
         sp := Vec[ Op ]()
         tmp_interp := new_variable( "_tmp", interpolation_type = wanted_interpolation, sym = sp )

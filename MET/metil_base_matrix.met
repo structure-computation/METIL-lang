@@ -529,7 +529,7 @@ def get_det( self ) when self.tensor_order == 2
         info t.det
         popen( "octave -q", "w" ) <<< "t = [$t];" <<< "det(t)"
 
-# inverse of a tiny matrix (rank 1, 2, 3)
+# inverse of a tiny matrix (rank 1, 2, 3, ...)
 def inv_tiny( mat, d = mat.get_det() ) when mat.tensor_order == 2
     if mat.nb_rows == 1
         return Mat[ mat.T, Gen[1,1] ]( default_value = 1 / d )

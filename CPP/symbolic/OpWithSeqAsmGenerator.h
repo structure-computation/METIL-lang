@@ -3,7 +3,7 @@
 
 #include "splittedvec.h"
 #include <sys/mman.h>
-// #define DEBUG_ASM
+#define DEBUG_ASM
 
 struct OpWithSeqAsmGenerator {
     enum AsmType {
@@ -506,7 +506,7 @@ private:
         #ifdef DEBUG_ASM
             std::cout << "    mov   rax, " << ptr_res << std::endl;
             if ( ch->reg >= 0 ) {
-                std::cout << "    movsd [ rax ], xmm" << reg << std::endl;
+                std::cout << "    movsd [ rax ], xmm" << ch->reg << std::endl;
             } else if ( ch->stack >= 0 ) {
                 std::cout << "    movsd [ rsp - 8 ], xmm0"<< std::endl;
                 std::cout << "    movsd xmm0, [ rsp + " << ch->stack * T_size << " ]"<< std::endl;
@@ -540,12 +540,7 @@ private:
             // movsd [ rax ], xmm0
             os.push_back( 0xf2 ); os.push_back( 0x0f ); os.push_back( 0x11 ); os.push_back( 0x00 );
             // movsd xmm0, [ rsp - 8 ]
-            os.push_back( 0xf2 );
-            os.push_back( 0x0f );
-            os.push_back( 0x10 );
-            os.push_back( 0x44 );
-            os.push_back( 0x24 );
-            os.push_back( 0xf8 );
+            os.push_back( 0xf2 ); os.push_back( 0x0f ); os.push_back( 0x10 ); os.push_back( 0x44 ); os.push_back( 0x24 ); os.push_back( 0xf8 );
         }
         
     }
