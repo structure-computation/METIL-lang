@@ -144,12 +144,14 @@ Ex &Ex::operator-=(const Ex &c) { *this = *this - c; return *this; }
 
 Ex &Ex::operator/=(const Ex &c) { *this = *this / c; return *this; }
 
-void Ex::set_beg_value( T b, bool inclusive ) {
-    op->set_beg_value( b, inclusive );
+void Ex::set_beg_value( Thread *th, const void *tok, T b, bool inclusive ) {
+    if ( op->set_beg_value( b, inclusive ) )
+        th->add_error( "symbol ->beg_value already a parent", tok );
 }
 
-void Ex::set_end_value( T e, bool inclusive ) {
-    op->set_end_value( e, inclusive );
+void Ex::set_end_value( Thread *th, const void *tok, T e, bool inclusive ) {
+    if ( op->set_end_value( e, inclusive ) )
+        th->add_error( "symbol ->beg_value already a parent", tok );
 }
 
 bool Ex::beg_value_valid() const {
@@ -2208,9 +2210,9 @@ Ex integration_( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, co
         Ex old_var = var;
         var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
         if ( beg.known_at_compile_time() )
-            var.set_beg_value( beg.value(), true );
+            var.set_beg_value( th, tok, beg.value(), true );
         if ( end.known_at_compile_time() )
-            var.set_end_value( end.value(), true );
+            var.set_end_value( th, tok, end.value(), true );
         expr = expr.subs( th, tok, old_var, var );
     }
     
@@ -2310,14 +2312,14 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             Ex old_var = var;
             var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
             if ( var.beg_value_valid() )
-                var.set_beg_value( std::max( b, var.beg_value() ), false );
+                var.set_beg_value( th, tok, std::max( b, var.beg_value() ), false );
             else
-                var.set_beg_value( b, false );
+                var.set_beg_value( th, tok, b, false );
             //
             if ( var.end_value_valid() )
-                var.set_end_value( std::min( e, var.end_value() ), false );
+                var.set_end_value( th, tok, std::min( e, var.end_value() ), false );
             else
-                var.set_end_value( e, false );
+                var.set_end_value( th, tok, e, false );
             expr = expr.subs( th, tok, old_var, var );
         }
     }

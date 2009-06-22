@@ -211,7 +211,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return res
     
     # integration
-    def integration( expr, mul_by_jac = true, order_diff = 7, want_interval_assumptions = true )
+    def integration( expr, mul_by_jac = true, order_diff = 7, want_interval_assumptions = false )
         res := scalar_conversion( Op, expr )
         if mul_by_jac
             res *= get_jac()

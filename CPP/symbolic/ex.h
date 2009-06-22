@@ -74,8 +74,8 @@ struct Ex {
     int poly_deg( const Ex &var ) const;
     int poly_deg( const VarArgs &a ) const;
     
-    void set_beg_value( T b, bool inclusive );
-    void set_end_value( T e, bool inclusive );
+    void set_beg_value( Thread *th, const void *tok, T b, bool inclusive );
+    void set_end_value( Thread *th, const void *tok, T e, bool inclusive );
     void set_access_cost( Float64 c );
     void set_nb_simd_terms( Int32 c );
     void set_integer_type( Int32 c );
