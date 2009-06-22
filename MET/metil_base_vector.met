@@ -727,7 +727,7 @@ class VecOp
             # # else if va[i].type == VecOp
                 # va[i].subs_rec(  )
     def get_size_evaluation_costs_a_lot
-        return max( va.map(_0.size_evaluation_costs_a_lot) )
+        return true # max( va.map(_0.size_evaluation_costs_a_lot) )
     def get_size
         if va.size
             return va[0].size

@@ -279,7 +279,7 @@ class SelectVec
 def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0 pertinence 3
     return SelectVec( self, vec )
 ## ##
-def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 3
+def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 4
     return SelectVec( self, range( vec.begin, vec.begin + ( self.size - vec.begin ) // vec.increment, vec.increment ) )
 
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
