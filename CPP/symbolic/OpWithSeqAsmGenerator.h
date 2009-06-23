@@ -64,16 +64,16 @@ struct OpWithSeqAsmGenerator {
         return room_in_stack;
     }
     
-    int get_free_reg() {
+    int get_free_reg( int forbidden_register = -1 ) {
         // if there's already a free reg
         for(unsigned i=0;i<nb_regs;++i)
-            if ( not regs[ i ] )
+            if ( i != forbidden_register and not regs[ i ] )
                 return i;
         
         // else, if there's already a reg saved in stack
         int best_parent_date = -1, best_reg = -1;
         for(unsigned i=0;i<nb_regs;++i) {
-            if ( regs[ i ]->stack >= 0 and best_parent_date < regs[ i ]->min_parent_date() ) {
+            if ( i != forbidden_register and regs[ i ]->stack >= 0 and best_parent_date < regs[ i ]->min_parent_date() ) {
                 best_parent_date = regs[ i ]->min_parent_date();
                 best_reg = i;
             }
@@ -88,7 +88,7 @@ struct OpWithSeqAsmGenerator {
         best_parent_date = -1;
         best_reg = -1;
         for(unsigned i=0;i<nb_regs;++i) {
-            if ( best_parent_date < regs[ i ]->min_parent_date() ) {
+            if ( i != forbidden_register and best_parent_date < regs[ i ]->min_parent_date() ) {
                 best_parent_date = regs[ i ]->min_parent_date();
                 best_reg = i;
             }
@@ -181,11 +181,11 @@ struct OpWithSeqAsmGenerator {
                     write_save_op_somewhere_and_clear_reg( op->children[0] );
             } else {
                 op->reg = get_free_reg(); regs[ op->reg ] = op;
-                std::cout << "-> " << op->reg << std::endl;
                 write_get_op_in_reg( op->reg, op->children[0] );
             }
             write_self_sse2_op_xmm( op->reg, op->children[ 1 ], sse2_op );
         } else if ( op->type == STRING_select_symbolic_NUM ) {
+            assert( 0 );
             write_select_symbolic( op->reg, op );
         } else if ( op->type == STRING_pow_NUM ) {
             assert( 0 );
@@ -194,11 +194,9 @@ struct OpWithSeqAsmGenerator {
             assert( 0 );
             write_self_sse2_op_xmm( op->reg, op->children[ 0 ], 0x51 ); // particular case : op->reg does not have to be initialized
         } else if ( op->type == STRING_heaviside_NUM ) {
-            assert( 0 );
-            write_heaviside_or_eqz( op->reg, op, 5 ); // >= 0
+            write_heaviside_or_eqz( op, 5 ); // >= 0
         } else if ( op->type == STRING_eqz_NUM ) {
-            assert( 0 );
-            write_heaviside_or_eqz( op->reg, op, 0 ); // == 0
+            write_heaviside_or_eqz( op, 0 ); // == 0
         } else if ( op->type == STRING_pos_part_NUM ) {
             assert( 0 );
             write_pos_part( op->reg, op ); // x_+
@@ -347,10 +345,17 @@ private:
         
     }
     
-    void write_heaviside_or_eqz( int reg, OpWithSeq *op, unsigned char cmp_op ) {
-        write_save_op_in_xmm( reg, op->children[ 0 ] );
-        write_cmpsd( reg, op->children[1], cmp_op );
-        write_andsd( reg, op->children[2] );
+    void write_heaviside_or_eqz( OpWithSeq *op, unsigned char cmp_op ) {
+        if ( op->children[ 0 ]->reg >= 0 ) {
+            op->reg = op->children[ 0 ]->reg; regs[ op->reg ] = op;
+            if ( op->children[ 0 ]->nb_times_used != op->children[ 0 ]->parents.size() )
+                write_save_op_somewhere_and_clear_reg( op->children[0] );
+        } else {
+            op->reg = get_free_reg(); regs[ op->reg ] = op;
+            write_get_op_in_reg( op->reg, op->children[0] );
+        }
+        write_cmpsd( op->reg, op->children[1], cmp_op );
+        write_andsd( op->reg, op->children[2] );
     }
     
     void write_pos_part( int reg, OpWithSeq *op ) {
@@ -396,32 +401,32 @@ private:
     }
     
     void write_andsd( int reg, OpWithSeq *ch ) {
-        assert( 0 );
-//         if ( ch->reg < 0 and ch->stack & 1 ) {
-//             int n_reg = get_free_reg( NULL, reg );
-//             write_save_op_in_xmm( n_reg, ch );
-//             ch->reg = n_reg;
-//         }
-//         
-//         //
-//         #ifdef DEBUG_ASM
-//             std::cout << "    andpd   xmm" << reg << ", " << ch->asm_str() << std::endl;
-//         #endif
-//         
-//         //
-//         os.push_back( 0x66 );
-//         if ( reg >= 8 or ch->reg >= 8 )
-//             os.push_back( 0x40 | 4 * ( reg >= 8 ) | ( ch->reg >= 8 ) );
-//         os.push_back( 0x0f );
-//         os.push_back( 0x54 );
-//         if ( ch->reg >= 0 ) {
-//             os.push_back( 0xc0 | 8 * ( reg % 8 ) | ( ch->reg % 8 ) );
-//         } else {
-//             assert( ch->stack >= 0 );
-//             os.push_back( 0x84 | 8 * ( reg % 8 ) );
-//             os.push_back( 0x24 );
-//             *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
-//         }
+        if ( ch->reg < 0 and ch->stack & 1 ) {
+            assert( not ch->ptr_val );
+            int n_reg = get_free_reg( reg );
+            write_save_op_in_xmm( n_reg, ch );
+            ch->reg = n_reg;
+        }
+        
+        //
+        #ifdef DEBUG_ASM
+            std::cout << "    andpd   xmm" << reg << ", " << ch->asm_str() << std::endl;
+        #endif
+        
+        //
+        os.push_back( 0x66 );
+        if ( reg >= 8 or ch->reg >= 8 )
+            os.push_back( 0x40 | 4 * ( reg >= 8 ) | ( ch->reg >= 8 ) );
+        os.push_back( 0x0f );
+        os.push_back( 0x54 );
+        if ( ch->reg >= 0 ) {
+            os.push_back( 0xc0 | 8 * ( reg % 8 ) | ( ch->reg % 8 ) );
+        } else {
+            assert( ch->stack >= 0 );
+            os.push_back( 0x84 | 8 * ( reg % 8 ) );
+            os.push_back( 0x24 );
+            *reinterpret_cast<int *>( os.get_room_for( 4 ) ) = ch->stack * T_size;
+        }
     }
     
     void write_assign_number_M1_to_offset_from_stack_pointer( int offset_in_stack ) {
@@ -658,14 +663,15 @@ private:
     }
     
     void write_save_op_in_xmm( int reg, OpWithSeq *ch ) {
-        assert( 0 );
         if ( reg == ch->reg )
             return;
         //
         if ( ch->reg >= 0 )
             write_copy_xmm_regs( reg, ch->reg );
-        else
+        else {
+            assert( not ch->ptr_val );
             write_save_stack_in_xmm( reg, ch->stack * T_size );
+        }
     }
 
     void write_self_sse2_op_xmm( int reg, OpWithSeq *ch, unsigned char sse2_op ) {

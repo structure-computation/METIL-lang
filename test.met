@@ -282,27 +282,24 @@ import "EF/std_elements.met"
     # # expr[0,0].display_graphviz()
 # t()
 
-# def test_564
-    # v := Vec[Float64,2]( 666 )
-    # n := Vec[Op     ,4]( function = x => symbol("n_$x") )
-    # r := Vec[Float64,4]( function = x => x+1 )
-    # s := Vec[Int64  ,4]( function = x => x+1 )
-    # expr := (2-n[0]*n[2])
-    # # expr += (2-n[0]*n[1]) # *(n[i]-n[i+1])
-    # for i in 0 ..  n.size-1
-        # expr += (2-n[i]*n[i+1])*(n[i]-n[i+1])
+def test_564
+    v := Vec[Float64,2]( 666 )
+    n := Vec[Op     ,4]( function = x => symbol("n_$x") )
+    r := Vec[Float64,4]( function = x => x+1 )
+    s := Vec[Int64  ,4]( function = x => x+1 )
+    expr := heaviside( n[0] - 2 )
     
-    # as := AsmWriter()
-    # as.add_association( n, &r )
-    # as.add( &v[0], expr, reassign )
-    # co := as.to_code()
-    # co.execute()
+    as := AsmWriter()
+    as.add_association( n, &r )
+    as.add( &v[0], expr, reassign )
+    co := as.to_code()
+    co.execute()
     
-    # info Float64( expr.subs( n, s ) )
-    # info v[ 0 ]
-    # # expr.display_tex()
+    info Float64( expr.subs( n, s ) )
+    info v[ 0 ]
+    # expr.display_tex()
     
-# # test_564()
+test_564()
 
 # def test_17
     # e := SymbolicElement[Triangle]()
@@ -318,10 +315,10 @@ import "EF/std_elements.met"
     
 # # test_17()
 
-e := SymbolicElement[Hexa]()
+# e := SymbolicElement[Hexa]()
 
 # e.pos_nodes = e.points
-e.pos.display_tex()
+# e.pos.display_tex()
 
 # base := Vec[Op]()
 # for order in 1 .. 4

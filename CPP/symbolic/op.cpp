@@ -179,10 +179,7 @@ int Op::set_beg_value( Rationnal b, bool inclusive ) {
         beg_value.init( b );
         beg_value_valid = true;
     }
-    //     if ( parents.size() )
-    //         cpp_repr( std::cout << std::endl );
     return parents.size();
-    // assert( parents.size() == 0 ); // TODO
 }
 
 int Op::set_end_value( Rationnal e, bool inclusive ) {
@@ -194,7 +191,6 @@ int Op::set_end_value( Rationnal e, bool inclusive ) {
         end_value_valid = true;
     }
     return parents.size();
-    // assert( parents.size() == 0 ); // TODO
 }
 
 // ----------------------------------------------------------------------------------------------------------
