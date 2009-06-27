@@ -36,7 +36,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     name_elem := ""
     _children := Vec[ Vec[ Ptr[ SymbolicElementAncestor ] ], nvi + 1 ]()
     _alternate_pos := Vec[ Op, dim ]()
-    _want_alternate_pos := false
+    _want_alternate_pos := 0
     
     assume_const_jac := 0
     num_child        := -1 # if self is a child elem

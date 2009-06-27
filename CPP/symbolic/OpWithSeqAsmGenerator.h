@@ -86,8 +86,8 @@ struct OpWithSeqAsmGenerator {
         
         // else, select a given register to be saved in stack and...
         best_parent_date = -1;
-        best_reg = -1;
-        for(unsigned i=0;i<nb_regs;++i) {
+        best_reg = 0;
+        for(unsigned i=1;i<nb_regs;++i) {
             if ( i != forbidden_register and best_parent_date < regs[ i ]->min_parent_date() ) {
                 best_parent_date = regs[ i ]->min_parent_date();
                 best_reg = i;

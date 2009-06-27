@@ -1,41 +1,43 @@
-# # fn := "paint_function"
-# # File( "$fn.cpp", "w" ) <<<<
-    # # #include <QtGui/QPainter>
-    # # #include <QtGui/QWidget>
-    # # extern "C" void paint_function( QWidget *qw, int, QPaintEvent * ) {
-        # # int frameNo = 50;
-        # # QPainter painter(qw);
-        # # painter.setRenderHint(QPainter::Antialiasing, true);
-        # # painter.translate(qw->width() / 2, qw->height() / 2);
-        # # for (int diameter = 0; diameter < 256; diameter += 9) {
-            # # int delta = abs((frameNo % 128) - diameter / 2);
-            # # int alpha = 255 - (delta * delta) / 4 - diameter;
-            # # if (alpha > 0) {
-                # # painter.setPen(QPen(QColor(0, diameter / 2, 127, alpha), 3));
+import "/home/leclerc/prog/DIC/DisplayWindow.met"
+
+fn := "paint_function"
+File( "$fn.cpp", "w" ) <<<<
+    #include <QtGui/QPainter>
+    #include <QtGui/QWidget>
+    extern "C" void paint_function( QWidget *qw, int, QPaintEvent * ) {
+        int frameNo = 50;
+        QPainter painter(qw);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.translate(qw->width() / 2, qw->height() / 2);
+        for (int diameter = 0; diameter < 256; diameter += 9) {
+            int delta = abs((frameNo % 128) - diameter / 2);
+            int alpha = 255 - (delta * delta) / 4 - diameter;
+            if (alpha > 0) {
+                painter.setPen(QPen(QColor(0, diameter / 2, 127, alpha), 3));
         
-                # # painter.drawEllipse(QRectF(-diameter / 2.0, -diameter / 2.0,
-                                        # # diameter, diameter));
-            # # }
-        # # }
-    # # }
+                painter.drawEllipse(QRectF(-diameter / 2.0, -diameter / 2.0,
+                                        diameter, diameter));
+            }
+        }
+    }
 
-# # if not last_modification_time_or_zero_of_file_named( "$fn.so" )
-    # # cmd := "g++ -I$(get_QT_INCLUDE_DIR()) -fPIC -shared $fn.cpp -o $fn.so"
-    # # info cmd
-    # # if system( cmd )
-        # # return 1
+if not last_modification_time_or_zero_of_file_named( "$fn.so" )
+    cmd := "g++ -I$(get_QT_INCLUDE_DIR()) -fPIC -shared $fn.cpp -o $fn.so"
+    info cmd
+    if system( cmd )
+        return 1
 
-# # dl := DlLoader( "./$fn.so" )
-# # if not dl
-    # # info dl.get_last_error()
-    # # return 1
+dl := DlLoader( "./$fn.so" )
+if not dl
+    info dl.get_last_error()
+    return 1
 
-# # fu := dl.find_symbol( "paint_function" )
-# # if not fu
-    # # info dl.get_last_error()
-    # # return 1
+fu := dl.find_symbol( "paint_function" )
+if not fu
+    info dl.get_last_error()
+    return 1
 
-# # d1 := DisplayWindow_( 2, fu )
+d1 := DisplayWindow( 2, fu )
 # # d2 := DisplayWindow_( 2, fu )
 
 # # a := symbol("a")
@@ -282,90 +284,90 @@ import "EF/std_elements.met"
     # # expr[0,0].display_graphviz()
 # t()
 
-def test_564
-    v := Vec[Float64,2]( 666 )
-    n := Vec[Op     ,4]( function = x => symbol("n_$x") )
-    r := Vec[Float64,4]( function = x => x+1 )
-    s := Vec[Int64  ,4]( function = x => x+1 )
-    expr := heaviside( n[0] - 2 )
+# def test_564
+    # v := Vec[Float64,2]( 666 )
+    # n := Vec[Op     ,4]( function = x => symbol("n_$x") )
+    # r := Vec[Float64,4]( function = x => x+1 )
+    # s := Vec[Int64  ,4]( function = x => x+1 )
+    # expr := heaviside( n[0] - 2 )
     
-    as := AsmWriter()
-    as.add_association( n, &r )
-    as.add( &v[0], expr, reassign )
-    co := as.to_code()
-    co.execute()
+    # as := AsmWriter()
+    # as.add_association( n, &r )
+    # as.add( &v[0], expr, reassign )
+    # co := as.to_code()
+    # co.execute()
     
-    info Float64( expr.subs( n, s ) )
-    info v[ 0 ]
-    # expr.display_tex()
+    # info Float64( expr.subs( n, s ) )
+    # info v[ 0 ]
+    # # expr.display_tex()
     
-test_564()
+# test_564()
 
-# def test_17
-    # e := SymbolicElement[Triangle]()
+# # def test_17
+    # # e := SymbolicElement[Triangle]()
     
-    # p_syms := Vec[Op]()
-    # p := e.new_variable( "p", sym = p_syms )
-    # r := e.integration( heaviside( p ) )
+    # # p_syms := Vec[Op]()
+    # # p := e.new_variable( "p", sym = p_syms )
+    # # r := e.integration( heaviside( p ) )
     
-    # a := symbol("a")
-    # r = r.subs( e.pos_nodes[0]+++e.pos_nodes[1]+++e.pos_nodes[2]+++p_syms, [0, 0, 1, 0, 0, 1,  a, a+1, a] )
-    # # info r
-    # plot( (-100..200)/100, r )
+    # # a := symbol("a")
+    # # r = r.subs( e.pos_nodes[0]+++e.pos_nodes[1]+++e.pos_nodes[2]+++p_syms, [0, 0, 1, 0, 0, 1,  a, a+1, a] )
+    # # # info r
+    # # plot( (-100..200)/100, r )
     
-# # test_17()
+# # # test_17()
 
-# e := SymbolicElement[Hexa]()
+# # e := SymbolicElement[Hexa]()
 
-# e.pos_nodes = e.points
-# e.pos.display_tex()
+# # e.pos_nodes = e.points
+# # e.pos.display_tex()
 
-# base := Vec[Op]()
-# for order in 1 .. 4
-    # for comb in ConstantSumList( sum = order, list_size = 2 )
-        # base.push_back( product( e.var_inter ^ comb ) )
+# # base := Vec[Op]()
+# # for order in 1 .. 4
+    # # for comb in ConstantSumList( sum = order, list_size = 2 )
+        # # base.push_back( product( e.var_inter ^ comb ) )
 
-# coeff_dep_expr := Vec[ Vec[ Op, base.size ], 2 ]()
-# coeff_dep_test := Vec[ Vec[ Op, base.size ], 2 ]()
-# sym_dep_expr := Vec[ Op ]()
-# sym_dep_test := Vec[ Op ]()
-# dep := Vec[ Op, e.dim ]()
-# tep := Vec[ Op, e.dim ]()
-# for d in 0 .. e.dim
-    # for x in 0 .. base.size
-        # coeff_dep_expr[ d ][ x ] = symbol("U^($x)_$d")
-        # coeff_dep_test[ d ][ x ] = symbol("{U^($x)_$d}^*")
-        # sym_dep_expr.push_back( coeff_dep_expr[ d ][ x ] )
-        # sym_dep_test.push_back( coeff_dep_test[ d ][ x ] )
-    # dep[ d ] = dot( coeff_dep_expr[ d ], base )
-    # tep[ d ] = dot( coeff_dep_test[ d ], base )
+# # coeff_dep_expr := Vec[ Vec[ Op, base.size ], 2 ]()
+# # coeff_dep_test := Vec[ Vec[ Op, base.size ], 2 ]()
+# # sym_dep_expr := Vec[ Op ]()
+# # sym_dep_test := Vec[ Op ]()
+# # dep := Vec[ Op, e.dim ]()
+# # tep := Vec[ Op, e.dim ]()
+# # for d in 0 .. e.dim
+    # # for x in 0 .. base.size
+        # # coeff_dep_expr[ d ][ x ] = symbol("U^($x)_$d")
+        # # coeff_dep_test[ d ][ x ] = symbol("{U^($x)_$d}^*")
+        # # sym_dep_expr.push_back( coeff_dep_expr[ d ][ x ] )
+        # # sym_dep_test.push_back( coeff_dep_test[ d ][ x ] )
+    # # dep[ d ] = dot( coeff_dep_expr[ d ], base )
+    # # tep[ d ] = dot( coeff_dep_test[ d ], base )
 
-# eps := e.grad_sym( dep )
-# ept := e.grad_sym( tep )
-# ene := eps : hooke_iso( 1, 0.3, e.dim ) : ept
+# # eps := e.grad_sym( dep )
+# # ept := e.grad_sym( tep )
+# # ene := eps : hooke_iso( 1, 0.3, e.dim ) : ept
 
-# # ene += 1e3 * dot( dep, tep ).subs( e.var_inter, [ 0 0 ] )
-# # ene += 1e3 * dot( dep - [ 0.1 0 ], tep ).subs( e.var_inter, [ 1 0 ] )
-# def asym( m )
-    # return m[0,1]-m[1,0]
-# omega_e := asym( e.grad( dep ).subs(e.var_inter,e.var_inter*0) )
-# omega_t := asym( e.grad( tep ).subs(e.var_inter,e.var_inter*0) )
+# # # ene += 1e3 * dot( dep, tep ).subs( e.var_inter, [ 0 0 ] )
+# # # ene += 1e3 * dot( dep - [ 0.1 0 ], tep ).subs( e.var_inter, [ 1 0 ] )
+# # def asym( m )
+    # # return m[0,1]-m[1,0]
+# # omega_e := asym( e.grad( dep ).subs(e.var_inter,e.var_inter*0) )
+# # omega_t := asym( e.grad( tep ).subs(e.var_inter,e.var_inter*0) )
 
-# ene = e.integration( ene ) + omega_t * omega_e
+# # ene = e.integration( ene ) + omega_t * omega_e
 
-# vec := ene.diff( sym_dep_test )
-# mat := vec.diff( sym_dep_expr )
-# vec *= -1
+# # vec := ene.diff( sym_dep_test )
+# # mat := vec.diff( sym_dep_expr )
+# # vec *= -1
 
-# res := ( mat \ vec ).subs( sym_dep_expr, sym_dep_expr * 0 )
+# # res := ( mat \ vec ).subs( sym_dep_expr, sym_dep_expr * 0 )
 
 
 
-# info Mat[Float64]( mat )
+# # info Mat[Float64]( mat )
 
-# info res
-# info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 0 0 ] ) )
-# info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 1 0 ] ) )
-# info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 0 1 ] ) )
+# # info res
+# # info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 0 0 ] ) )
+# # info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 1 0 ] ) )
+# # info Vec[Float64]( dep.subs( sym_dep_expr, res ).subs( e.var_inter, [ 0 1 ] ) )
 
 
