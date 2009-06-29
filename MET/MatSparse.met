@@ -10,6 +10,9 @@ class MatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType ] inherits Mat
     if nb_row_per_block * nb_col_per_block < simd_size
         simd_size = 1
 
+    static func_add_matfull := UntypedPtr( NULL )
+    static cpp_func ~= CppCompiledFunctionSet_
+    
     rows := Vec[ RD ]()
     nb_rows_ := ST( 0 )
     nb_cols_ := ST( 0 )
@@ -17,6 +20,13 @@ class MatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType ] inherits Mat
     def init( nb_rows, nb_cols = nb_rows ) when nb_rows.is_a_number
         init_using_default_values( self )
         resize( nb_rows, nb_cols )
+        if not func_add_matfull
+            cpp_func.init( self )
+            func_add_matfull = cpp_func[ "func_add_matfull" ]
+    
+    def add( m, indices ) when m.tensor_order == 2 and indices.tensor_order == 1
+        # assert( indices )
+        exec_ccode_function( func_add_matfull, rows.get_begin(), m.data.get_begin(), indices.get_begin(), Int32( indices.size ) )
     
     def resize( nb_rows, nb_cols = nb_rows )
         rows.size = nb_rows // nb_row_per_block
@@ -48,6 +58,28 @@ class MatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType ] inherits Mat
         res <<< "    }"
         
         return res
+        
+    def get_src( stream ) 
+        stream <<< "#include <iostream>"
+        vargs := Vec[String]()
+        for r in 0 .. br
+            for c in 0 .. bc
+                vargs.push_back( "ke[ ( $br * i + $r ) * nb_ind * $bc + $bc * j + $c ]" )
+        #
+        stream <<<< 
+            template<class RD,class T1,class T2> void func_add_matfull( RD *rows, const T1 *ke, const T2 *ind, int nb_ind ) {
+                for(int i=0;i<nb_ind;++i)
+                    for(int j=0;j<nb_ind;++j)
+                        rows[ ind[i] ].add( 0, $bc * ind[j], $(join(vargs,", ") ) );
+            }
+
+    #
+    def get_wanted_functions
+        return [
+            CppFunctionDescription( "func_add_matfull", [ Ptr[RD], Ptr[T], Ptr[Int32], Int32 ] )
+        ]
+    def get_control_sum
+        return last_modification_time_or_zero_of_file_named( __file_at_stack_level__(0) )
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------
 
