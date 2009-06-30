@@ -407,7 +407,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
             CppFunctionDescription( "chol", [ Ptr[ RD ], Ptr[ RD ], ST ] )
         ]
     
-    def get_control_sum
+    def get_control_sum pertinence 3
         return last_modification_time_or_zero_of_file_named( __file_at_stack_level__(0) )
 
 
