@@ -17,7 +17,7 @@ class MatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType ] inherits Mat
     nb_rows_ := ST( 0 )
     nb_cols_ := ST( 0 )
     
-    def init( nb_rows, nb_cols = nb_rows ) when nb_rows.is_a_number
+    def init( nb_rows = 0, nb_cols = nb_rows ) when nb_rows.is_a_number
         init_using_default_values( self )
         resize( nb_rows, nb_cols )
         if not func_add_matfull
