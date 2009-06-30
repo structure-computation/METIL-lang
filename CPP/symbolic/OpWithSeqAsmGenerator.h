@@ -3,7 +3,7 @@
 
 #include "splittedvec.h"
 #include <sys/mman.h>
-#define DEBUG_ASM
+// #define DEBUG_ASM
 
 struct OpWithSeqAsmGenerator {
     enum AsmType {
@@ -185,7 +185,7 @@ struct OpWithSeqAsmGenerator {
             }
             write_self_sse2_op_xmm( op->reg, op->children[ 1 ], sse2_op );
         } else if ( op->type == STRING_select_symbolic_NUM ) {
-            assert( 0 );
+            op->reg = get_free_reg(); regs[ op->reg ] = op;
             write_select_symbolic( op->reg, op );
         } else if ( op->type == STRING_pow_NUM ) {
             assert( 0 );
@@ -296,8 +296,7 @@ private:
         #endif
         // mov rax, ...
         os.push_back( 0x48 );
-        os.push_back( 0xc7 );
-        os.push_back( 0xc0 );
+        os.push_back( 0xb8 );
         *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = op->children[0]->ptr_val;
         
         if ( op->children[1]->type == Op::NUMBER ) {
@@ -322,8 +321,7 @@ private:
             
             // mov rbx, ...
             os.push_back( 0x48 );
-            os.push_back( 0xc7 );
-            os.push_back( 0xc3 );
+            os.push_back( 0xbb );
             *reinterpret_cast<void **>( os.get_room_for( sizeof(void *) ) ) = op->children[1]->ptr_val;
             
             // mov ebx, [ rbx ]
