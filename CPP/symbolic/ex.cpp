@@ -1740,6 +1740,18 @@ void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &cente
     #endif
 }
 
+void get_taylor_expansion_manual( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
+    Rationnal r( 1 );
+    for(Int32 i=0;i<=deg_poly_max;++i) {
+        Ex t = r * expr.subs( th, tok, var, center );
+        res.push_back( t );
+        if ( i < deg_poly_max ) {
+            expr = expr.diff( th, tok, var );
+            r /= i + 1;
+        }
+    }
+}
+
 #include "fit.h"
 
 template<unsigned n>
@@ -2437,7 +2449,12 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     }
     
     // else -> simple polynomial_expansion
-    polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+    if ( deg_poly < 8 ) {
+        polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+    } else {
+        taylor_expansion.clear();
+        get_taylor_expansion_manual( th, tok, expr, mid, var, deg_poly, taylor_expansion );
+    }
     
     //
     Ex res( 0 );

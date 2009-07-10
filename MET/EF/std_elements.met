@@ -334,7 +334,7 @@ class Hexa inherits NameElement
     static def interval_var_inter( vi )
         return [ [0,1], [0,1], [0,1] ]
     static def corr_cpp( num_node )
-        return [ 0 1 3 5 4 5 7 6 ][ num_node ]
+        return [ 0 1 3 2 4 5 7 6 ][ num_node ]
 
 #~
     17 ---18----19
@@ -631,7 +631,7 @@ class Wedge inherits NameElement
     property has_a_var_inter_is_inside_method
     static vtk_num  := 10
     static points   := [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[1,0,1],[0,1,1]]
-    static children := [(Triangle,[0,2,1]),(Triangle,[3,4,5]),(Quad,[0,3,5,2]),(Quad,[2,5,4,1]),(Quad,[0,1,4,3])]
+    static children := [(Quad,[0,1,4,3]),(Quad,[0,3,5,2]),(Quad,[1,2,5,4]),(Triangle,[0,2,1]),(Triangle,[3,4,5])]
     static def interval_var_inter( vi )
         return [ [0,1], [0,1-vi[0]], [0,1] ]
     static def var_inter_is_inside( vi, tol = 0 )
