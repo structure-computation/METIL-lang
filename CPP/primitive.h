@@ -409,8 +409,8 @@ void get_primitives_Symbol( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "beg_value", "ret.init( self.beg_value() );", /*ret*/"Rationnal" ).M("Op") );
     primitive_functions.push_back( PrimitiveFunction( "end_value", "ret.init( self.end_value() );", /*ret*/"Rationnal" ).M("Op") );
     
-    primitive_functions.push_back( PrimitiveFunction( "set_beg_value", "self.set_beg_value(a,b);" ).M("Op").A("Rationnal").A("Bool") ); 
-    primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(a,b);" ).M("Op").A("Rationnal").A("Bool") );
+    primitive_functions.push_back( PrimitiveFunction( "set_beg_value", "self.set_beg_value(th,tok,a,b);" ).M("Op").A("Rationnal").A("Bool") ); 
+    primitive_functions.push_back( PrimitiveFunction( "set_end_value", "self.set_end_value(th,tok,a,b);" ).M("Op").A("Rationnal").A("Bool") );
     primitive_functions.push_back( PrimitiveFunction( "set_access_cost", "self.set_access_cost(a);" ).M("Op").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "set_nb_simd_terms", "self.set_nb_simd_terms(a);" ).M("Op").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "set_integer_type", "self.set_integer_type(a);" ).M("Op").A("Int32") );

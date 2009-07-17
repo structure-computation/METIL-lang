@@ -161,6 +161,8 @@ class ColOrRowExtraction[ ST, want_row ]
         if want_row
             return m->nb_cols
         return m->nb_rows
+    def get_sizes
+        return [get_size()]
     def get_sub_types      return m->sub_types
     def reassign( vec ) when vec.tensor_order == 1
         for v, c in vec, 0...

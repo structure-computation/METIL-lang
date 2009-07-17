@@ -74,8 +74,8 @@ struct Ex {
     int poly_deg( const Ex &var ) const;
     int poly_deg( const VarArgs &a ) const;
     
-    void set_beg_value( T b, bool inclusive );
-    void set_end_value( T e, bool inclusive );
+    void set_beg_value( Thread *th, const void *tok, T b, bool inclusive );
+    void set_end_value( Thread *th, const void *tok, T e, bool inclusive );
     void set_access_cost( Float64 c );
     void set_nb_simd_terms( Int32 c );
     void set_integer_type( Int32 c );
@@ -157,5 +157,14 @@ Ex select_symbolic( const Ex &vec, const Ex &index );
 
 #define PRINT( A ) \
     std::cout << "  " << __STRING(A) << std::flush << " -> " << (A) << std::endl
+
+inline Ex operator>=( const Ex &a, const Ex &b ) { return heaviside( a - b ); }
+inline Ex operator> ( const Ex &a, const Ex &b ) { return 1 - heaviside( b - a ); }
+inline Ex operator<=( const Ex &a, const Ex &b ) { return heaviside( b - a ); }
+inline Ex operator< ( const Ex &a, const Ex &b ) { return 1 - heaviside( a - b ); }
+inline Ex operator==( const Ex &a, const Ex &b ) { return eqz( a - b ); }
+inline Ex operator!=( const Ex &a, const Ex &b ) { return 1 - eqz( a - b ); }
+
+inline bool assumed( const Ex &a ) { return a.known_at_compile_time() and a.value(); }
 
 #endif // EX_H

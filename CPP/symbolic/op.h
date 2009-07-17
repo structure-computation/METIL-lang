@@ -69,8 +69,8 @@ struct Op {
     int nb_nodes_of_type( int t ) const; //
     int nb_nodes_of_type_rec( int t ) const; // without update of current_op
     
-    void set_beg_value( Rationnal b, bool inclusive );
-    void set_end_value( Rationnal e, bool inclusive );
+    int set_beg_value( Rationnal b, bool inclusive );
+    int set_end_value( Rationnal e, bool inclusive );
 
     // ..._data 
     NumberData *number_data() { return reinterpret_cast<NumberData *>( this + 1 ); }

@@ -36,7 +36,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     name_elem := ""
     _children := Vec[ Vec[ Ptr[ SymbolicElementAncestor ] ], nvi + 1 ]()
     _alternate_pos := Vec[ Op, dim ]()
-    _want_alternate_pos := false
+    _want_alternate_pos := 0
     
     assume_const_jac := 0
     num_child        := -1 # if self is a child elem
@@ -119,7 +119,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def get_pos
         if _want_alternate_pos
             return _alternate_pos
-        return pe.interpolation( var_inter, pos_nodes )
+        return Vec[ Op ]( pe.interpolation( var_inter, pos_nodes ) )
     
     def interpolation( val_on_nodes ) return pe.interpolation( var_inter, val_on_nodes )
     def interpolation_vertex( val_on_vertex_nodes ) return pe.interpolation_vertex( var_inter, val_on_vertex_nodes )
@@ -211,10 +211,45 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return res
     
     # integration
-    def integration( expr, mul_by_jac = true, order_diff = 5 )
+    def integration( expr, mul_by_jac = true, order_diff = 20, want_interval_assumptions = false )
         res := scalar_conversion( Op, expr )
         if mul_by_jac
             res *= get_jac()
+        
+        # interval_var_inter := pe.interval_var_inter( var_inter ) 
+        # res = integration( res, var_inter[1], interval_var_inter[1][0], interval_var_inter[1][1], order_diff ) # res.display_tex()
+        # info res
+        # res.display_tex()
+        # tmp := res
+        # res = 0
+        # for i in 0..101
+            # res += tmp.subs( var_inter[0], interval_var_inter[0][0] + ( interval_var_inter[0][1] - interval_var_inter[0][0] ) * i / 100 )
+        # return res
+        
+        #
+        if want_interval_assumptions
+            my_var_inter := Vec[Op]()
+            for v in var_inter
+                my_var_inter.push_back( symbol( String( v.tex_string() ) + "^k" ) )
+            #
+            subs_b := Vec[Op]()
+            subs_e := Vec[Op]()
+            for i in 0 .. var_inter.size
+                b := Op( pe.interval_var_inter( my_var_inter )[ i ][ 0 ] )
+                e := Op( pe.interval_var_inter( my_var_inter )[ i ][ 1 ] )
+                if b.beg_value_valid()
+                    my_var_inter[i].set_beg_value( b.beg_value(), false )
+                if e.end_value_valid()
+                    my_var_inter[i].set_end_value( e.end_value(), false )
+                subs_b.push_back( var_inter   [i] )
+                subs_e.push_back( my_var_inter[i] )
+            res = res.subs( subs_b, subs_e )
+            #
+            interval_var_inter := pe.interval_var_inter( my_var_inter ) 
+            for i in ( 0 .. nvi ).reversed
+                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
+            return res
+        # else
         interval_var_inter := pe.interval_var_inter( var_inter ) 
         for i in ( 0 .. nvi ).reversed
             res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
@@ -248,6 +283,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
+            # info vec
             return pe.interpolation( var_inter, vec )
         if nb_dim.size == 1
             d := nb_dim[0]
@@ -362,7 +398,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         assert( 0, "TODO" )
         
     # helper function -> give a new "field" based on "canonical" interpolation
-    def new_variable( interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
+    def new_variable( name, interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
         wanted_interpolation := interpolation_type[ 0 .. interpolation_type.size - "_minus_1".size ]
         sp := Vec[ Op ]()
         tmp_interp := new_variable( "_tmp", interpolation_type = wanted_interpolation, sym = sp )
@@ -431,8 +467,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     ~#
     virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
-        if nvi == dim
-            return Vec[ Op ]( newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true ) )
+        # if nvi == dim
+            # return Vec[ Op ]( newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true ) )
         return Vec[ Op ]( newton_raphson_minimize_iteration( dot( d, d ), var_inter, assume_matrix_is_factorizable = true ) )
 
     #~

@@ -94,9 +94,6 @@ int main(int argc,char **argv) {
         signal( SIGUSR1, signal_mgr );
     #endif
 
-    BigInt<32768> b( 10 );
-    std::cout << METIL_NS::pow( b, 10 ) << std::endl;
-
     // initialisation of main_thread
     main_thread = new Thread( new Scope, new ErrorList );
     AutoDecRef<Thread> adc_thread( main_thread );
@@ -229,6 +226,7 @@ int main(int argc,char **argv) {
             MetilQtThread mqt;
             QTimer::singleShot( 0, &mqt, SLOT(start()) );
             
+            std::cout << "yop" << std::endl;
             qapp.exec();
         } else {
     #endif

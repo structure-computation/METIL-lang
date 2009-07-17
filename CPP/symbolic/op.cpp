@@ -171,7 +171,7 @@ void find_mul_items_and_coeff_rec( const Op *a, SplittedVec<MulSeq,4,16,true> &i
     }
 }
 
-void Op::set_beg_value( Rationnal b, bool inclusive ) {
+int Op::set_beg_value( Rationnal b, bool inclusive ) {
     beg_value_inclusive = inclusive;
     if ( beg_value_valid )
         beg_value = b;
@@ -179,12 +179,10 @@ void Op::set_beg_value( Rationnal b, bool inclusive ) {
         beg_value.init( b );
         beg_value_valid = true;
     }
-    //     if ( parents.size() )
-    //         cpp_repr( std::cout << std::endl );
-    assert( parents.size() == 0 ); // TODO
+    return parents.size();
 }
 
-void Op::set_end_value( Rationnal e, bool inclusive ) {
+int Op::set_end_value( Rationnal e, bool inclusive ) {
     end_value_inclusive = inclusive;
     if ( end_value_valid )
         end_value = e;
@@ -192,7 +190,7 @@ void Op::set_end_value( Rationnal e, bool inclusive ) {
         end_value.init( e );
         end_value_valid = true;
     }
-    assert( parents.size() == 0 ); // TODO
+    return parents.size();
 }
 
 // ----------------------------------------------------------------------------------------------------------

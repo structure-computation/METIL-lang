@@ -144,12 +144,14 @@ Ex &Ex::operator-=(const Ex &c) { *this = *this - c; return *this; }
 
 Ex &Ex::operator/=(const Ex &c) { *this = *this / c; return *this; }
 
-void Ex::set_beg_value( T b, bool inclusive ) {
-    op->set_beg_value( b, inclusive );
+void Ex::set_beg_value( Thread *th, const void *tok, T b, bool inclusive ) {
+    if ( op->set_beg_value( b, inclusive ) )
+        th->add_error( "symbol ->beg_value already a parent", tok );
 }
 
-void Ex::set_end_value( T e, bool inclusive ) {
-    op->set_end_value( e, inclusive );
+void Ex::set_end_value( Thread *th, const void *tok, T e, bool inclusive ) {
+    if ( op->set_end_value( e, inclusive ) )
+        th->add_error( "symbol ->beg_value already a parent", tok );
 }
 
 bool Ex::beg_value_valid() const {
@@ -1738,6 +1740,18 @@ void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &cente
     #endif
 }
 
+void get_taylor_expansion_manual( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
+    Rationnal r( 1 );
+    for(Int32 i=0;i<=deg_poly_max;++i) {
+        Ex t = r * expr.subs( th, tok, var, center );
+        res.push_back( t );
+        if ( i < deg_poly_max ) {
+            expr = expr.diff( th, tok, var );
+            r /= i + 1;
+        }
+    }
+}
+
 #include "fit.h"
 
 template<unsigned n>
@@ -2208,9 +2222,9 @@ Ex integration_( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, co
         Ex old_var = var;
         var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
         if ( beg.known_at_compile_time() )
-            var.set_beg_value( beg.value(), true );
+            var.set_beg_value( th, tok, beg.value(), true );
         if ( end.known_at_compile_time() )
-            var.set_end_value( end.value(), true );
+            var.set_end_value( th, tok, end.value(), true );
         expr = expr.subs( th, tok, old_var, var );
     }
     
@@ -2302,14 +2316,24 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         return Ex( 0 );
 
     // add interval assumptions
-    if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
-        Ex old_var = var;
-        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-        if ( beg.known_at_compile_time() )
-            var.set_beg_value( beg.value(), true );
-        if ( end.known_at_compile_time() )
-            var.set_end_value( end.value(), true );
-        expr = expr.subs( th, tok, old_var, var );
+    if ( beg.known_at_compile_time() and end.known_at_compile_time() ) {
+        Rationnal b = std::min( beg.value(), end.value() );
+        Rationnal e = std::max( beg.value(), end.value() );
+        //
+        if ( var.beg_value_valid()==false or var.beg_value() < b or var.end_value_valid()==false or var.end_value() > e ) {
+            Ex old_var = var;
+            var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
+            if ( var.beg_value_valid() )
+                var.set_beg_value( th, tok, std::max( b, var.beg_value() ), false );
+            else
+                var.set_beg_value( th, tok, b, false );
+            //
+            if ( var.end_value_valid() )
+                var.set_end_value( th, tok, std::min( e, var.end_value() ), false );
+            else
+                var.set_end_value( th, tok, e, false );
+            expr = expr.subs( th, tok, old_var, var );
+        }
     }
     
     //
@@ -2346,6 +2370,8 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
         ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
         polynomial_expansion( th, tok, discontinuities, var, nb_terms_taylor_ch - 1, ch_taylor_expansion, mid );
         
+        Ex end_supeq_beg = ( end >= beg );
+        
         SEX cut_pos, cut_val;
         cut_pos.push_back( beg ); cut_val.push_back( 1 );
         for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
@@ -2366,8 +2392,18 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
             Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
             Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
             Ex cp = mid - a / ( b + eqz( b ) );
-            cut_pos.push_back( cp );
-            cut_val.push_back( ( 1 - eqz( b ) ) * ( 1 - sgn( cp - beg ) * sgn( cp - end ) ) / 2 );
+            Ex va = ( 1 - eqz( b ) ) * ( 1 - ( end > cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp > end ) );
+            for(unsigned c=0;;++c) {
+                if ( c == cut_pos.size() ) {
+                    cut_pos.push_back( cp );
+                    cut_val.push_back( va );
+                    break;
+                }
+                if ( assumed( cut_pos[ c ] == cp ) ) {
+                    cut_val[ c ] += ( 1 - cut_val[ c ] ) * va;
+                    break;
+                }
+            }
         }
         cut_pos.push_back( end ); cut_val.push_back( 1 );
         
@@ -2382,10 +2418,17 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                 Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
                 // 
                 Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
-                for(unsigned b=1;b+1<cut_pos.size();++b)
-                    if ( b != num_cut_0 and b != num_cut_1 )
-                        valid = valid * ( 1 + sgn( cut_pos[ b ] - cut_pos[ num_cut_0 ] ) * sgn( cut_pos[ b ] - cut_pos[ num_cut_1 ] ) ) / 2;
-                        
+                for(unsigned b=1;b+1<cut_pos.size();++b) {
+                    if ( b != num_cut_0 and b != num_cut_1 ) {
+                        valid = valid * (
+                            cut_val[ b ] * (
+                                ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
+                                ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
+                            ) +
+                            1 - cut_val[ b ]
+                        );
+                    }
+                }
                 //
                 SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
                 //
@@ -2394,7 +2437,11 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
                     tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
                         pow( off_cut, Ex( Rationnal( i + 1 ) ) )
                     ) * Rationnal( 1, i + 1 );
-                // std::cout << valid << " ; " << cut_pos[num_cut_0] << " " << cut_pos[num_cut_1] << " " << tmp << " " << cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ] << std::endl;
+                // std::cout << "valid=" << valid << " cp0=" << cut_pos[num_cut_0] << " cp1=" << cut_pos[num_cut_1] << " tmp=" << tmp << " num_cut_0=" << num_cut_0 << " num_cut_1=" << num_cut_1 << std::endl;
+                //
+                if ( num_cut_0 != 0 and num_cut_1 + 1 != cut_pos.size() )
+                    valid *= sgn( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) * sgn( end - beg );
+                //
                 res += tmp * valid;
             }
         }
@@ -2402,7 +2449,12 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     }
     
     // else -> simple polynomial_expansion
-    polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+    if ( deg_poly < 8 ) {
+        polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+    } else {
+        taylor_expansion.clear();
+        get_taylor_expansion_manual( th, tok, expr, mid, var, deg_poly, taylor_expansion );
+    }
     
     //
     Ex res( 0 );

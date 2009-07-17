@@ -161,6 +161,29 @@ def nb_sub_element_of_flatten_list( l )
         res += nb_sub_element_of_flatten_list( i )
     return res
 
+#~
+    flat( [[21 1],[21 2 4]] ) -> [ 21 1 21 2 4 ]
+    ...
+~#
+def flatten( l, res ) when l.tensor_order <= 0
+    res.push_back( l )
+def flatten( l, res )
+    for v in l
+        flatten( v, res )
+def flatten( l )
+    res := Vec[ SubTypeFlatten( l ) ]() # hum !!
+    flatten( l, res )
+    return res
+
+def SubTypeFlatten( l ) when l.tensor_order <= 0
+    return l.type
+def SubTypeFlatten( l )
+    for v in l
+        r := SubTypeFlatten( v )
+        if r != None
+            return r
+    return None
+
 ## reduction( ( 1, 2, 3 ), add ) -> 6 ##
 def reduction( vec, function, default_value ) when vec.tensor_order==1
     if not vec.size
@@ -279,7 +302,7 @@ class SelectVec
 def select( self, vec ) when self.tensor_order==1 and vec.tensor_order > 0 pertinence 3
     return SelectVec( self, vec )
 ## ##
-def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 3
+def select( self, vec ) when self.tensor_order==1 and vec.is_an_OpenRange pertinence 4
     return SelectVec( self, range( vec.begin, vec.begin + ( self.size - vec.begin ) // vec.increment, vec.increment ) )
 
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
@@ -727,7 +750,7 @@ class VecOp
             # # else if va[i].type == VecOp
                 # va[i].subs_rec(  )
     def get_size_evaluation_costs_a_lot
-        return max( va.map(_0.size_evaluation_costs_a_lot) )
+        return true # max( va.map(_0.size_evaluation_costs_a_lot) )
     def get_size
         if va.size
             return va[0].size

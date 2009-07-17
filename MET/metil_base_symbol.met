@@ -430,6 +430,19 @@ class CodeWriterAlt
 def assumed( cond ) when is_of_type_Op( cond )
     return known_at_compile_time( cond ) and cond.value()
     
+# return true if cond is known_at_compile_time and is true
+def assumed( cond ) when cond.is_a_VecOp and @cond.op == equal
+    if cond.va[0].size != cond.va[1].size
+        return false
+    #
+    for i in cond
+        if not known_at_compile_time( i )
+            return false
+        if not i.value()
+            return false
+    return true
+    
+    
 # ------------------------------------------------- INTEGRATION ------------------------------------------------- 
     
     
@@ -853,8 +866,8 @@ class AsmWriter
     class Code
         p := UntypedPtr( NULL )
         
-        def destroy
-            p.free()
+        # def destroy
+            # p.free()
         
         def execute
             exec_untyped_ptr_function( p )
@@ -868,8 +881,26 @@ class AsmWriter
         aw.add_expr( UntypedPtr(ptr_res), Op(expr), method )
         return self
 
+    def add( ptr_res, expr, method ) when expr.tensor_order > 0
+        for key,val in expr
+            add(&(@ptr_res)[key] , val , method) 
+        return self
+
     def add_association( op_symbol, pointer )
         aw.add_association( op_symbol, UntypedPtr(pointer), pointer.T )
+        return self
+        
+    def add_association( vec_symbol, pointer ) when vec_symbol.tensor_order == 1
+        cpt := 0
+        for op_1 in vec_symbol
+            add_association( op_1 , &(@pointer)[cpt] )
+            cpt += 1
+        return self
+
+    def add_association( mat_symbol, pointer ) when mat_symbol.tensor_order == 2
+        for i in 0 .. mat_symbol.nb_rows
+            for j in 0 .. mat_symbol.nb_cols
+                add_association( mat_symbol[i,j], &(@pointer)[i,j] )
         return self
 
     def to_code
