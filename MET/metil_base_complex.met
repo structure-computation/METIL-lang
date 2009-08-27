@@ -79,9 +79,17 @@ def sqrtc( a ) when a.is_a_number and not a.is_a_complex_number
     co := ( a >= 0 )
     return C( sa * co, sa * ( 1 - co ) )
 
+## sqrt(real) that returns a complex number ##
+def sqrtc( a ) when a.is_a_number and a.is_a_complex_number
+    return sqrt( a )
+    
 ## ##
 def exp( a ) when a.is_a_complex_number
     return exp( a.real ) * ( cos( a.imag ) + a.type( 0, 1 ) * sin( a.imag ) )
+
+## ##
+def eqz( a ) when a.is_a_complex_number
+    return eqz( a.real ) * eqz( a.imag )
 
 ## ##
 def abs( a ) when a.is_a_complex_number
