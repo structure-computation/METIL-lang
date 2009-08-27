@@ -36,7 +36,7 @@ def w_d( function, fout )
     
 fout := File("CPP/symbolic/series_func_1.h","w")
 # fout := ref stdout
-for func in [ log exp sin cos tan asin acos atan ]
+for func in [ log exp sin cos tan asin acos atan atan2 ]
     w_d( func, fout )
 
 
