@@ -60,7 +60,7 @@ class Poly[ T, static_order=-1 ]
             
     def get_roots
         rorder := get_assumed_actual_order()
-        assert( rorder <= 3, "TODO : roots of poly with order > 3" )
+        assert( rorder <= 4, "TODO : roots of poly with order > 4" )
         res := Vec[ PolyRoot[C,T] ]( size = rorder )
         validity := T::scalar_type(1)
         for i in ( 1 .. rorder+1 ).reversed
@@ -86,32 +86,34 @@ class Poly[ T, static_order=-1 ]
 
     # # méthode de Ferrari (voir http://fr.wikipedia.org/wiki/Méthode_de_Ferrari )
     def ret_roots( n, res, validity ) when n == 4
-        tmp := 1/ (coefs[4] + eqz(coefs[4]) )  
-        b   := coefs[3]*tmp;
-        c   := coefs[2]*tmp;
-        d   := coefs[1]*tmp;
-        e   := coefs[0]*tmp;
-        del := b/4;
-        b2  := b^2;
-        b3  := b2*b;
-        p   := -3*b2/(T)8+c;
-        q   := b3/8 - b*c/2 + d;
-        r   := -3*b2*b2/(T)256 + c*del*del - del*d + e;
-        disc Poly[T,3](Vec[Op,4](4*r*p-q*q,-8*r,-4*p,8));
+        tmp := 1/ (coeffs[4] + eqz(coeffs[4]) )  
+        b   := coeffs[3]*tmp
+        c   := coeffs[2]*tmp
+        d   := coeffs[1]*tmp
+        e   := coeffs[0]*tmp
+        del := b/4
+        b2  := b^2
+        b3  := b2*b
+        p   := -3*b2/8+c
+        q   := b3/8 - b*c/2 + d
+        r   := -3*b2*b2/256 + c*del*del - del*d + e
+        disc :=     Poly[T,3](4*r*p-q*q,-8*r,-4*p,8)
         r_disc := disc.get_real_roots(); # on a au moins une solution réelle car deg(disc) = 3
         rac := r_disc[0].validity*r_disc[0].value + (1-r_disc[0].validity)*(r_disc[1].validity*r_disc[1].value+(1-r_disc[1].validity)*(r_disc[2].validity*r_disc[2].value))
         a0  := -sqrtc(C(2*rac-p,0));
         b0  := -q/(a0*2);
-        z1  := Poly[T,2](b0+rac,a0,1).roots()  
-        z2  := Poly[T,2](rac-b0,-a0,1).roots()
-        res[0].validity += validity
-        res[1].validity += validity
-        res[2].validity += validity
-        res[3].validity += validity
-        res[0].value += ( z1[0]-del ) * validity
-        res[1].value += ( z1[1]-del ) * validity
-        res[2].value += ( z2[0]-del ) * validity
-        res[3].value += ( z2[1]-del ) * validity 
+        p1  := Poly[C,2](b0+rac,a0,1)
+        p2  := Poly[C,2](rac-b0,-a0,1)
+        z1  := p1.get_roots()  
+        z2  := p2.get_roots()
+        res[0].validity += validity * z1[0].validity
+        res[1].validity += validity * z1[1].validity
+        res[2].validity += validity * z2[0].validity
+        res[3].validity += validity * z2[1].validity
+        res[0].value += ( z1[0].value-del ) * validity
+        res[1].value += ( z1[1].value-del ) * validity
+        res[2].value += ( z2[0].value-del ) * validity
+        res[3].value += ( z2[1].value-del ) * validity 
 
     def ret_roots( n, res, validity ) when n == 3
         c3 := coeffs[3] + eqz( coeffs[3])
