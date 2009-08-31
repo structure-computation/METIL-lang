@@ -51,6 +51,7 @@ struct Op {
     void cpp_repr( std::ostream &os ) const;
     void tex_repr( std::ostream &os ) const;
     void ser_repr( std::ostream &os ) const; // for serialization
+    void maple_repr( std::ostream &os ) const;
     void graphviz_repr( std::ostream &os, const SplittedVec<const Op *,32> &dep ) const;
     bool depends_on( const Op *a ) const;
     bool depends_on_rec( const Op *a ) const; // without update of current_op

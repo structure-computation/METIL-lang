@@ -83,9 +83,38 @@ class Poly[ T, static_order=-1 ]
             res[i].value = res_c[i].value.real
             res[i].validity = res_c[i].validity * ( abs(res_c[i].value.imag) < max_root_cmp )
         return res
-    
+
+    # # méthode de Ferrari (voir http://fr.wikipedia.org/wiki/Méthode_de_Ferrari )
+    def ret_roots( n, res, validity ) when n == 4
+        tmp := 1/ (coefs[4] + eqz(coefs[4]) )  
+        b   := coefs[3]*tmp;
+        c   := coefs[2]*tmp;
+        d   := coefs[1]*tmp;
+        e   := coefs[0]*tmp;
+        del := b/4;
+        b2  := b^2;
+        b3  := b2*b;
+        p   := -3*b2/(T)8+c;
+        q   := b3/8 - b*c/2 + d;
+        r   := -3*b2*b2/(T)256 + c*del*del - del*d + e;
+        disc Poly[T,3](Vec[Op,4](4*r*p-q*q,-8*r,-4*p,8));
+        r_disc := disc.get_real_roots(); # on a au moins une solution réelle car deg(disc) = 3
+        rac := r_disc[0].validity*r_disc[0].value + (1-r_disc[0].validity)*(r_disc[1].validity*r_disc[1].value+(1-r_disc[1].validity)*(r_disc[2].validity*r_disc[2].value))
+        a0  := -sqrtc(C(2*rac-p,0));
+        b0  := -q/(a0*2);
+        z1  := Poly[T,2](b0+rac,a0,1).roots()  
+        z2  := Poly[T,2](rac-b0,-a0,1).roots()
+        res[0].validity += validity
+        res[1].validity += validity
+        res[2].validity += validity
+        res[3].validity += validity
+        res[0].value += ( z1[0]-del ) * validity
+        res[1].value += ( z1[1]-del ) * validity
+        res[2].value += ( z2[0]-del ) * validity
+        res[3].value += ( z2[1]-del ) * validity 
+
     def ret_roots( n, res, validity ) when n == 3
-        c3 := coeffs[3] + ( 1 - validity )
+        c3 := coeffs[3] + eqz( coeffs[3])
         c := coeffs[0] / c3; b := coeffs[1] / c3; a := coeffs[2] / c3
         
         eps := 1e-10 * max(abs(coeffs)) # TODO -> T use (Op case)
@@ -111,7 +140,7 @@ class Poly[ T, static_order=-1 ]
     
     def ret_roots( n, res, validity ) when n == 2
         det_sq := coeffs[1]^2 - 4 * coeffs[0] * coeffs[2]
-        c2 := coeffs[2] + ( 1 - validity )
+        c2 := coeffs[2] + eqz( coeffs[2] )
         delta := sqrtc( det_sq )
         res[0].value += ( 0.5 * ( - coeffs[1] + delta ) / c2 ) * validity
         res[0].validity += validity

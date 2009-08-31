@@ -480,7 +480,196 @@ void tex_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
 void Op::tex_repr( std::ostream &os ) const {
     tex_repr_rec( os, this, 0 );
 }
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+std::string maple_repr( const Rationnal &val, int type_parent ) {
+    std::ostringstream os;
+    int local_type = 10000;
+    if ( val.num.is_negative() and val.den == Rationnal::BI(1) )
+        local_type = STRING_sub_NUM;
+    else if ( val.den != Rationnal::BI(1) )
+        local_type = STRING_div_NUM;
+    bool want_par = type_parent > local_type;
     
+    if ( want_par ) os << "(";
+    if ( val.den == Rationnal::BI(1) ) os << val.num;
+    else os << val.num << "/" << val.den ;
+    if ( want_par ) os << ") ";
+    return os.str();
+}
+
+void maple_repr( const MulSeq &ms, std::ostream &os, int type_parent ) {
+    if ( ms.e.is_one() ) {
+        if ( ms.op->type == Op::NUMBER and ms.op->number_data()->val.is_minus_one() ) {
+            bool np = ( type_parent > STRING_sub_NUM ) and ms.op->type >= 0;
+            if ( np ) os << "(";
+            os << "-";
+            if ( np ) os << ") ";
+        }
+        else {
+            bool np = ( type_parent > ms.op->type ) and ms.op->type >= 0;
+            if ( np ) os << "(";
+            ms.op->maple_repr( os );
+            if ( np ) os << ") ";
+        }
+    }
+    else if ( ms.e.num.is_one() ) {
+        if ( ms.e.den.is_two() )
+            os << "sqrt(";
+        else
+            os << "(";
+            //os << "\\sqrt[" << ms.e.den << "]{";
+        ms.op->maple_repr( os );
+        if ( ms.e.den.is_two() )
+            os << ")";
+        else
+            os << ")**(1/" << ms.e.den << ") ";
+    } else {
+        bool p = ms.op->type == STRING_add_NUM or ms.op->type == STRING_mul_NUM;
+        //os << "{";
+        //if ( p ) os << "(";
+        os << "(";
+        ms.op->maple_repr( os );
+        os << ")";
+        //if ( p ) os << ")";
+        //os << "}";
+        if ( ms.e.is_integer() )
+            os << "**(" << ms.e.num << ") ";
+        else
+            os << "**( " << ms.e.num << "/" << ms.e.den << ") ";
+    }
+}
+
+void maple_repr_rec( std::ostream &os, const Op *op, int type_parent ) {
+    if ( op->type == Op::NUMBER ) {
+        os << maple_repr( op->number_data()->val, type_parent );
+    } else if ( op->type == Op::SYMBOL ) {
+        os << op->symbol_data()->cpp_name_str; /// PROVISOIRE
+    } else if ( op->type == STRING_add_NUM ) { // (...) + (...)
+        bool np = type_parent > STRING_add_NUM; if ( np ) os << "(";
+        
+        std::vector<const Op *> p_part;
+        std::vector<const Op *> s_part;
+        find_p_and_s_parts_rec( op, p_part, s_part );
+    
+        for(unsigned i=0;i<p_part.size();++i) {
+            if ( i ) os << "+";
+            maple_repr_rec( os, p_part[i], STRING_add_NUM );
+        }
+        for(unsigned i=0;i<s_part.size();++i) {
+            os << "-";
+            if ( s_part[i]->type == Op::NUMBER ) // + (-2)
+                os << maple_repr( - s_part[i]->number_data()->val, STRING_add_NUM );
+            else { // ( -2 ) * a
+                Op *ch_0 = s_part[i]->func_data()->children[0];
+                Op *ch_1 = s_part[i]->func_data()->children[1];
+                if ( ch_0->number_data()->val.is_minus_one() )
+                    maple_repr_rec( os, ch_1, STRING_sub_NUM );
+                else {
+                    os << maple_repr( - ch_0->number_data()->val, STRING_mul_NUM );
+                    //os << "*";
+                    maple_repr_rec( os, ch_1, STRING_mul_NUM );
+                }
+            }
+        }
+        
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_mul_NUM ) { // (...) * (...)
+        SplittedVec<MulSeq,4,16,true> items;
+        find_mul_items_and_coeff_rec( op, items );
+        SplittedVec<MulSeq,4,16,true> items_[2];
+        Rationnal n_num = 1;
+        Rationnal n_den = 1;
+        for(unsigned i=0;i<items.size();++i) {
+            if ( items[i].op->type == Op::NUMBER ) {
+                n_num *= items[i].op->number_data()->val.num;
+                n_den *= items[i].op->number_data()->val.den;
+            }
+            else
+                items_[ items[i].e.num.is_negative() ].push_back( items[i] );
+        }
+        //
+        if ( items_[1].size() ) { // den
+            for(unsigned i=0;i<items_[1].size();++i)
+                items_[1][i].e.num.val *= -1;
+            //
+            os << " ( "; // \\displaystyle
+            if ( not n_num.is_one() )
+                os << n_num << " ";
+            for(unsigned i=0;i<items_[0].size();++i)
+                maple_repr( items_[0][i], os << ( i ? "\\," : " " ), ( items_[0].size() == 1 and n_num.is_one() ? 0 : STRING_mul_NUM ) ); /// ?????????????????
+            os << " )/( "; // \\displaystyle
+            if ( not n_den.is_one() )
+                os << n_den << " ";
+            for(unsigned i=0;i<items_[1].size();++i)
+                maple_repr( items_[1][i], os << ( i ? "\\," : " " ), ( items_[1].size() == 1 and n_den.is_one() ? 0 : STRING_mul_NUM ) );  /// ?????????????????
+            os << ")";
+        } else { // only *
+            if ( n_num.is_one()==false or n_den.is_one()==false )
+                os << maple_repr( n_num / n_den, STRING_mul_NUM ) << " ";
+            for(unsigned i=0;i<items_[0].size();++i)
+                maple_repr( items_[0][i], os << ( i ? "\\," : " " ), STRING_mul_NUM ) ;  /// ?????????????????
+        }
+    } else if ( is_a_sub( op ) ) { // -a
+        bool np = type_parent > op->type;
+        if ( np ) os << "(";
+        os << "-";
+        maple_repr_rec( os, op->func_data()->children[1], op->type );
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_pow_NUM ) { // (...) ^ (...)
+        bool np = type_parent > STRING_pow_NUM;
+        if ( np ) os << "(";
+        if ( op->func_data()->children[1]->type == Op::NUMBER and op->func_data()->children[1]->number_data()->val.num.is_one() and op->func_data()->children[1]->number_data()->val.den.is_one()==false ) {
+            if ( op->func_data()->children[1]->number_data()->val.den.is_two() )
+                os << "sqrt(";
+            else
+                os << "(";
+                //os << "\\sqrt[" << op->func_data()->children[1]->number_data()->val.den << "]{";
+            maple_repr_rec( os, op->func_data()->children[0], 0 );
+            if ( op->func_data()->children[1]->number_data()->val.den.is_two() )
+                os << ")";
+            else
+                os << ")**(1/" << op->func_data()->children[1]->number_data()->val.den << ")";
+        } else {
+            os << "(";
+            maple_repr_rec( os, op->func_data()->children[0], STRING_pow_NUM );
+            os << ")^(";
+            maple_repr_rec( os, op->func_data()->children[1], STRING_pow_NUM );
+            os << ")";
+        }
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_mod_NUM ) { // (...) % (...)
+        bool np = type_parent > op->type; if ( np ) os << "(";
+        os << "(";
+        maple_repr_rec( os, op->func_data()->children[0], op->type );
+        os << ") mod(";
+        maple_repr_rec( os, op->func_data()->children[1], op->type );
+        os << ")";
+        if ( np ) os << ")";
+    } else if ( op->type == STRING_abs_NUM ) { // abs( a )
+        os << "abs(";
+        maple_repr_rec( os, op->func_data()->children[0], op->type );
+        os << ")";
+    } else {
+        if ( op->type==STRING_heaviside_NUM )
+            os << "Heaviside(";
+        else if ( op->type==STRING_pos_part_NUM )
+            os << "\\mathop{\\mathrm{P}_{\\geq 0}}("; /// ?????????????????
+        else
+            os << "\\mathop{\\mathrm{" << Nstring(op->type) << "}}(";
+        for(unsigned i=0;i<Op::FuncData::max_nb_children and op->func_data()->children[i];++i) {
+            if ( i ) os << ",";
+            maple_repr_rec( os, op->func_data()->children[i], 0 );
+        }
+        os << ")";
+    }
+}
+
+void Op::maple_repr( std::ostream &os ) const {
+    maple_repr_rec( os, this, 0 );
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 int Op::poly_deg_rec() const {
     if ( op_id == current_op )
