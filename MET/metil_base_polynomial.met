@@ -100,8 +100,8 @@ class Poly[ T, static_order=-1 ]
         disc :=     Poly[T,3](4*r*p-q*q,-8*r,-4*p,8)
         r_disc := disc.get_real_roots(); # on a au moins une solution réelle car deg(disc) = 3
         rac := r_disc[0].validity*r_disc[0].value + (1-r_disc[0].validity)*(r_disc[1].validity*r_disc[1].value+(1-r_disc[1].validity)*(r_disc[2].validity*r_disc[2].value))
-        a0  := -sqrtc(C(2*rac-p,0));
-        b0  := -q/(a0*2);
+        a0  := -sqrtc(C(2*rac-p,0))
+        b0  := -q/(a0*2)
         p1  := Poly[C,2](b0+rac,a0,1)
         p2  := Poly[C,2](rac-b0,-a0,1)
         z1  := p1.get_roots()  
