@@ -50,11 +50,9 @@ class Poly[ T, static_order=-1 ]
             res.coeffs[i] = coeffs[i+1] * (i+1)
         return res
         
-    # def get_assumed_real_roots
-        # return self.roots.map( x => ( x[0].real, x[1] ) )
-    class PolyRoot[C,T]
+    class PolyRoot[ C, T ]
         value := C(0)
-        validity := T(0)
+        validity := T::scalar_type(0)
         def select( n )
             if n
                 return validity
@@ -64,7 +62,7 @@ class Poly[ T, static_order=-1 ]
         rorder := get_assumed_actual_order()
         assert( rorder <= 3, "TODO : roots of poly with order > 3" )
         res := Vec[ PolyRoot[C,T] ]( size = rorder )
-        validity := T(1)
+        validity := T::scalar_type(1)
         for i in ( 1 .. rorder+1 ).reversed
             ret_roots( i, res, ( coeffs[ i ] != 0 ) * validity )
             validity *= coeffs[ i ] == 0
@@ -121,8 +119,8 @@ class Poly[ T, static_order=-1 ]
         res[1].validity += validity
     
     def ret_roots( n, res, validity ) when n == 1
-        res[0].value -= ( coeffs[0] / ( coeffs[1] + ( 1 - validity ) ) ) * validity
-        res[0].validity += validity
+        res[0].value -= ( coeffs[0] / ( coeffs[1] + eqz( coeffs[1] ) ) ) * validity
+        res[0].validity = heaviside( res[0].validity + validity )
 
     static def make_test
         for v in rectilinear( -2 .. 3, static_order + 1 )
