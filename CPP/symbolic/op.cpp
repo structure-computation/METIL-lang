@@ -689,6 +689,15 @@ int Op::poly_deg_rec() const {
         additional_int = ( d0 < 0 ? -1 : d0 * int( func_data()->children[1]->number_data()->val.num ) );
     } else if ( type == Op::NUMBER or type == Op::SYMBOL ) {
         additional_int = 0;
+    } else if ( type >= 0 ) {
+        additional_int = 0;
+        // if there is a children that depends on var
+        for(unsigned i=0;i<FuncData::max_nb_children and func_data()->children[i];++i) {
+            if ( func_data()->children[i]->poly_deg_rec() != 0 ) {
+                additional_int = -1;
+                break;
+            }
+        }
     } else {
         additional_int = -1;
     }
