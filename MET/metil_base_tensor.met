@@ -70,7 +70,7 @@ class Tensor[ T, s=[], ST=SizeType ]
     def get_diag
         return DiagFromTensor( self )
     
-    def select( ind ) when ind.tensor_order == 1 pertinence 3
+    def select( ind ) when ind.tensor_order == 1 pertinence 4
         return data[ ind ]
     
     def select( varargs ) pertinence 2
