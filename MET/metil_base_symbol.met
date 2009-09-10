@@ -685,6 +685,7 @@ def newton_raphson_minimize_iteration( expr, unknowns, old_values = Vec[Op,unkno
     if unknowns.tensor_order <= 0
         return newton_raphson_minimize_iteration( expr, [unknowns], old_values )
     if expr.type != Op
+        assert( expr.tensor_order <= 0, "first argument of newton_raphson_minimize_iteration must be a scalar" )
         return newton_raphson_minimize_iteration( Op(expr), unknowns, old_values )
     #
     # nb_unknowns := unknowns.size
