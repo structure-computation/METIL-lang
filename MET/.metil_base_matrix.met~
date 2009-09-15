@@ -1150,18 +1150,25 @@ def tensorial_product( a, b ) when a.is_a_vector and b.is_a_vector
 class GlTransformation[ T = Float64 ]
     data := Mat[ T, Gen[4,4] ]()
 
-    static Trans3 homothetie( v )
+    static def identity
         res := GlTransformation[ T ]()
         for i in 0 .. 4
             for j in 0 .. 4
-                res[i,j] = ( i == j ) * ( i >= 3 or v[i] )
+                res[ i, j ] = ( i == j )
+        return res
+        
+    static def homothetie( v )
+        res := GlTransformation[ T ]()
+        for i in 0 .. 4
+            for j in 0 .. 4
+                res[ i, j ] = ( i == j ) * ( i >= 3 or v[i] )
         return res
     
     static def translation( v )
         res := GlTransformation[ T ]()
         for i in 0 .. 4
             for j in 0 .. 4
-                res[i,j] = ( i == j ) + ( j == 3 ) * ( i >= 3 or v[i] )
+                res[ i, j ] = ( i == j ) + ( j == 3 ) * ( i >= 3 or v[i] )
         return res
     
     static def plane_symetry( point, normal_ )
@@ -1173,16 +1180,16 @@ class GlTransformation[ T = Float64 ]
             res[ i, 3 ] = 2.0 * dotpn * normal[ i ]
         for i in 0 .. 3
             for j in 0 .. 3
-                res(i,j)=(i==j)-2.0*normal[j]*normal[i]
-        for(unsigned j=0j<d1-1++j)
-            res(d1-1,j)=0.0
-        res(d1-1,d1-1)=1.0
+                res[ i, j ] = ( i == j ) - 2.0 * normal[j] * normal[i]
+        for j in 0 .. 3
+            res[ 3, j ] = 0.0
+        res[ 3, 3 ] = 1.0
         return res
     
-    static Trans3 rotation( val )
-        res := GlTransformation[ T ]
-        T angle = length(val)
-        if ( angle==0.0 )
+    static def rotation( val )
+        res := GlTransformation[ T ]()
+        angle := length(val)
+        if not angle
             return identity()
         val /= angle
         T sa = sin(angle)

@@ -2449,7 +2449,6 @@ Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, con
     }
     
     // else -> simple polynomial_expansion
-    PRINT( deg_poly );
     if ( deg_poly < 8 ) {
         polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
     } else {

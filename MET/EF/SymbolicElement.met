@@ -380,7 +380,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             d := nb_dim[0]
             res := Vec[ Op, d ]()
             for j in 0 .. d
-                s := symbol("$bn.$name[$j]","$name_{$j}")
+                s := symbol("$bn.$name[$j]","$name{}_{$j}")
                 sym.push_back( s )
                 res[j] = s
             return res
@@ -391,7 +391,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 for k in 0 .. nb_dim[1]
                     if symm and k > j
                         continue
-                    s := symbol("$bn.$name($j,$k)","$name_{$j,$k}")
+                    s := symbol("$bn.$name($j,$k)","$name{}_{$j,$k}")
                     sym.push_back( s )
                     mat[j,k] = s
             return mat
