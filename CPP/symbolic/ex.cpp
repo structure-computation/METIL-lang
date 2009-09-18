@@ -118,6 +118,14 @@ std::string Ex::ser_repr() const {
     return ss.str();
 }
 
+Ex::T Ex::value( Thread *th, const void *tok ) const {
+    if ( op->type != Op::NUMBER ) {
+        th->add_error( "symbol is not a known number", tok );
+        return 0;
+    }
+    return op->number_data()->val;
+}
+
 Ex::T Ex::value() const {
     assert( op->type == Op::NUMBER );
     return op->number_data()->val;

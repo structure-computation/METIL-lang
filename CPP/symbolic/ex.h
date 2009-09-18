@@ -52,6 +52,7 @@ struct Ex {
     std::string tex_repr() const;
     std::string ser_repr() const; // for serialization
     T value() const;
+    T value( Thread *th, const void *tok ) const;
     
     unsigned node_count() const;
     unsigned ops_count() const;
