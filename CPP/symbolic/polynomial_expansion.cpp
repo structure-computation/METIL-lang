@@ -164,8 +164,9 @@ struct PolynomialExpansion {
                     } else if ( n.is_minus_one_half() ) { // a ^ (-0.5)
                         #include "series_rsqrt.h"
                     } else {
-                        std::ostringstream s; s << n;
-                        th->add_error( "TODO : PolynomialExpansion for pow( a, "+s.str()+" ). -> see file 'ex.cpp'.", tok );
+//                         std::ostringstream s; s << n;
+//                         th->add_error( "TODO : PolynomialExpansion for pow( a, "+s.str()+" ). -> see file 'ex.cpp'.", tok );
+                        #include "series_pow.h"
                     }
                 } else {
                     th->add_error( "TODO : PolynomialExpansion for pow( a, not a simple number ). -> see file 'ex.cpp'.", tok );
@@ -200,6 +201,7 @@ struct PolynomialExpansion {
             case STRING_asin_NUM:      exp_rec_asin( a ); break;
             case STRING_acos_NUM:      exp_rec_acos( a ); break;
             case STRING_atan_NUM:      exp_rec_atan( a ); break;
+            case STRING_atan2_NUM:     exp_rec_atan2( a ); break;
             case STRING_pow_NUM:       exp_rec_pow( a ); break;
             default:
                 th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );

@@ -281,7 +281,7 @@ Ex add_number_and_expr( const Ex &a, const Ex &b ) { // a is a number
     // 10 + ( 5 + a )
     if ( b.op->type == STRING_add_NUM and b.op->func_data()->children[0]->type == Op::NUMBER ) {
         return Ex( a.op->number_data()->val + b.op->func_data()->children[0]->number_data()->val ) + 
-               Ex( b.op->func_data()->children[1] );
+                Ex( b.op->func_data()->children[1] );
     }
     Op *res = Op::new_function( STRING_add_NUM, a.op, b.op );
     update_inter_add( res, a.op, b.op );
@@ -338,9 +338,9 @@ Ex operator+( const Ex &a, const Ex &b ) {
     // interval
     update_inter_add( res, a.op, b.op );
 
-    #ifdef A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
+#ifdef A_POSTERIORI_SIMPLIFICATION_AFTER_EACH_ADD
     return add_a_posteriori_simplification( res );
-    #endif
+#endif
     
     return res;
 }
@@ -418,12 +418,12 @@ Ex mul_number_and_expr( Ex a, Ex b ) { // a is a number
         bool has_one = false;
         for(unsigned i=0;i<items.size();++i)
             has_one |= ( items[i].c.is_one() or items[i].c.is_minus_one() );
-        #ifdef ALWAYS_DISTRIBUTE_NUMBER
-            has_one = false;
-        #endif
-        #ifdef NEVER_DISTRIBUTE_NUMBER
-            has_one = true;
-        #endif
+#ifdef ALWAYS_DISTRIBUTE_NUMBER
+        has_one = false;
+#endif
+#ifdef NEVER_DISTRIBUTE_NUMBER
+        has_one = true;
+#endif
         if ( not has_one ) {
             for(unsigned i=0;i<items.size();++i)
                 items[i].c *= a.op->number_data()->val;
@@ -797,10 +797,10 @@ Ex sin( Ex a_ ) {
     a = a_posteriori_simplification( a );
     //
     if ( a.op->type == STRING_mul_NUM )  {
-      Op *c0 = a.op->func_data()->children[0];
-      Op *c1 = a.op->func_data()->children[1];
-      if ( c0->is_minus_one() )
-         return Ex( -1 ) * sin ( Ex( c1 ) );
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->is_minus_one() )
+            return Ex( -1 ) * sin ( Ex( c1 ) );
     }
     if ( a.op->necessary_negative() ) return Ex(-1) * sin ( Ex( -1 ) * Ex( a.op ) );
     Op *res = Op::new_function( STRING_sin_NUM, a.op );
@@ -815,10 +815,10 @@ Ex cos( const Ex &a_ ) {
     
     if ( is_a_number( a.op ) ) return cos_96( a.op->number_data()->val );
     if ( a.op->type == STRING_mul_NUM )  {
-      Op *c0 = a.op->func_data()->children[0];
-      Op *c1 = a.op->func_data()->children[1];
-      if ( c0->is_minus_one() )
-         return cos ( Ex ( c1 ));
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->is_minus_one() )
+            return cos ( Ex ( c1 ));
     }
     if ( a.op->necessary_negative() ) return cos( Ex( -1 ) * Ex( a.op ) );
     Op *res = Op::new_function( STRING_cos_NUM, a.op );
@@ -832,10 +832,10 @@ Ex tan( const Ex &a_ ) {
     Ex a = a_posteriori_simplification( a_ );
     if ( is_a_number( a.op ) ) return tan_96( a.op->number_data()->val );
     if ( a.op->type == STRING_mul_NUM )  {
-      Op *c0 = a.op->func_data()->children[0];
-      Op *c1 = a.op->func_data()->children[1];
-      if ( c0->is_minus_one() )
-         return Ex( -1 ) * tan( Ex ( c1 ) );
+        Op *c0 = a.op->func_data()->children[0];
+        Op *c1 = a.op->func_data()->children[1];
+        if ( c0->is_minus_one() )
+            return Ex( -1 ) * tan( Ex ( c1 ) );
     }
     if ( a.op->necessary_negative() ) return Ex(-1) * tan ( Ex( -1 ) * Ex( a.op ) );
     return Op::new_function( STRING_tan_NUM, a.op );
@@ -1028,7 +1028,7 @@ Ex root( Thread *th, const void *tok, const Ex &r, int n ) {
 //         Ex x0 = ( 2 * std::real(    u) - a ) / 3;
 //         Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
 //         Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
-//         
+        //         
 //         //Ex va = 1 - ez;
 //         if ( n == 0 )
 //             return x0;
@@ -1082,18 +1082,18 @@ struct DiffRec {
             return;
         a->op_id = Op::current_op;
         //
-        #define MAKE_D0( res ) \
-            { \
-                Op *c0 = a->func_data()->children[0]; diff_rec( c0 ); \
-                Op *d0 = c0->additional_info; \
-                a->additional_info = to_inc_op( res ); \
-            }
-        #define MAKE_D0D1( res ) \
-            { \
-                Op *c0 = a->func_data()->children[0]; Op *c1 = a->func_data()->children[1]; diff_rec( c0 ); diff_rec( c1 ); \
-                Op *d0 = c0->additional_info; Op *d1 = c1->additional_info; \
-                a->additional_info = to_inc_op( res ); \
-            }
+#define MAKE_D0( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; diff_rec( c0 ); \
+        Op *d0 = c0->additional_info; \
+        a->additional_info = to_inc_op( res ); \
+    }
+#define MAKE_D0D1( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; Op *c1 = a->func_data()->children[1]; diff_rec( c0 ); diff_rec( c1 ); \
+        Op *d0 = c0->additional_info; Op *d1 = c1->additional_info; \
+        a->additional_info = to_inc_op( res ); \
+    }
         switch ( a->type ) {
             case Op::NUMBER:           a->additional_info = zero.op->inc_ref(); break;
             case Op::SYMBOL:           a->additional_info = zero.op->inc_ref(); break;
@@ -1117,13 +1117,14 @@ struct DiffRec {
             case STRING_asin_NUM:      MAKE_D0( Ex( d0 ) / pow( 1 - pow( Ex( c0 ), 2 ), Rationnal(1,2) ) ); break;
             case STRING_acos_NUM:      MAKE_D0( - Ex( d0 ) / pow( 1 - pow( Ex( c0 ), 2 ), Rationnal(1,2) ) ); break;
             case STRING_atan_NUM:      MAKE_D0( Ex( d0 ) / ( 1 + pow( Ex( c0 ), 2 ) ) ); break;
+            case STRING_atan2_NUM:     MAKE_D0D1(1 / ( 1 + pow ( Ex( c0 ) / Ex( c1 ) , 2) ) * ( Ex( d0 ) / Ex( c1 ) - Ex( d1 ) * Ex( c0 ) / pow( Ex( c1 ) , 2 ) ) ); break;
             case STRING_pow_NUM:
                 if ( a->func_data()->children[1]->type == Op::NUMBER ) {
                     Op *c0 = a->func_data()->children[0]; Op *c1 = a->func_data()->children[1]; diff_rec( c0 ); diff_rec( c1 );
                     Op *d0 = c0->additional_info;
                     a->additional_info = to_inc_op(
-                        Ex( c1 ) * Ex( d0 ) * pow( Ex( c0 ), Ex( a->func_data()->children[1]->number_data()->val - Rationnal( 1 ) ) )
-                    );
+                            Ex( c1 ) * Ex( d0 ) * pow( Ex( c0 ), Ex( a->func_data()->children[1]->number_data()->val - Rationnal( 1 ) ) )
+                                                  );
                     break;
                 }
                 MAKE_D0D1( Ex( d0 ) * Ex( c1 ) * pow( Ex( c0 ), Ex( c1 ) - Rationnal( 1 ) ) + /* dx * x ^ ( y - 1 ) */ Ex( d1 ) * log( Ex( c0 ) ) * Ex( a ) /*dy * log( x ) * x ^ y*/ ); 
@@ -1168,10 +1169,10 @@ void get_interval_rec( Thread *th, const void *tok, Op *op, SplittedVec<MinMax,6
     MinMax *min_max = reinterpret_cast<MinMax *>( op->additional_info );
     //
     //
-    #define up_ch_0  get_interval_rec( th, tok, op->func_data()->children[0], v )
-    #define up_ch_1  get_interval_rec( th, tok, op->func_data()->children[1], v )
-    #define mm_ch_0  reinterpret_cast<MinMax *>( op->func_data()->children[0]->additional_info )
-    #define mm_ch_1  reinterpret_cast<MinMax *>( op->func_data()->children[1]->additional_info )
+#define up_ch_0  get_interval_rec( th, tok, op->func_data()->children[0], v )
+#define up_ch_1  get_interval_rec( th, tok, op->func_data()->children[1], v )
+#define mm_ch_0  reinterpret_cast<MinMax *>( op->func_data()->children[0]->additional_info )
+#define mm_ch_1  reinterpret_cast<MinMax *>( op->func_data()->children[1]->additional_info )
     switch ( op->type ) {
         case Op::NUMBER:            min_max->beg = op; min_max->end = op; break;
         case Op::SYMBOL:            min_max->beg = op; min_max->end = op; break;
@@ -1229,35 +1230,35 @@ void get_interval_rec( Thread *th, const void *tok, Op *op, SplittedVec<MinMax,6
         // case STRING_tan_NUM:        break;
         // case STRING_asin_NUM:       break;
         // case STRING_acos_NUM:       break;
-        case STRING_pow_NUM: {
-            up_ch_0;
-            up_ch_1;
-            if ( mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->number_data()->val == mm_ch_1->end.op->number_data()->val ) {
-                Rationnal expo = mm_ch_1->end.op->number_data()->val;
-                std::cout << expo << std::endl;
-                if ( expo.is_even() ) {
-                    Ex opposite = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
-                    min_max->beg = ( 1 - opposite ) * min( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
-                    min_max->end = max( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
-                    break;
-                } else if ( expo.is_odd() ) {
-                    if ( expo.is_pos() ) {
-                        min_max->beg = pow( mm_ch_0->beg, expo );
-                        min_max->end = pow( mm_ch_0->end, expo );
-                    } else {
-                        min_max->beg = pow( mm_ch_0->end, expo );
-                        min_max->end = pow( mm_ch_0->beg, expo );
+            case STRING_pow_NUM: {
+                up_ch_0;
+                up_ch_1;
+                if ( mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->type == Op::NUMBER and mm_ch_1->beg.op->number_data()->val == mm_ch_1->end.op->number_data()->val ) {
+                    Rationnal expo = mm_ch_1->end.op->number_data()->val;
+                    std::cout << expo << std::endl;
+                    if ( expo.is_even() ) {
+                        Ex opposite = heaviside( - mm_ch_0->beg ) * heaviside( mm_ch_0->end );
+                        min_max->beg = ( 1 - opposite ) * min( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                        min_max->end = max( pow( mm_ch_0->beg, expo ), pow( mm_ch_0->end, expo ) );
+                        break;
+                    } else if ( expo.is_odd() ) {
+                        if ( expo.is_pos() ) {
+                            min_max->beg = pow( mm_ch_0->beg, expo );
+                            min_max->end = pow( mm_ch_0->end, expo );
+                        } else {
+                            min_max->beg = pow( mm_ch_0->end, expo );
+                            min_max->end = pow( mm_ch_0->beg, expo );
+                        }
+                        break;
                     }
-                    break;
                 }
-            }
-            Ex tmp = exp( log( Ex( op->func_data()->children[0] ) ) * Ex( op->func_data()->children[1] ) );
-            get_interval_rec( th, tok, tmp.op, v );
-            min_max->beg = reinterpret_cast<MinMax *>( tmp.op->additional_info )->beg;
-            min_max->end = reinterpret_cast<MinMax *>( tmp.op->additional_info )->end;
-            break;
-        } default:
-            th->add_error( "for now, no rules to get interval from function of type '"+std::string(Nstring(op->type))+"'.", tok );
+                Ex tmp = exp( log( Ex( op->func_data()->children[0] ) ) * Ex( op->func_data()->children[1] ) );
+                get_interval_rec( th, tok, tmp.op, v );
+                min_max->beg = reinterpret_cast<MinMax *>( tmp.op->additional_info )->beg;
+                min_max->end = reinterpret_cast<MinMax *>( tmp.op->additional_info )->end;
+                break;
+            } default:
+                    th->add_error( "for now, no rules to get interval from function of type '"+std::string(Nstring(op->type))+"'.", tok );
     }
 }
 
@@ -1284,7 +1285,7 @@ void Ex::interval( Thread *th, const void *tok, const VarArgs &a, const VarArgs 
 struct IdEx { Ex operator()( const Ex &ex ) const { return ex; } };
 
 template<class Func = IdEx>
-struct SubsRec {
+        struct SubsRec {
     SubsRec( Thread *th, const void *tok, const Ex &expr, const Func &func = Func() ) : th(th), tok(tok), expr( expr ) {
         subs_rec( expr.op, func );
     }
@@ -1301,20 +1302,20 @@ struct SubsRec {
             return;
         a->op_id = Op::current_op;
         //
-        #define MAKE_S0( res ) \
-            { \
-                Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
-                Ex e0 = c0->additional_info; \
-                a->additional_info = to_inc_op( func( res ) ); \
-            }
-        #define MAKE_S0S1( res ) \
-            { \
-                Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
-                Op *c1 = a->func_data()->children[1]; subs_rec( c1, func ); \
-                Ex e0 = c0->additional_info; \
-                Ex e1 = c1->additional_info; \
-                a->additional_info = to_inc_op( func( res ) ); \
-            }
+#define MAKE_S0( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
+        Ex e0 = c0->additional_info; \
+        a->additional_info = to_inc_op( func( res ) ); \
+    }
+#define MAKE_S0S1( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
+        Op *c1 = a->func_data()->children[1]; subs_rec( c1, func ); \
+        Ex e0 = c0->additional_info; \
+        Ex e1 = c1->additional_info; \
+        a->additional_info = to_inc_op( func( res ) ); \
+    }
 
         switch ( a->type ) {
             case Op::NUMBER:           a->additional_info = to_inc_op( func( a ) ); break;
@@ -1350,373 +1351,373 @@ struct SubsRec {
     Thread *th;
     const void *tok;
     Ex expr;
-};
+        };
 
-Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
-    ++Op::current_op;
-    for(unsigned i=0;i<a.variables.size();++i) {
-        reinterpret_cast<Ex *>(a.variables[i].data)->op->op_id = Op::current_op;
-        reinterpret_cast<Ex *>(a.variables[i].data)->op->additional_info = reinterpret_cast<Ex *>(b.variables[i].data)->op->inc_ref();
-    }
-    SubsRec<> sr( th, tok, *this );
-    return op->additional_info;
-}
-
-Ex Ex::subs( Thread *th, const void *tok, const SEX &a, const SEX &b ) const {
-    ++Op::current_op;
-    for(unsigned i=0;i<a.size();++i) {
-        a[i].op->op_id = Op::current_op;
-        a[i].op->additional_info = b[i].op->inc_ref();
-    }
-    SubsRec<> sr( th, tok, *this );
-    return op->additional_info;
-}
-
-Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
-    ++Op::current_op;
-    a.op->op_id = Op::current_op;
-    a.op->additional_info = b.op->inc_ref();
-    SubsRec<> sr( th, tok, *this );
-    return op->additional_info;
-}
-
-// ------------------------------------------------------------------------------------------------------------
-int Ex::poly_deg( const Ex &var ) const {
-    ++Op::current_op;
-    var.op->op_id = Op::current_op;
-    var.op->additional_int = 1;
-    return op->poly_deg_rec();
-}
-
-// ------------------------------------------------------------------------------------------------------------
-int Ex::poly_deg( const VarArgs &var ) const {
-    ++Op::current_op;
-    for(unsigned i=0;i<var.nb_uargs();++i) {
-        Op *op = reinterpret_cast<Ex *>( var.uarg(i)->data)->op;
-        op->op_id = Op::current_op;
-        op->additional_int = 1;
-    }
-    return op->poly_deg_rec();
-}
-
-// ------------------------------------------------------------------------------------------------------------
-unsigned Ex::node_count() const {
-    return op->nb_nodes();
-}
-unsigned Ex::ops_count() const {
-    return op->nb_ops();
-}
-unsigned Ex::nb_sub_symbols() const {
-    return op->nb_nodes_of_type( Op::SYMBOL );
-}
-
-// ------------------------------------------------------------------------------------------------------------
-
-struct ExpandOp {
-    Ex make_mul( const SplittedVec<const Op *,32> &res, unsigned beg ) const {
-        if ( res.size() == beg )
-            return 1;
-        //
-        const Op *a = res[ beg ];
-        if ( a->type != STRING_add_NUM )
-            return a;
-        //
-        SplittedVec<const Op *,32> add_children;
-        get_child_not_of_type_add( a, add_children );
-        Ex sum, rem = make_mul( res, beg + 1 );
-        for(unsigned i=0;i<add_children.size();++i)
-            sum += add_children[i] * rem;
-        return sum;
-    }
-    Ex operator()( const Ex &ex ) const {
-        Op *a = ex.op;
-        if ( a->type == STRING_mul_NUM ) {
-            SplittedVec<const Op *,32> res;
-            get_child_not_of_type_mul( a, res );
-            return make_mul( res, 0 );
+        Ex Ex::subs( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
+            ++Op::current_op;
+            for(unsigned i=0;i<a.variables.size();++i) {
+                reinterpret_cast<Ex *>(a.variables[i].data)->op->op_id = Op::current_op;
+                reinterpret_cast<Ex *>(a.variables[i].data)->op->additional_info = reinterpret_cast<Ex *>(b.variables[i].data)->op->inc_ref();
+            }
+            SubsRec<> sr( th, tok, *this );
+            return op->additional_info;
         }
-        return ex;
-    }
-};
 
-Ex Ex::expand( Thread *th, const void *tok ) const {
-    ++Op::current_op;
-    SubsRec<ExpandOp> sr( th, tok, *this );
-    return op->additional_info;
-}
+        Ex Ex::subs( Thread *th, const void *tok, const SEX &a, const SEX &b ) const {
+            ++Op::current_op;
+            for(unsigned i=0;i<a.size();++i) {
+                a[i].op->op_id = Op::current_op;
+                a[i].op->additional_info = b[i].op->inc_ref();
+            }
+            SubsRec<> sr( th, tok, *this );
+            return op->additional_info;
+        }
+
+        Ex Ex::subs( Thread *th, const void *tok, const Ex &a, const Ex &b ) const {
+            ++Op::current_op;
+            a.op->op_id = Op::current_op;
+            a.op->additional_info = b.op->inc_ref();
+            SubsRec<> sr( th, tok, *this );
+            return op->additional_info;
+        }
 
 // ------------------------------------------------------------------------------------------------------------
-struct LinearizeDiscOp {
-    Ex operator()( const Ex &ex ) const {
-        Op *a = ex.op;
-        if ( a->type == STRING_heaviside_NUM or a->type == STRING_abs_NUM or a->type == STRING_pos_part_NUM ) {
-            Ex ch( a->func_data()->children[0] );
-            ch.op->inc_ref();
-            ch.op->inc_ref();
+        int Ex::poly_deg( const Ex &var ) const {
+            ++Op::current_op;
+            var.op->op_id = Op::current_op;
+            var.op->additional_int = 1;
+            return op->poly_deg_rec();
+        }
+
+// ------------------------------------------------------------------------------------------------------------
+        int Ex::poly_deg( const VarArgs &var ) const {
+            ++Op::current_op;
+            for(unsigned i=0;i<var.nb_uargs();++i) {
+                Op *op = reinterpret_cast<Ex *>( var.uarg(i)->data)->op;
+                op->op_id = Op::current_op;
+                op->additional_int = 1;
+            }
+            return op->poly_deg_rec();
+        }
+
+// ------------------------------------------------------------------------------------------------------------
+        unsigned Ex::node_count() const {
+            return op->nb_nodes();
+        }
+        unsigned Ex::ops_count() const {
+            return op->nb_ops();
+        }
+        unsigned Ex::nb_sub_symbols() const {
+            return op->nb_nodes_of_type( Op::SYMBOL );
+        }
+
+// ------------------------------------------------------------------------------------------------------------
+
+        struct ExpandOp {
+            Ex make_mul( const SplittedVec<const Op *,32> &res, unsigned beg ) const {
+                if ( res.size() == beg )
+                    return 1;
+                //
+                const Op *a = res[ beg ];
+                if ( a->type != STRING_add_NUM )
+                    return a;
+                //
+                SplittedVec<const Op *,32> add_children;
+                get_child_not_of_type_add( a, add_children );
+                Ex sum, rem = make_mul( res, beg + 1 );
+                for(unsigned i=0;i<add_children.size();++i)
+                    sum += add_children[i] * rem;
+                return sum;
+            }
+            Ex operator()( const Ex &ex ) const {
+                Op *a = ex.op;
+                if ( a->type == STRING_mul_NUM ) {
+                    SplittedVec<const Op *,32> res;
+                    get_child_not_of_type_mul( a, res );
+                    return make_mul( res, 0 );
+                }
+                return ex;
+            }
+        };
+
+        Ex Ex::expand( Thread *th, const void *tok ) const {
+            ++Op::current_op;
+            SubsRec<ExpandOp> sr( th, tok, *this );
+            return op->additional_info;
+        }
+
+// ------------------------------------------------------------------------------------------------------------
+        struct LinearizeDiscOp {
+            Ex operator()( const Ex &ex ) const {
+                Op *a = ex.op;
+                if ( a->type == STRING_heaviside_NUM or a->type == STRING_abs_NUM or a->type == STRING_pos_part_NUM ) {
+                    Ex ch( a->func_data()->children[0] );
+                    ch.op->inc_ref();
+                    ch.op->inc_ref();
             
-            Ex res = ch.subs( th, tok, *vars, *mids );
-            std::cout << " -> " << ch  << std::endl;
-            for(unsigned i=0;i<nb_vars;++i) {
-                const Ex &var = *reinterpret_cast<const Ex *>(vars->variables[i].data);
-                const Ex &mid = *reinterpret_cast<const Ex *>(mids->variables[i].data);
-                std::cout << var << std::endl;
-                std::cout << mid << std::endl;
-                std::cout << ch.diff( th, tok, var ) << std::endl;
-                res += ch.diff( th, tok, var ).subs( th, tok, *vars, *mids ) * ( var - mid );
+                    Ex res = ch.subs( th, tok, *vars, *mids );
+                    std::cout << " -> " << ch  << std::endl;
+                    for(unsigned i=0;i<nb_vars;++i) {
+                        const Ex &var = *reinterpret_cast<const Ex *>(vars->variables[i].data);
+                        const Ex &mid = *reinterpret_cast<const Ex *>(mids->variables[i].data);
+                        std::cout << var << std::endl;
+                        std::cout << mid << std::endl;
+                        std::cout << ch.diff( th, tok, var ) << std::endl;
+                        res += ch.diff( th, tok, var ).subs( th, tok, *vars, *mids ) * ( var - mid );
+                    }
+                    std::cout << res << std::endl;
+                    switch ( a->type ) {
+                        case STRING_heaviside_NUM:
+                            return ex; // heaviside( res + 0.1 );
+                        case STRING_abs_NUM:
+                            return abs( res );
+                        case STRING_pos_part_NUM:
+                            return pos_part( res );
+                        default:
+                            assert( 0 );
+                    }
+                }
+                return ex;
             }
-            std::cout << res << std::endl;
-            switch ( a->type ) {
-                case STRING_heaviside_NUM:
-                    return ex; // heaviside( res + 0.1 );
-                case STRING_abs_NUM:
-                    return abs( res );
-                case STRING_pos_part_NUM:
-                    return pos_part( res );
-                default:
-                    assert( 0 );
-            }
+            const VarArgs *vars;
+            const VarArgs *mids;
+            unsigned nb_vars;
+            Thread *th;
+            const void *tok;
+        };
+
+
+        Ex Ex::linearize_discontinuity_children( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
+            ++Op::current_op;
+            LinearizeDiscOp func;
+            func.vars = &a;
+            func.mids = &b;
+            func.th   = th;
+            func.tok  = tok;
+            func.nb_vars = std::min( a.variables.size(), b.variables.size() );
+            SubsRec<LinearizeDiscOp> sr( th, tok, *this, func );
+            return op->additional_info;
         }
-        return ex;
-    }
-    const VarArgs *vars;
-    const VarArgs *mids;
-    unsigned nb_vars;
-    Thread *th;
-    const void *tok;
-};
-
-
-Ex Ex::linearize_discontinuity_children( Thread *th, const void *tok, const VarArgs &a, const VarArgs &b ) const {
-    ++Op::current_op;
-    LinearizeDiscOp func;
-    func.vars = &a;
-    func.mids = &b;
-    func.th   = th;
-    func.tok  = tok;
-    func.nb_vars = std::min( a.variables.size(), b.variables.size() );
-    SubsRec<LinearizeDiscOp> sr( th, tok, *this, func );
-    return op->additional_info;
-}
 
 // ------------------------------------------------------------------------------------------------------------
-Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const {
-    SplittedVec<const Op *,32> symbols;
-    get_sub_symbols( op, symbols );
-    if ( symbols.size() > 1 ) {
-        std::ostringstream ss;
-        ss << "subs_numerical works only with expressions which contains at most 1 variable ( remaining ones are ";
-        for(unsigned i=0;i<symbols.size();++i)
-            ss << Ex( symbols[i] ) << " ";
-        ss << ")";
-        th->add_error(ss.str(),tok);
-        return 0;
-    }
-    //
-    if ( symbols.size() == 0 )
-        return value();
+        Rationnal Ex::subs_numerical( Thread *th, const void *tok, const Rationnal &a ) const {
+            SplittedVec<const Op *,32> symbols;
+            get_sub_symbols( op, symbols );
+            if ( symbols.size() > 1 ) {
+                std::ostringstream ss;
+                ss << "subs_numerical works only with expressions which contains at most 1 variable ( remaining ones are ";
+                for(unsigned i=0;i<symbols.size();++i)
+                    ss << Ex( symbols[i] ) << " ";
+                ss << ")";
+                th->add_error(ss.str(),tok);
+                return 0;
+            }
+            //
+            if ( symbols.size() == 0 )
+                return value();
         
     // TODO : Optimize
-    Ex res = subs( th, tok, Ex( symbols[0] ), Ex( a ) );
-    if ( symbols.size() > 1 ) {
-        th->add_error("subs_numerical works on expr with only one symbol.",tok);
-        return 0;
-    }
-    return res.value();
-}
+            Ex res = subs( th, tok, Ex( symbols[0] ), Ex( a ) );
+            if ( symbols.size() > 1 ) {
+                th->add_error("subs_numerical works on expr with only one symbol.",tok);
+                return 0;
+            }
+            return res.value();
+        }
 
 // ------------------------------------------------------------------------------------------------------------
 // a posteriori factorization
 // ------------------------------------------------------------------------------------------------------------
-bool same_abs_value( const Op *a, const Op *b ) {
-    if ( a->type == Op::NUMBER and b->type == Op::NUMBER )
-        return abs( a->number_data()->val ) == abs( b->number_data()->val );
-    return false;
-}
-bool same_op_or_same_abs_value( const Op *a, const Op *b ) {
-    if ( a == b )
-        return true;
-    return same_abs_value( a, b );
-}
-
-struct CmpByOpPtr {
-    bool operator()( const Ex &a, const Ex &b ) const { return a.op < b.op; }
-};
-
-struct SumMulSeq {
-    struct Item {
-        const Op *m;
-        Ex::T e;
-        const Op *corr_op;
-    };
-    typedef SplittedVec<Item      ,4,4,true> MulList;
-    typedef SplittedVec<MulList   ,4,4,true> AddList;
-    typedef SplittedVec<const Op *,4,4,true> AddOLst;
-    
-    void add_to_quo_lst( const Op *op, std::vector<Ex> &quo_lst ) {
-        if ( op->type == STRING_add_NUM ) {
-            add_to_quo_lst( op->func_data()->children[0], quo_lst );
-            add_to_quo_lst( op->func_data()->children[1], quo_lst );
+        bool same_abs_value( const Op *a, const Op *b ) {
+            if ( a->type == Op::NUMBER and b->type == Op::NUMBER )
+                return abs( a->number_data()->val ) == abs( b->number_data()->val );
+            return false;
         }
-        else
-            quo_lst.push_back( op );
-    }
-    Ex sep_by( const Op *m, const Ex::T &e ) {
-        // m^e * quo + rem
-        std::vector<Ex> quo_lst, rem_lst;
-        for(unsigned i=0;i<items.size();++i) {
-            bool has = false;
-            for(unsigned j=0;j<items[i].size();++j) {
-                if ( same_op_or_same_abs_value( items[i][j].m, m ) ) {
-                    if ( items[i][j].e.is_pos() )
-                        has |= ( e.is_pos() and items[i][j].e >= e );
-                    else
-                        has |= ( e.is_neg() and items[i][j].e <= e );
+        bool same_op_or_same_abs_value( const Op *a, const Op *b ) {
+            if ( a == b )
+                return true;
+            return same_abs_value( a, b );
+        }
+
+        struct CmpByOpPtr {
+            bool operator()( const Ex &a, const Ex &b ) const { return a.op < b.op; }
+        };
+
+        struct SumMulSeq {
+            struct Item {
+                const Op *m;
+                Ex::T e;
+                const Op *corr_op;
+            };
+            typedef SplittedVec<Item      ,4,4,true> MulList;
+            typedef SplittedVec<MulList   ,4,4,true> AddList;
+            typedef SplittedVec<const Op *,4,4,true> AddOLst;
+    
+            void add_to_quo_lst( const Op *op, std::vector<Ex> &quo_lst ) {
+                if ( op->type == STRING_add_NUM ) {
+                    add_to_quo_lst( op->func_data()->children[0], quo_lst );
+                    add_to_quo_lst( op->func_data()->children[1], quo_lst );
                 }
+                else
+                    quo_lst.push_back( op );
             }
-            if ( has ) {
-                Ex p( 1 );
-                for(unsigned j=0;j<items[i].size();++j) {
-                    if ( items[i][j].m == m ) {
-                        if ( items[i][j].e.is_pos() ) {
-                            if ( e.is_pos() and items[i][j].e >= e ) {
-                                if ( items[i][j].e != e )
-                                    p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
-                            } else
-                                p *= Ex( items[i][j].corr_op );
-                        } else {
-                            if ( e.is_neg() and items[i][j].e <= e ) {
-                                if ( items[i][j].e != e )
-                                    p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
-                            } else
-                                p *= Ex( items[i][j].corr_op );
+            Ex sep_by( const Op *m, const Ex::T &e ) {
+        // m^e * quo + rem
+                std::vector<Ex> quo_lst, rem_lst;
+                for(unsigned i=0;i<items.size();++i) {
+                    bool has = false;
+                    for(unsigned j=0;j<items[i].size();++j) {
+                        if ( same_op_or_same_abs_value( items[i][j].m, m ) ) {
+                            if ( items[i][j].e.is_pos() )
+                                has |= ( e.is_pos() and items[i][j].e >= e );
+                            else
+                                has |= ( e.is_neg() and items[i][j].e <= e );
                         }
                     }
-                    else if ( same_abs_value( items[i][j].m, m ) )
-                        p *= 1 - 2 * ( items[i][j].m->number_data()->val.is_pos() xor m->number_data()->val.is_pos() );
-                    else
-                        p *= items[i][j].corr_op;
+                    if ( has ) {
+                        Ex p( 1 );
+                        for(unsigned j=0;j<items[i].size();++j) {
+                            if ( items[i][j].m == m ) {
+                                if ( items[i][j].e.is_pos() ) {
+                                    if ( e.is_pos() and items[i][j].e >= e ) {
+                                        if ( items[i][j].e != e )
+                                            p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
+                                    } else
+                                        p *= Ex( items[i][j].corr_op );
+                                } else {
+                                    if ( e.is_neg() and items[i][j].e <= e ) {
+                                        if ( items[i][j].e != e )
+                                            p *= pow( Ex( items[i][j].m ), Ex( items[i][j].e - e ) );
+                                    } else
+                                        p *= Ex( items[i][j].corr_op );
+                                }
+                            }
+                            else if ( same_abs_value( items[i][j].m, m ) )
+                                p *= 1 - 2 * ( items[i][j].m->number_data()->val.is_pos() xor m->number_data()->val.is_pos() );
+                            else
+                                p *= items[i][j].corr_op;
+                        }
+                        add_to_quo_lst( p.op, quo_lst );
+                    } else
+                        rem_lst.push_back( corr_ops[i] );
                 }
-                add_to_quo_lst( p.op, quo_lst );
-            } else
-                rem_lst.push_back( corr_ops[i] );
-        }
-        //
-        std::sort( quo_lst.begin(), quo_lst.end(), CmpByOpPtr() );
-        std::sort( rem_lst.begin(), rem_lst.end(), CmpByOpPtr() );
-        Ex quo, rem;
-        for(unsigned i=0;i<quo_lst.size();++i) quo += quo_lst[i];
-        for(unsigned i=0;i<rem_lst.size();++i) rem += rem_lst[i];
-        return pow( Ex( m ), Ex( e ) ) * quo + rem;
-    }
+                //
+                std::sort( quo_lst.begin(), quo_lst.end(), CmpByOpPtr() );
+                std::sort( rem_lst.begin(), rem_lst.end(), CmpByOpPtr() );
+                Ex quo, rem;
+                for(unsigned i=0;i<quo_lst.size();++i) quo += quo_lst[i];
+                for(unsigned i=0;i<rem_lst.size();++i) rem += rem_lst[i];
+                return pow( Ex( m ), Ex( e ) ) * quo + rem;
+            }
     
-    AddList items;
-    AddOLst corr_ops;
-};
-void get_SumMulSeq_mul_seq( const Op *op, SumMulSeq::MulList &ml ) {
-    if ( op->type == STRING_mul_NUM ) {
-        get_SumMulSeq_mul_seq( op->func_data()->children[0], ml );
-        get_SumMulSeq_mul_seq( op->func_data()->children[1], ml );
-    }
-    else {
-        SumMulSeq::Item *item = ml.new_elem();
-        if ( op->type == STRING_pow_NUM and op->func_data()->children[1]->type == Op::NUMBER ) {
-            item->m       = op->func_data()->children[0];
-            item->e       = op->func_data()->children[1]->number_data()->val;
-            item->corr_op = op;
-        }
-        else {
-            item->m       = op;
-            item->e       = 1;
-            item->corr_op = op;
-        }
-    }
-}
-void get_SumMulSeq( const Op *op, SumMulSeq &sq ) {
-    if ( op->type == STRING_add_NUM ) {
-        get_SumMulSeq( op->func_data()->children[0], sq );
-        get_SumMulSeq( op->func_data()->children[1], sq );
-    }
-    else {
-        sq.corr_ops.push_back( op );
-        get_SumMulSeq_mul_seq( op, *sq.items.new_elem() );
-    }
-}
-std::ostream &operator<<( std::ostream &os, const SumMulSeq &sq ) {
-    for(unsigned i=0;i<sq.items.size();++i)
-        for(unsigned j=0;j<sq.items[i].size();++j)
-            os << ( j ? "*" : ( i ? "+" : "" ) ) << Ex( sq.items[i][j].m ) << "^" << sq.items[i][j].e;
-    return os;
-}
-
-// ------------------------------------------------------------------------------------------------------------
-struct ItemAndFreqSet {
-    struct Item {
-        Item( const Op *m, Ex::T e ) : m( m ), e( e ), freq( 0 ) {}
-        const Op *m;
-        Ex::T e;
-        int freq;
-    };
-    void insert( const Op *m, Ex::T e ) {
-        for(unsigned i=0;i<items.size();++i)
-            if ( same_op_or_same_abs_value( items[i].m, m ) and items[i].e == e )
-                return;
-        if ( m->is_minus_one()==false and m->is_one()==false ) // -1 or 1
-            items.push_back( Item( m, e ) );
-    }
-    void add_freq( const Op *m, Ex::T e ) {
-        for(unsigned i=0;i<items.size();++i) {
-            if ( same_op_or_same_abs_value( items[i].m, m ) ) {
-                if ( items[i].e.is_pos() )
-                    items[i].freq += ( e.is_pos() and items[i].e <= e );
-                else
-                    items[i].freq += ( e.is_neg() and items[i].e >= e );
+            AddList items;
+            AddOLst corr_ops;
+        };
+        void get_SumMulSeq_mul_seq( const Op *op, SumMulSeq::MulList &ml ) {
+            if ( op->type == STRING_mul_NUM ) {
+                get_SumMulSeq_mul_seq( op->func_data()->children[0], ml );
+                get_SumMulSeq_mul_seq( op->func_data()->children[1], ml );
+            }
+            else {
+                SumMulSeq::Item *item = ml.new_elem();
+                if ( op->type == STRING_pow_NUM and op->func_data()->children[1]->type == Op::NUMBER ) {
+                    item->m       = op->func_data()->children[0];
+                    item->e       = op->func_data()->children[1]->number_data()->val;
+                    item->corr_op = op;
+                }
+                else {
+                    item->m       = op;
+                    item->e       = 1;
+                    item->corr_op = op;
+                }
             }
         }
-    }
-    Item *best_item() {
-        int best_ind = 0;
-        for(unsigned i=0;i<items.size();++i)
-            if ( abs( items[best_ind].freq ) < abs( items[i].freq ) )
-                best_ind = i;
-        return &items[ best_ind ];
-    }
-    std::vector<Item> items;
-};
-std::ostream &operator<<( std::ostream &os, const ItemAndFreqSet::Item &item ) {
-    os << Ex( item.m ) << "^" << item.e << " (" << item.freq << ")";
-    return os;
-}
+        void get_SumMulSeq( const Op *op, SumMulSeq &sq ) {
+            if ( op->type == STRING_add_NUM ) {
+                get_SumMulSeq( op->func_data()->children[0], sq );
+                get_SumMulSeq( op->func_data()->children[1], sq );
+            }
+            else {
+                sq.corr_ops.push_back( op );
+                get_SumMulSeq_mul_seq( op, *sq.items.new_elem() );
+            }
+        }
+        std::ostream &operator<<( std::ostream &os, const SumMulSeq &sq ) {
+            for(unsigned i=0;i<sq.items.size();++i)
+                for(unsigned j=0;j<sq.items[i].size();++j)
+                    os << ( j ? "*" : ( i ? "+" : "" ) ) << Ex( sq.items[i][j].m ) << "^" << sq.items[i][j].e;
+            return os;
+        }
 
-Ex add_a_posteriori_simplification( const Ex &a ) {
-    if ( a.op->simplified )
-        return a;
-    //
-    if ( a.op->type == STRING_add_NUM ) {
-        SumMulSeq sq;
-        get_SumMulSeq( a.op, sq );
+// ------------------------------------------------------------------------------------------------------------
+        struct ItemAndFreqSet {
+            struct Item {
+                Item( const Op *m, Ex::T e ) : m( m ), e( e ), freq( 0 ) {}
+                const Op *m;
+                Ex::T e;
+                int freq;
+            };
+            void insert( const Op *m, Ex::T e ) {
+                for(unsigned i=0;i<items.size();++i)
+                    if ( same_op_or_same_abs_value( items[i].m, m ) and items[i].e == e )
+                        return;
+                if ( m->is_minus_one()==false and m->is_one()==false ) // -1 or 1
+                    items.push_back( Item( m, e ) );
+            }
+            void add_freq( const Op *m, Ex::T e ) {
+                for(unsigned i=0;i<items.size();++i) {
+                    if ( same_op_or_same_abs_value( items[i].m, m ) ) {
+                        if ( items[i].e.is_pos() )
+                            items[i].freq += ( e.is_pos() and items[i].e <= e );
+                        else
+                            items[i].freq += ( e.is_neg() and items[i].e >= e );
+                    }
+                }
+            }
+            Item *best_item() {
+                int best_ind = 0;
+                for(unsigned i=0;i<items.size();++i)
+                    if ( abs( items[best_ind].freq ) < abs( items[i].freq ) )
+                        best_ind = i;
+                return &items[ best_ind ];
+            }
+            std::vector<Item> items;
+        };
+        std::ostream &operator<<( std::ostream &os, const ItemAndFreqSet::Item &item ) {
+            os << Ex( item.m ) << "^" << item.e << " (" << item.freq << ")";
+            return os;
+        }
+
+        Ex add_a_posteriori_simplification( const Ex &a ) {
+            if ( a.op->simplified )
+                return a;
+            //
+            if ( a.op->type == STRING_add_NUM ) {
+                SumMulSeq sq;
+                get_SumMulSeq( a.op, sq );
         // get frequency of sub items
-        ItemAndFreqSet items_and_freq;
-        for(unsigned i=0;i<sq.items.size();++i)
-            for(unsigned j=0;j<sq.items[i].size();++j)
-                items_and_freq.insert( sq.items[i][j].m, sq.items[i][j].e );
-        for(unsigned i=0;i<sq.items.size();++i)
-            for(unsigned j=0;j<sq.items[i].size();++j)
-                items_and_freq.add_freq( sq.items[i][j].m, sq.items[i][j].e );
-        ItemAndFreqSet::Item *best_item = items_and_freq.best_item();
-        // 
-        if ( best_item->freq > 1 )
-            return a_posteriori_simplification( sq.sep_by( best_item->m, best_item->e ) );
-    }
-    //
-    a.op->simplified = true;
-    return a;
-}
-Ex a_posteriori_simplification( const Ex &a ) {
-    #ifdef WITHOUT_SIMP
-    return a;
-    #endif
-    return add_a_posteriori_simplification( a );
-}
+                ItemAndFreqSet items_and_freq;
+                for(unsigned i=0;i<sq.items.size();++i)
+                    for(unsigned j=0;j<sq.items[i].size();++j)
+                        items_and_freq.insert( sq.items[i][j].m, sq.items[i][j].e );
+                for(unsigned i=0;i<sq.items.size();++i)
+                    for(unsigned j=0;j<sq.items[i].size();++j)
+                        items_and_freq.add_freq( sq.items[i][j].m, sq.items[i][j].e );
+                ItemAndFreqSet::Item *best_item = items_and_freq.best_item();
+                // 
+                if ( best_item->freq > 1 )
+                    return a_posteriori_simplification( sq.sep_by( best_item->m, best_item->e ) );
+            }
+            //
+            a.op->simplified = true;
+            return a;
+        }
+        Ex a_posteriori_simplification( const Ex &a ) {
+#ifdef WITHOUT_SIMP
+            return a;
+#endif
+            return add_a_posteriori_simplification( a );
+        }
 
 
 
@@ -1726,123 +1727,123 @@ Ex a_posteriori_simplification( const Ex &a ) {
 
 
 // ------------------------------------------------------------------------------------------------------------
-void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
-    #ifdef USE_SERIES_FOR_TAYLOR
-        Ex tmp("tmp",3,"tmp",3);
-        Ex e = expr.subs( th, tok, var, center + tmp );
-        SEX expressions; expressions.push_back( e );
-        res.get_room_for( deg_poly_max + 1 );
-        polynomial_expansion( th, tok, expressions, tmp, deg_poly_max, res );
-        for(unsigned i=0;i<res.size();++i)
-            res[i] = res[i].subs( th, tok, tmp, var - center );
-    #else
-        Rationnal r( 1 );
-        for(Int32 i=0;i<=deg_poly_max;++i) {
-            Ex t = r * expr.subs( th, tok, var, center );
-            res.push_back( t );
-            if ( i < deg_poly_max ) {
-                expr = expr.diff( th, tok, var );
-                r /= i + 1;
+        void get_taylor_expansion( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
+#ifdef USE_SERIES_FOR_TAYLOR
+            Ex tmp("tmp",3,"tmp",3);
+            Ex e = expr.subs( th, tok, var, center + tmp );
+            SEX expressions; expressions.push_back( e );
+            res.get_room_for( deg_poly_max + 1 );
+            polynomial_expansion( th, tok, expressions, tmp, deg_poly_max, res );
+            for(unsigned i=0;i<res.size();++i)
+                res[i] = res[i].subs( th, tok, tmp, var - center );
+#else
+            Rationnal r( 1 );
+            for(Int32 i=0;i<=deg_poly_max;++i) {
+                Ex t = r * expr.subs( th, tok, var, center );
+                res.push_back( t );
+                if ( i < deg_poly_max ) {
+                    expr = expr.diff( th, tok, var );
+                    r /= i + 1;
+                }
+            }
+#endif
+        }
+
+        void get_taylor_expansion_manual( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
+            Rationnal r( 1 );
+            for(Int32 i=0;i<=deg_poly_max;++i) {
+                Ex t = r * expr.subs( th, tok, var, center );
+                res.push_back( t );
+                if ( i < deg_poly_max ) {
+                    expr = expr.diff( th, tok, var );
+                    r /= i + 1;
+                }
             }
         }
-    #endif
-}
-
-void get_taylor_expansion_manual( Thread *th, const void *tok, Ex expr, const Ex &center, const Ex &var, Int32 deg_poly_max, SEX &res ) {
-    Rationnal r( 1 );
-    for(Int32 i=0;i<=deg_poly_max;++i) {
-        Ex t = r * expr.subs( th, tok, var, center );
-        res.push_back( t );
-        if ( i < deg_poly_max ) {
-            expr = expr.diff( th, tok, var );
-            r /= i + 1;
-        }
-    }
-}
 
 #include "fit.h"
 
-template<unsigned n>
-struct Poly_fit_01_rec {
-    struct Coeffs {
-        Ex c[ n ];
-    };
+                 template<unsigned n>
+                 struct Poly_fit_01_rec {
+             struct Coeffs {
+                 Ex c[ n ];
+             };
     
-    void get_poly( const Op *a ) {
-        if ( a->op_id == Op::current_op )
-            return;
-        a->op_id = Op::current_op;
-        Coeffs *pol = coeffs.new_elem();
-        a->additional_info = reinterpret_cast<Op *>( pol );
-        //
-        switch ( a->type ) {
-            case Op::NUMBER:
-            case Op::SYMBOL:
-                pol->c[0] = a;
-                break;
-            case STRING_add_NUM:
-                get_poly( a->func_data()->children[0] );
-                get_poly( a->func_data()->children[1] );
-                for(unsigned i=0;i<n;++i)
-                    pol->c[i] = reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c[i] +
-                                reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c[i];
-                break;
-            case STRING_mul_NUM:
-                get_poly( a->func_data()->children[0] );
-                get_poly( a->func_data()->children[1] );
-                get_fit_from_mul(
-                    reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c, 
-                    reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c,
-                    pol->c, N<n>()
-                );
-                break;
-            default:
-                th->add_error( "Unable to manage function of type "+std::string( Nstring( a->type ) )+" during poly fit propagation", tok );
-        }
-    }
+             void get_poly( const Op *a ) {
+                 if ( a->op_id == Op::current_op )
+                     return;
+                 a->op_id = Op::current_op;
+                 Coeffs *pol = coeffs.new_elem();
+                 a->additional_info = reinterpret_cast<Op *>( pol );
+                 //
+                 switch ( a->type ) {
+                     case Op::NUMBER:
+                     case Op::SYMBOL:
+                         pol->c[0] = a;
+                         break;
+                     case STRING_add_NUM:
+                         get_poly( a->func_data()->children[0] );
+                         get_poly( a->func_data()->children[1] );
+                         for(unsigned i=0;i<n;++i)
+                             pol->c[i] = reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c[i] +
+                                     reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c[i];
+                         break;
+                     case STRING_mul_NUM:
+                         get_poly( a->func_data()->children[0] );
+                         get_poly( a->func_data()->children[1] );
+                         get_fit_from_mul(
+                                          reinterpret_cast<const Coeffs *>( a->func_data()->children[0]->additional_info )->c, 
+                                 reinterpret_cast<const Coeffs *>( a->func_data()->children[1]->additional_info )->c,
+                                         pol->c, N<n>()
+                                         );
+                         break;
+                     default:
+                         th->add_error( "Unable to manage function of type "+std::string( Nstring( a->type ) )+" during poly fit propagation", tok );
+                 }
+             }
     
-    SplittedVec<Coeffs,64,64,true> coeffs;
-    Thread *th;
-    const void *tok;
-};
+             SplittedVec<Coeffs,64,64,true> coeffs;
+             Thread *th;
+             const void *tok;
+                 };
 
 
-template<int n>
-void get_poly_fit_01( Thread *th, const void *tok, const Ex &expr, const Ex &var, SEX &res, N<n> ) {
-    typedef Poly_fit_01_rec<n> PF;
-    PF p;
-    //
-    typename PF::Coeffs *pol = p.coeffs.new_elem();
-    pol->c[ 1 ] = 1;
-    //
-    ++Op::current_op;
-    var.op->op_id = Op::current_op;
-    var.op->additional_info = reinterpret_cast<Op *>( pol );
-    //
-    p.th = th;
-    p.tok = tok;
-    p.get_poly( expr.op );
-    for(unsigned i=0;i<n;++i)
-        res.push_back( reinterpret_cast<typename PF::Coeffs *>( expr.op->additional_info )->c[ i ] );
-}
+                 template<int n>
+                         void get_poly_fit_01( Thread *th, const void *tok, const Ex &expr, const Ex &var, SEX &res, N<n> ) {
+                     typedef Poly_fit_01_rec<n> PF;
+                     PF p;
+                     //
+                     typename PF::Coeffs *pol = p.coeffs.new_elem();
+                     pol->c[ 1 ] = 1;
+                     //
+                     ++Op::current_op;
+                     var.op->op_id = Op::current_op;
+                     var.op->additional_info = reinterpret_cast<Op *>( pol );
+                     //
+                     p.th = th;
+                     p.tok = tok;
+                     p.get_poly( expr.op );
+                     for(unsigned i=0;i<n;++i)
+                         res.push_back( reinterpret_cast<typename PF::Coeffs *>( expr.op->additional_info )->c[ i ] );
+                         }
 
 // get coeffs of P( x - beg )
-template<int n>
-void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, SEX &res, N<n> ) {
-    Ex new_var("v",1,"v",2);
-    Ex new_expr = expr.subs( th, tok, var, beg + new_var * ( end - beg ) );
-    get_poly_fit_01( th, tok, new_expr, new_var, res, N<n>() );
-    Ex d = end - beg;
-    for(unsigned i=0;i<n;++i)
-        res[ i ] = res[ i ] / pow( d, i );
-}
+                         template<int n>
+                                 void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, SEX &res, N<n> ) {
+                             Ex new_var("v",1,"v",2);
+                             Ex new_expr = expr.subs( th, tok, var, beg + new_var * ( end - beg ) );
+                             get_poly_fit_01( th, tok, new_expr, new_var, res, N<n>() );
+                             Ex d = end - beg;
+                             for(unsigned i=0;i<n;++i)
+                                 res[ i ] = res[ i ] / pow( d, i );
+                                 }
 
-void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly, SEX &res ) {
-    switch ( deg_poly ) {
-        case 0 : res.push_back( expr ); break;
-        case 1 : get_poly_fit( th, tok, expr, var, beg, end, res, N<2 >() ); break;
-        case 2 : get_poly_fit( th, tok, expr, var, beg, end, res, N<3 >() ); break;
-        case 3 : get_poly_fit( th, tok, expr, var, beg, end, res, N<4 >() ); break;
+                                 void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly, SEX &res ) {
+                                     switch ( deg_poly ) {
+                                         case 0 : res.push_back( expr ); break;
+                                         case 1 : get_poly_fit( th, tok, expr, var, beg, end, res, N<2 >() ); break;
+                                         case 2 : get_poly_fit( th, tok, expr, var, beg, end, res, N<3 >() ); break;
+                                         case 3 : get_poly_fit( th, tok, expr, var, beg, end, res, N<4 >() ); break;
 //         case 4 : get_poly_fit( th, tok, expr, var, beg, end, res, N<5 >() ); break;
 //         case 5 : get_poly_fit( th, tok, expr, var, beg, end, res, N<6 >() ); break;
 //         case 6 : get_poly_fit( th, tok, expr, var, beg, end, res, N<7 >() ); break;
@@ -1850,60 +1851,60 @@ void get_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, c
 //         case 8 : get_poly_fit( th, tok, expr, var, beg, end, res, N<9 >() ); break;
 //         case 9 : get_poly_fit( th, tok, expr, var, beg, end, res, N<10>() ); break;
 //         case 10: get_poly_fit( th, tok, expr, var, beg, end, res, N<11>() ); break;
-    }
-}
+                                     }
+                                 }
 
-Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly ) {
-    SEX pol;
-    get_poly_fit( th, tok, expr, beg, end, var, deg_poly, pol );
-    //
-    Ex res;
-    for(unsigned i=0;i<pol.size();++i)
-        res += pol[i] * pow( var - beg, i );
-    return res;
-}
+                                 Ex make_poly_fit( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly ) {
+                                     SEX pol;
+                                     get_poly_fit( th, tok, expr, beg, end, var, deg_poly, pol );
+                                     //
+                                     Ex res;
+                                     for(unsigned i=0;i<pol.size();++i)
+                                         res += pol[i] * pow( var - beg, i );
+                                     return res;
+                                 }
 
-Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    //
-    SEX taylor_expansion;
-    get_taylor_expansion( th, tok, expr, ( beg + end ) / 2, var, deg_poly_max, taylor_expansion );
-    //
-    Ex res( 0 ), d = ( end - beg ) / 2;
-    for( Int32 i=0; i<(Int32)taylor_expansion.size(); i += 2 )
-        res = res + 2 * taylor_expansion[i] * pow( d, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
-    return res;
+                                 Ex integration_with_taylor_expansion( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+                                     //
+                                     SEX taylor_expansion;
+                                     get_taylor_expansion( th, tok, expr, ( beg + end ) / 2, var, deg_poly_max, taylor_expansion );
+                                     //
+                                     Ex res( 0 ), d = ( end - beg ) / 2;
+                                     for( Int32 i=0; i<(Int32)taylor_expansion.size(); i += 2 )
+                                         res = res + 2 * taylor_expansion[i] * pow( d, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
+                                     return res;
     //     SEX taylor_expansion;
     //     get_taylor_expansion( th, tok, expr, beg, var, deg_poly_max, taylor_expansion );
-    //     //
+                                     //     //
     //     Ex res( 0 ), d = end - beg;
     //     for( Int32 i=0; i<(Int32)taylor_expansion.size(); ++i )
     //         res = res + taylor_expansion[i] * pow( d, Ex( Rationnal( i + 1 ) ) ) * Rationnal( 1, i + 1 );
     //     return res;
-}
+                                 }
 
 
-Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validity ) {
-    for(unsigned i=0;i<std::min(3u,taylor_expansion.size());++i) {
-        roots   .push_back( 0 );
-        validity.push_back( 0 );
-    }
+                                 Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validity ) {
+                                     for(unsigned i=0;i<std::min(3u,taylor_expansion.size());++i) {
+                                         roots   .push_back( 0 );
+                                         validity.push_back( 0 );
+                                     }
     
-    //
-    Ex z = taylor_expansion[3], ez = eqz( z );
-    Ex a = taylor_expansion[2] / ( z + ez ), b = taylor_expansion[1] / ( z + ez ), c = taylor_expansion[0] / ( z + ez );
-    Ex delta = pow( b, 2 ) - 4 * a * c;
-    Ex ea = eqz( a ), eb = eqz( b ), hd = heaviside( delta );
-    Ex sq_delta = pow( delta * hd, Rationnal( 1, 2 ) );
-    roots   [ 0 ] = - ( ( 1 - ea ) * ( b + sq_delta ) + ea * c ) / ( 2 * a + ea * ( b + eb ) ); // first root
-    roots   [ 1 ] = - (                b - sq_delta            ) / ( 2 * a + ea              ); // second one
-    validity[ 0 ] = 1 - ea * eb;
-    validity[ 1 ] = ( 1 - ea ) * hd;
+                                     //
+                                     Ex z = taylor_expansion[3], ez = eqz( z );
+                                     Ex a = taylor_expansion[2] / ( z + ez ), b = taylor_expansion[1] / ( z + ez ), c = taylor_expansion[0] / ( z + ez );
+                                     Ex delta = pow( b, 2 ) - 4 * a * c;
+                                     Ex ea = eqz( a ), eb = eqz( b ), hd = heaviside( delta );
+                                     Ex sq_delta = pow( delta * hd, Rationnal( 1, 2 ) );
+                                     roots   [ 0 ] = - ( ( 1 - ea ) * ( b + sq_delta ) + ea * c ) / ( 2 * a + ea * ( b + eb ) ); // first root
+                                     roots   [ 1 ] = - (                b - sq_delta            ) / ( 2 * a + ea              ); // second one
+                                     validity[ 0 ] = 1 - ea * eb;
+                                     validity[ 1 ] = ( 1 - ea ) * hd;
 
     // order 3
-    if ( not z.op->is_zero() ) {
-        Ex p = b - pow(a,2) / 3;
-        Ex q = pow(a,3) * Rationnal(2,27) - a * b / 3 + c;
-        Ex delta = 4 * pow(p,3) + 27 * pow(q,2);
+                                     if ( not z.op->is_zero() ) {
+                                         Ex p = b - pow(a,2) / 3;
+                                         Ex q = pow(a,3) * Rationnal(2,27) - a * b / 3 + c;
+                                         Ex delta = 4 * pow(p,3) + 27 * pow(q,2);
         //delta >= 0
         //         Ex u = (-27*q+sqrt(27*delta))/2;
         //         Ex v = (-27*q-sqrt(27*delta))/2;
@@ -1911,26 +1912,26 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
         //             sgn(u)*pow(abs(u),1.0/3.0)+sgn(v)*pow(abs(v),1.0/3.0)-a)/3.0
         //         );
         //delta < 0
-        std::complex<Ex> j( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
-        std::complex<Ex> v( -27 * q / 2, 0 );
-        v += sqrtc( - Rationnal(27,4) * delta ) * std::complex<Ex>( 0, 1 );
-        std::complex<Ex> u( powc( v, Rationnal(1,3) ) );
-        Ex x0 = ( 2 * std::real(    u) - a ) / 3;
-        Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
-        Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
+                                         std::complex<Ex> j( -Rationnal(1,2), sqrt_96(Rationnal(3,4)) );
+                                         std::complex<Ex> v( -27 * q / 2, 0 );
+                                         v += sqrtc( - Rationnal(27,4) * delta ) * std::complex<Ex>( 0, 1 );
+                                         std::complex<Ex> u( powc( v, Rationnal(1,3) ) );
+                                         Ex x0 = ( 2 * std::real(    u) - a ) / 3;
+                                         Ex x1 = ( 2 * std::real(  j*u) - a ) / 3;
+                                         Ex x2 = ( 2 * std::real(j*j*u) - a ) / 3;
         
-        Ex va = 1 - ez;
-        roots   [ 0 ] = ( 1 - va ) * roots   [ 0 ] + va * x0;
-        validity[ 0 ] = ( 1 - va ) * validity[ 0 ] + va;
-        va *= 1 - heaviside( delta );
-        roots   [ 1 ] = ( 1 - va ) * roots   [ 1 ] + va * x1;
-        roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
-        validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
-        validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
-    }
+                                         Ex va = 1 - ez;
+                                         roots   [ 0 ] = ( 1 - va ) * roots   [ 0 ] + va * x0;
+                                         validity[ 0 ] = ( 1 - va ) * validity[ 0 ] + va;
+                                         va *= 1 - heaviside( delta );
+                                         roots   [ 1 ] = ( 1 - va ) * roots   [ 1 ] + va * x1;
+                                         roots   [ 2 ] = ( 1 - va ) * roots   [ 2 ] + va * x2;
+                                         validity[ 1 ] = ( 1 - va ) * validity[ 1 ] + va;
+                                         validity[ 2 ] = ( 1 - va ) * validity[ 2 ] + va;
+                                     }
     
-    return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
-}
+                                     return ( a * ( 1 - ea ) + b * ( 1 - eb ) * ea ) * ez + z * ( 1 - ez );
+                                 }
 
 // Ex integration_with_discontinuities_rec( Thread *th, const void *tok, const Ex &expr, const Ex &var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
 //     const Op *disc = expr.op->find_discontinuities( var.op );
@@ -1938,7 +1939,7 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //         const Op *ch = disc->func_data()->children[0];
 //         Ex ex_disc( disc );
 //         Ex ex_ch( ch );
-//         
+                                 //         
 //         // ch = f * g
 //         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
 //         if ( ch->type == STRING_mul_NUM ) {
@@ -1960,10 +1961,10 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //             }
 //             else
 //                 assert( 0 /* TODO */ );
-//             
+                                 //             
 //             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
 //         }
-//         
+                                 //         
 //         // taylor_expansion
 //         #ifdef WANT_ORDER_2_FOR_DISC_INTEGRATION
 //         SEX taylor_expansion;
@@ -1975,10 +1976,10 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
 //         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
 //         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
-// 
+                                 // 
 //         SEX roots, root_validity;
 //         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
-//         
+                                 //         
 //         // ch = f * g (mandatory : in case of several roots, ch is factorized and then we use this optimization)
 //         //   -> H( f * g ) = H( f ) * H( g ) + ( 1 - H( f ) ) * ( 1 - H( g ) )
 //         if ( ch->type == STRING_mul_NUM ) {
@@ -2000,10 +2001,10 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //             }
 //             else
 //                 assert( 0 /* TODO */ );
-//             
+                                 //             
 //             return integration( th, tok, new_expr, var, beg, end, deg_poly_max );
 //         }
-//         
+                                 //         
 //         // several roots ?
 //         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
 //             Ex su = leading_coefficient;
@@ -2031,12 +2032,12 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //                 info i, r[0].diff(i)
 //             for i in c
 //                 info i, r[1].diff(i)
-//         */
+                                 //         */
 //         Ex p0 = taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * taylor_expansion[6];
 //         Ex p1 = taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * taylor_expansion[5];
 //         Ex roots[] = { -p1 / p0 };
 //         #endif
-//         
+                                 //         
 //         // special case ( the last one ) : only one root
 //         Ex cut = mid + roots[0];
 //         Ex subs_p, subs_n;
@@ -2053,20 +2054,20 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //             subs_p = expr.subs( th, tok, ex_disc,   ex_ch );
 //         }
 //         else
-//             assert( 0 ); //
-//         
-//         //
+                                 //             assert( 0 ); //
+                                 //         
+                                 //         //
 //         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
 //         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
 //         Ex n_beg = 1 - p_beg;
 //         Ex n_end = 1 - p_end;
-//         
-//         //
+                                 //         
+                                 //         //
 //         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
 //         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
 //         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
 //         Ex pe = end + ( cut - end ) * p_beg * n_end;
-//         
+                                 //         
 //         Ex int_n = integration( th, tok, subs_n, var, nb, ne, deg_poly_max );
 //         Ex int_p = integration( th, tok, subs_p, var, pb, pe, deg_poly_max );
 //         return int_n + int_p;
@@ -2074,7 +2075,7 @@ Ex get_roots_with_validity( const SEX &taylor_expansion, SEX &roots, SEX &validi
 //     return integration_with_taylor_expansion( th, tok, expr, var, beg, end, deg_poly_max );
 // }
 
-Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const Ex &var, const Ex &cen, const Ex &beg, const Ex &end, int level = 0 ) {
+                                 Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const Ex &var, const Ex &cen, const Ex &beg, const Ex &end, int level = 0 ) {
 //     // look up for a discontinuity
 //     SimpleVector<Op *> discontinuities;
 //     ++Op::current_op;
@@ -2086,7 +2087,7 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
 //         const Op *ch = disc->func_data()->children[0];
 //         Ex ex_disc( disc ), ex_ch( ch );
 //         std::cout << level << " " << ex_disc << std::endl;
-//         
+                                     //         
 //         //         // taylor_expansion of child (to find the roots)
 //         //         SEX taylor_expansion;
 //         //         Ex mid = Rationnal( 1, 2 ) * ( beg + end );
@@ -2097,10 +2098,10 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
 //         //         poly_coeff.push_back( taylor_expansion[1] - Rationnal( 5,21) * pow(del,4) * taylor_expansion[5] - Rationnal(10,33) * pow(del,6) * taylor_expansion[7] );
 //         //         poly_coeff.push_back( taylor_expansion[2] + Rationnal( 6, 7) * pow(del,2) * taylor_expansion[4] + Rationnal( 5, 7) * pow(del,4) * taylor_expansion[6] );
 //         //         poly_coeff.push_back( taylor_expansion[3] + Rationnal(10, 9) * pow(del,2) * taylor_expansion[5] + Rationnal(35,33) * pow(del,4) * taylor_expansion[7] );
-//         // 
+                                     //         // 
 //         //         SEX roots, root_validity;
 //         //         Ex leading_coefficient = get_roots_with_validity( poly_coeff, roots, root_validity );
-//         //         
+                                     //         //         
 //         //         // several roots ?
 //         //         if ( root_validity[1].op->is_zero()==false or root_validity[2].op->is_zero()==false ) {
 //         //             Ex su = leading_coefficient;
@@ -2126,11 +2127,11 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
 //                 info i, r[0].diff(i)
 //             for i in c
 //                 info i, r[1].diff(i)
-//         */
+                                     //         */
 //         // best L2 fitting of order 7 -> order 1
 //         Ex p0 = ch_taylor_expansion[0] + Rationnal(1,3) * pow(del,2) * ch_taylor_expansion[2] + Rationnal(1,5) * pow(del,4) * ch_taylor_expansion[4] + Rationnal(1,7) * pow(del,6) * ch_taylor_expansion[6];
 //         Ex p1 = ch_taylor_expansion[1] + Rationnal(3,5) * pow(del,2) * ch_taylor_expansion[3] + Rationnal(3,7) * pow(del,4) * ch_taylor_expansion[5];
-//         
+                                     //         
 //         // end case : only one root
 //         SEX taylor_expansion_p, taylor_expansion_n;
 //         if ( disc->type == STRING_heaviside_NUM ) {
@@ -2152,21 +2153,21 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
 //             }
 //         }
 //         else
-//             assert( 0 ); //
-//         
-//         //
+                                     //             assert( 0 ); //
+                                     //         
+                                     //         //
 //         Ex p_beg = heaviside( ex_ch.subs( th, tok, var, beg ) );
 //         Ex p_end = heaviside( ex_ch.subs( th, tok, var, end ) );
 //         Ex n_beg = 1 - p_beg;
 //         Ex n_end = 1 - p_end;
-//         
-//         //
+                                     //         
+                                     //         //
 //         Ex cut = mid - p0 / ( p1 + eqz( p1 ) );
 //         Ex nb = beg + ( cut - beg ) * p_beg * n_end;
 //         Ex ne = end + ( beg - end + ( cut - beg ) * n_beg ) * p_end;
 //         Ex pb = beg + ( end - beg + ( cut - end ) * p_end ) * n_beg;
 //         Ex pe = end + ( cut - end ) * p_beg * n_end;
-//         
+                                     //         
 //         Ex int_n = integ_discontinuities_rec( th, tok, taylor_expansion_n, var, cen, nb , ne , level + 1 );
 //         Ex int_p = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, pb , pe , level + 1 );
 //         Ex int_z = integ_discontinuities_rec( th, tok, taylor_expansion_p, var, cen, beg, end, level + 1 );
@@ -2175,301 +2176,312 @@ Ex integ_discontinuities_rec( Thread *th, const void *tok, const SEX &taylor_exp
     
     
     // else -> no discontinuities
-    Ex res( 0 );
-    for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
-        res = res + taylor_expansion[i].subs( th, tok, var, cen ) * (
-            pow( end - cen, Ex( Rationnal( i + 1 ) ) ) -
-            pow( beg - cen, Ex( Rationnal( i + 1 ) ) )
-        ) * Rationnal( 1, i + 1 );
-    return res; 
-}
+                                     Ex res( 0 );
+                                     for(Int32 i=0;i<(Int32)taylor_expansion.size();++i)
+                                         res = res + taylor_expansion[i].subs( th, tok, var, cen ) * (
+                                                 pow( end - cen, Ex( Rationnal( i + 1 ) ) ) -
+                                                         pow( beg - cen, Ex( Rationnal( i + 1 ) ) )
+                                                                                ) * Rationnal( 1, i + 1 );
+                                     return res; 
+                                 }
 
-Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const SEX &discontinuities, unsigned offset_in_discontinuities, const SEX &p0, const SEX &p1, const Ex &beg, const Ex &end ) {
-    if ( offset_in_discontinuities == discontinuities.size() ) {
+                                 Ex integration_disc_rec( Thread *th, const void *tok, const SEX &taylor_expansion, const SEX &discontinuities, unsigned offset_in_discontinuities, const SEX &p0, const SEX &p1, const Ex &beg, const Ex &end ) {
+                                     if ( offset_in_discontinuities == discontinuities.size() ) {
         // [ -deb; deb ]
-        Ex res( 0 );
-        for(Int32 i=0;i<(Int32)taylor_expansion.size();++i) {
-            res = res + taylor_expansion[i] * (
-                pow( end, Ex( Rationnal( i + 1 ) ) ) - pow( beg, Ex( Rationnal( i + 1 ) ) )
-            ) * Rationnal( 1, i + 1 );
-        }
-        return res; 
-    }
+                                         Ex res( 0 );
+                                         for(Int32 i=0;i<(Int32)taylor_expansion.size();++i) {
+                                             res = res + taylor_expansion[i] * (
+                                                     pow( end, Ex( Rationnal( i + 1 ) ) ) - pow( beg, Ex( Rationnal( i + 1 ) ) )
+                                                                               ) * Rationnal( 1, i + 1 );
+                                         }
+                                         return res; 
+                                     }
     
-    //
-    Ex cut = - p0[offset_in_discontinuities] / ( p1[offset_in_discontinuities] + eqz( p1[offset_in_discontinuities] ) );
-    Ex end_sup_beg = heaviside( end - beg );
-    Ex beg_ = min( beg, end );
-    Ex end_ = max( beg, end );
+                                     //
+                                     Ex cut = - p0[offset_in_discontinuities] / ( p1[offset_in_discontinuities] + eqz( p1[offset_in_discontinuities] ) );
+                                     Ex end_sup_beg = heaviside( end - beg );
+                                     Ex beg_ = min( beg, end );
+                                     Ex end_ = max( beg, end );
     
-    //
-    Ex mon( -1 );
-    SEX neg_taylor_expansion;
-    ++Op::current_op;
-    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = mon.op;
-    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); neg_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
-    Ex res = integration_disc_rec( th, tok, neg_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, beg_, max(beg_,min(end_,cut)) );
+                                     //
+                                     Ex mon( -1 );
+                                     SEX neg_taylor_expansion;
+                                     ++Op::current_op;
+                                     discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = mon.op;
+                                     for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); neg_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+                                     Ex res = integration_disc_rec( th, tok, neg_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, beg_, max(beg_,min(end_,cut)) );
     
-    //
-    Ex one(  1 );
-    SEX sup_taylor_expansion;
-    ++Op::current_op;
-    discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = one.op;
-    for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); sup_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
-    res = res + integration_disc_rec( th, tok, sup_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, max(beg_,min(end_,cut)), end_ );
+                                     //
+                                     Ex one(  1 );
+                                     SEX sup_taylor_expansion;
+                                     ++Op::current_op;
+                                     discontinuities[offset_in_discontinuities].op->op_id = Op::current_op; discontinuities[offset_in_discontinuities].op->additional_info = one.op;
+                                     for(unsigned i=0;i<taylor_expansion.size();++i) { SubsRec<> sr( th, tok, taylor_expansion[i] ); sup_taylor_expansion.push_back( taylor_expansion[i].op->additional_info ); }
+                                     res = res + integration_disc_rec( th, tok, sup_taylor_expansion, discontinuities, offset_in_discontinuities + 1, p0, p1, max(beg_,min(end_,cut)), end_ );
     
-    return res;
-}
+                                     return res;
+                                 }
 
-Ex integration_( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    if ( same_op( beg.op, end.op ) )
-        return Ex( 0 );
+                                 Ex integration_( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+                                     if ( same_op( beg.op, end.op ) )
+                                         return Ex( 0 );
         
     // add interval assumptions
-    if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
-        Ex old_var = var;
-        var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-        if ( beg.known_at_compile_time() )
-            var.set_beg_value( th, tok, beg.value(), true );
-        if ( end.known_at_compile_time() )
-            var.set_end_value( th, tok, end.value(), true );
-        expr = expr.subs( th, tok, old_var, var );
-    }
+                                     if ( beg.known_at_compile_time() or end.known_at_compile_time() ) {
+                                         Ex old_var = var;
+                                         var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
+                                         if ( beg.known_at_compile_time() )
+                                             var.set_beg_value( th, tok, beg.value(), true );
+                                         if ( end.known_at_compile_time() )
+                                             var.set_end_value( th, tok, end.value(), true );
+                                         expr = expr.subs( th, tok, old_var, var );
+                                     }
     
     // degree of polynomial_expansion
-    Int32 pd = expr.poly_deg( var );
-    Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
+                                     Int32 pd = expr.poly_deg( var );
+                                     Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
     
     // polynomial_expansion
-    Ex mid = ( beg + end ) / 2;
-    Ex deb = ( end - beg ) / 2;
-    Ex exc("tmp",3,"tmp",3);
-    expr = expr.subs( th, tok, var, mid + exc );
-    SEX expressions, taylor_expansion;
-    expressions.push_back( expr );
-    taylor_expansion.get_room_for( deg_poly + 1 );
-    polynomial_expansion( th, tok, expressions, exc, deg_poly, taylor_expansion );
+                                     Ex mid = ( beg + end ) / 2;
+                                     Ex deb = ( end - beg ) / 2;
+                                     Ex exc("tmp",3,"tmp",3);
+                                     expr = expr.subs( th, tok, var, mid + exc );
+                                     SEX expressions, taylor_expansion;
+                                     expressions.push_back( expr );
+                                     taylor_expansion.get_room_for( deg_poly + 1 );
+                                     polynomial_expansion( th, tok, expressions, exc, deg_poly, taylor_expansion );
     
     // look up for discontinuities
-    SimpleVector<Op *> discontinuities_;
-    expr.op->find_discontinuities( exc.op, discontinuities_ );
-    if ( discontinuities_.size() ) {
-        SEX discontinuities;
-        for(unsigned i=0;i<discontinuities_.size();++i) {
-            Ex d( discontinuities_[i] );
-            for(unsigned j=0;;++j) {
-                if ( j == discontinuities.size() ) {
-                    discontinuities.push_back( d );
-                    break;
-                }
-                if ( same_ex( - d, discontinuities[ j ] ) )
-                    break;
-            }
-        }
+                                     SimpleVector<Op *> discontinuities_;
+                                     expr.op->find_discontinuities( exc.op, discontinuities_ );
+                                     if ( discontinuities_.size() ) {
+                                         SEX discontinuities;
+                                         for(unsigned i=0;i<discontinuities_.size();++i) {
+                                             Ex d( discontinuities_[i] );
+                                             for(unsigned j=0;;++j) {
+                                                 if ( j == discontinuities.size() ) {
+                                                     discontinuities.push_back( d );
+                                                     break;
+                                                 }
+                                                 if ( same_ex( - d, discontinuities[ j ] ) )
+                                                     break;
+                                             }
+                                         }
             
         // cuts -> linearization of all f(a) in H( f( a ) )
-        const int nb_terms_taylor_ch = 7;
-        SEX ch_taylor_expansion;
-        ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
-        polynomial_expansion( th, tok, discontinuities, exc, nb_terms_taylor_ch - 1, ch_taylor_expansion );
+                                         const int nb_terms_taylor_ch = 7;
+                                         SEX ch_taylor_expansion;
+                                         ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
+                                         polynomial_expansion( th, tok, discontinuities, exc, nb_terms_taylor_ch - 1, ch_taylor_expansion );
         
-        SEX p0, p1;
-        for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
+                                         SEX p0, p1;
+                                         for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
             /*
-                a := symbol("a")
-                c := Vec[Op,7]( function = x => symbol("c[$x]") )
-                v := Vec[Op,2]( function = x => symbol("v[$x]") )
-                p := dot( c, a ^ (0...) )
-                q := dot( v, a ^ (0...) )
-                del := symbol("del")
-                r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
-                for i in c
-                    info i, r[0].diff(i)
-                for i in c
-                    info i, r[1].diff(i)
+                                             a := symbol("a")
+                                             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+                                             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+                                             p := dot( c, a ^ (0...) )
+                                             q := dot( v, a ^ (0...) )
+                                             del := symbol("del")
+                                             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+                                             for i in c
+                                             info i, r[0].diff(i)
+                                             for i in c
+                                             info i, r[1].diff(i)
             */
             // best L2 fitting of order 7 -> order 1
-            p0.push_back( ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(deb,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(deb,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(deb,6) * ch_taylor_expansion[j+6] );
-            p1.push_back( ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(deb,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(deb,4) * ch_taylor_expansion[j+5]                                                          );
-        }
+                                             p0.push_back( ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(deb,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(deb,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(deb,6) * ch_taylor_expansion[j+6] );
+                                             p1.push_back( ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(deb,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(deb,4) * ch_taylor_expansion[j+5]                                                          );
+                                         }
         
-        //
-        return integration_disc_rec( th, tok, taylor_expansion, discontinuities, 0, p0, p1, -deb, deb );
-    }
+                                         //
+                                         return integration_disc_rec( th, tok, taylor_expansion, discontinuities, 0, p0, p1, -deb, deb );
+                                     }
 
-    //
-    Ex res( 0 );
-    for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
-        res = res + 2 * taylor_expansion[i] * (
-            pow( deb, Ex( Rationnal( i + 1 ) ) )
-        ) * Rationnal( 1, i + 1 );
-    return res; 
-}
+                                     //
+                                     Ex res( 0 );
+                                     for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+                                         res = res + 2 * taylor_expansion[i] * (
+                                                 pow( deb, Ex( Rationnal( i + 1 ) ) )
+                                                                               ) * Rationnal( 1, i + 1 );
+                                     return res; 
+                                 }
 
-SEX subs( Thread *th, const void *tok, const SEX &v, const Ex &from, const Ex &to, Int32 inc = 1 ) {
-    SEX res;
-    //
-    ++Op::current_op;
-    from.op->op_id = Op::current_op;
-    from.op->additional_info = to.op;
-    for(unsigned i=0;i<v.size(); i += inc ) {
-        SubsRec<> sr( th, tok, v[i] );
-        res.push_back( v[i].op->additional_info );
-    }
-    return res;
-}
+                                 SEX subs( Thread *th, const void *tok, const SEX &v, const Ex &from, const Ex &to, Int32 inc = 1 ) {
+                                     SEX res;
+                                     //
+                                     ++Op::current_op;
+                                     from.op->op_id = Op::current_op;
+                                     from.op->additional_info = to.op;
+                                     for(unsigned i=0;i<v.size(); i += inc ) {
+                                         SubsRec<> sr( th, tok, v[i] );
+                                         res.push_back( v[i].op->additional_info );
+                                     }
+                                     return res;
+                                 }
 
-Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
-    if ( same_op( beg.op, end.op ) )
-        return Ex( 0 );
+                                 Ex integration( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, const Ex &end, Int32 deg_poly_max ) {
+                                     if ( same_op( beg.op, end.op ) )
+                                         return Ex( 0 );
 
     // add interval assumptions
-    if ( beg.known_at_compile_time() and end.known_at_compile_time() ) {
-        Rationnal b = std::min( beg.value(), end.value() );
-        Rationnal e = std::max( beg.value(), end.value() );
-        //
-        if ( var.beg_value_valid()==false or var.beg_value() < b or var.end_value_valid()==false or var.end_value() > e ) {
-            Ex old_var = var;
-            var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
-            if ( var.beg_value_valid() )
-                var.set_beg_value( th, tok, std::max( b, var.beg_value() ), false );
-            else
-                var.set_beg_value( th, tok, b, false );
-            //
-            if ( var.end_value_valid() )
-                var.set_end_value( th, tok, std::min( e, var.end_value() ), false );
-            else
-                var.set_end_value( th, tok, e, false );
-            expr = expr.subs( th, tok, old_var, var );
-        }
-    }
+                                     PRINT("add interval assumptions");
+                                     if ( beg.known_at_compile_time() and end.known_at_compile_time() ) {
+                                         Rationnal b = std::min( beg.value(), end.value() );
+                                         Rationnal e = std::max( beg.value(), end.value() );
+                                         //
+                                         if ( var.beg_value_valid()==false or var.beg_value() < b or var.end_value_valid()==false or var.end_value() > e ) {
+                                             Ex old_var = var;
+                                             var = Ex( "tmp_end_beg_known", 17, "tmp_end_beg_known", 17 );
+                                             if ( var.beg_value_valid() )
+                                                 var.set_beg_value( th, tok, std::max( b, var.beg_value() ), false );
+                                             else
+                                                 var.set_beg_value( th, tok, b, false );
+                                             //
+                                             if ( var.end_value_valid() )
+                                                 var.set_end_value( th, tok, std::min( e, var.end_value() ), false );
+                                             else
+                                                 var.set_end_value( th, tok, e, false );
+                                             expr = expr.subs( th, tok, old_var, var );
+                                         }
+                                     }
     
-    //
-    Ex mid = ( beg + end ) / 2;
-    Ex off = ( end - beg ) / 2;
+                                     //
+                                     Ex mid = ( beg + end ) / 2;
+                                     Ex off = ( end - beg ) / 2;
     
     // degree of polynomial_expansion
-    Int32 pd = expr.poly_deg( var );
-    Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
-    SEX expressions, taylor_expansion;
-    expressions.push_back( expr );
-    taylor_expansion.get_room_for( deg_poly + 1 );
+                                     PRINT("degree of polynomial_expansion");
+                                     Int32 pd = expr.poly_deg( var );
+                                     Int32 deg_poly = ( pd < 0 ? deg_poly_max : std::min( pd, deg_poly_max ) );
+                                     SEX expressions, taylor_expansion;
+                                     expressions.push_back( expr );
+                                     taylor_expansion.get_room_for( deg_poly + 1 );
     
     // look up for discontinuities
-    SimpleVector<Op *> discontinuities_;
-    expr.op->find_discontinuities( var.op, discontinuities_ );
-    if ( discontinuities_.size() ) {
-        SEX discontinuities;
-        for(unsigned i=0;i<discontinuities_.size();++i) {
-            Ex d( discontinuities_[i] );
-            for(unsigned j=0;;++j) {
-                if ( j == discontinuities.size() ) {
-                    discontinuities.push_back( d );
-                    break;
-                }
-                if ( same_ex( - d, discontinuities[ j ] ) )
-                    break;
-            }
-        }
+                                     PRINT("look up for discontinuities");
+                                     SimpleVector<Op *> discontinuities_;
+                                     expr.op->find_discontinuities( var.op, discontinuities_ );
+                                     if ( discontinuities_.size() ) {
+                                         SEX discontinuities;
+                                         for(unsigned i=0;i<discontinuities_.size();++i) {
+                                             Ex d( discontinuities_[i] );
+                                             for(unsigned j=0;;++j) {
+                                                 if ( j == discontinuities.size() ) {
+                                                     discontinuities.push_back( d );
+                                                     break;
+                                                 }
+                                                 if ( same_ex( - d, discontinuities[ j ] ) )
+                                                     break;
+                                             }
+                                         }
         
         // cuts -> linearization of all f(a) in H( f( a ) )
-        const int nb_terms_taylor_ch = 7;
-        SEX ch_taylor_expansion;
-        ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
-        polynomial_expansion( th, tok, discontinuities, var, nb_terms_taylor_ch - 1, ch_taylor_expansion, mid );
+                                         PRINT("cuts -> linearization of all f(a) in H( f( a ) )");
+                                         const int nb_terms_taylor_ch = 7;
+                                         SEX ch_taylor_expansion;
+                                         ch_taylor_expansion.get_room_for( nb_terms_taylor_ch * discontinuities.size() );
+                                         polynomial_expansion( th, tok, discontinuities, var, nb_terms_taylor_ch - 1, ch_taylor_expansion, mid );
         
-        Ex end_supeq_beg = ( end >= beg );
+                                         Ex end_supeq_beg = ( end >= beg );
         
-        SEX cut_pos, cut_val;
-        cut_pos.push_back( beg ); cut_val.push_back( 1 );
-        for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
+                                         SEX cut_pos, cut_val;
+                                         cut_pos.push_back( beg ); cut_val.push_back( 1 );
+                                         for(unsigned i=0,j=0;i<discontinuities.size();++i,j+=nb_terms_taylor_ch) {
             /*
-                a := symbol("a")
-                c := Vec[Op,7]( function = x => symbol("c[$x]") )
-                v := Vec[Op,2]( function = x => symbol("v[$x]") )
-                p := dot( c, a ^ (0...) )
-                q := dot( v, a ^ (0...) )
-                del := symbol("del")
-                r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
-                for i in c
-                    info i, r[0].diff(i)
-                for i in c
-                    info i, r[1].diff(i)
+                                             a := symbol("a")
+                                             c := Vec[Op,7]( function = x => symbol("c[$x]") )
+                                             v := Vec[Op,2]( function = x => symbol("v[$x]") )
+                                             p := dot( c, a ^ (0...) )
+                                             q := dot( v, a ^ (0...) )
+                                             del := symbol("del")
+                                             r := newton_raphson_minimize_iteration( integration( ( p - q ) ^ 2, a, -del, del, deg_poly_max = 7 ), v )
+                                             for i in c
+                                             info i, r[0].diff(i)
+                                             for i in c
+                                             info i, r[1].diff(i)
             */
             // best L2 fitting of order 7 -> order 1
-            Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
-            Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
-            Ex cp = mid - a / ( b + eqz( b ) );
-            Ex va = ( 1 - eqz( b ) ) * ( 1 - ( end > cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp > end ) );
-            for(unsigned c=0;;++c) {
-                if ( c == cut_pos.size() ) {
-                    cut_pos.push_back( cp );
-                    cut_val.push_back( va );
-                    break;
-                }
-                if ( assumed( cut_pos[ c ] == cp ) ) {
-                    cut_val[ c ] += ( 1 - cut_val[ c ] ) * va;
-                    break;
-                }
-            }
-        }
-        cut_pos.push_back( end ); cut_val.push_back( 1 );
+                                             Ex a = ch_taylor_expansion[j+0] + Rationnal(1,3) * pow(off,2) * ch_taylor_expansion[j+2] + Rationnal(1,5) * pow(off,4) * ch_taylor_expansion[j+4] + Rationnal(1,7) * pow(off,6) * ch_taylor_expansion[j+6];
+                                             Ex b = ch_taylor_expansion[j+1] + Rationnal(3,5) * pow(off,2) * ch_taylor_expansion[j+3] + Rationnal(3,7) * pow(off,4) * ch_taylor_expansion[j+5]                                                         ;
+                                             Ex cp = mid - a / ( b + eqz( b ) );
+                                             Ex va = ( 1 - eqz( b ) ) * ( 1 - ( end > cp ) * ( beg >= cp ) - ( cp >= beg ) * ( cp > end ) );
+                                             for(unsigned c=0;;++c) {
+                                                 if ( c == cut_pos.size() ) {
+                                                     cut_pos.push_back( cp );
+                                                     cut_val.push_back( va );
+                                                     break;
+                                                 }
+                                                 if ( assumed( cut_pos[ c ] == cp ) ) {
+                                                     cut_val[ c ] += ( 1 - cut_val[ c ] ) * va;
+                                                     break;
+                                                 }
+                                             }
+                                         }
+                                         cut_pos.push_back( end ); cut_val.push_back( 1 );
         
         // polynomial_expansion
-        polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, var );
+                                         PRINT("polynomial_expansion");
+                                         if ( deg_poly < 8 ) {
+                                             polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, var );
+                                         } else {
+                                             taylor_expansion.clear();
+                                             get_taylor_expansion_manual( th, tok, expr, var, var, deg_poly, taylor_expansion );
+                                         }
         
-        //
-        Ex res;
-        for(unsigned num_cut_0=0;num_cut_0<cut_pos.size();++num_cut_0) {
-            for(unsigned num_cut_1=num_cut_0+1;num_cut_1<cut_pos.size();++num_cut_1) {
-                Ex mid_cut = ( cut_pos[ num_cut_1 ] + cut_pos[ num_cut_0 ] ) / 2;
-                Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
-                // 
-                Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
-                for(unsigned b=1;b+1<cut_pos.size();++b) {
-                    if ( b != num_cut_0 and b != num_cut_1 ) {
-                        valid = valid * (
-                            cut_val[ b ] * (
-                                ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
-                                ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
-                            ) +
-                            1 - cut_val[ b ]
-                        );
-                    }
-                }
-                //
-                SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
-                //
-                Ex tmp;
-                for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
-                    tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
-                        pow( off_cut, Ex( Rationnal( i + 1 ) ) )
-                    ) * Rationnal( 1, i + 1 );
+                                         //
+                                         Ex res;
+                                         for(unsigned num_cut_0=0;num_cut_0<cut_pos.size();++num_cut_0) {
+                                             for(unsigned num_cut_1=num_cut_0+1;num_cut_1<cut_pos.size();++num_cut_1) {
+                                                 Ex mid_cut = ( cut_pos[ num_cut_1 ] + cut_pos[ num_cut_0 ] ) / 2;
+                                                 Ex off_cut = ( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) / 2;
+                                                 // 
+                                                 Ex valid = cut_val[ num_cut_0 ] * cut_val[ num_cut_1 ];
+                                                 for(unsigned b=1;b+1<cut_pos.size();++b) {
+                                                     if ( b != num_cut_0 and b != num_cut_1 ) {
+                                                         valid = valid * (
+                                                                 cut_val[ b ] * (
+                                                                 ( b < num_cut_0 ? cut_pos[ b ] > cut_pos[ num_cut_0 ] : cut_pos[ b ] >= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] > cut_pos[ num_cut_1 ] : cut_pos[ b ] >= cut_pos[ num_cut_1 ] ) +
+                                                                 ( b < num_cut_0 ? cut_pos[ b ] < cut_pos[ num_cut_0 ] : cut_pos[ b ] <= cut_pos[ num_cut_0 ] ) * ( b < num_cut_1 ? cut_pos[ b ] < cut_pos[ num_cut_1 ] : cut_pos[ b ] <= cut_pos[ num_cut_1 ] )
+                                                                                ) +
+                                                                 1 - cut_val[ b ]
+                                                                         );
+                                                     }
+                                                 }
+                                                 //
+                                                 SEX taylor_expansion_subs = subs( th, tok, taylor_expansion, var, mid_cut, 2 );
+                                                 //
+                                                 Ex tmp;
+                                                 for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+                                                     tmp = tmp + 2 * taylor_expansion_subs[ i / 2 ] * (
+                                                             pow( off_cut, Ex( Rationnal( i + 1 ) ) )
+                                                                                ) * Rationnal( 1, i + 1 );
                 // std::cout << "valid=" << valid << " cp0=" << cut_pos[num_cut_0] << " cp1=" << cut_pos[num_cut_1] << " tmp=" << tmp << " num_cut_0=" << num_cut_0 << " num_cut_1=" << num_cut_1 << std::endl;
-                //
-                if ( num_cut_0 != 0 and num_cut_1 + 1 != cut_pos.size() )
-                    valid *= sgn( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) * sgn( end - beg );
-                //
-                res += tmp * valid;
-            }
-        }
-        return res;
-    }
+                                                 //
+                                                 if ( num_cut_0 != 0 and num_cut_1 + 1 != cut_pos.size() )
+                                                     valid *= sgn( cut_pos[ num_cut_1 ] - cut_pos[ num_cut_0 ] ) * sgn( end - beg );
+                                                 //
+                                                 res += tmp * valid;
+                                             }
+                                         }
+                                         return res;
+                                     }
     
     // else -> simple polynomial_expansion
-    if ( deg_poly < 8 ) {
-        polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
-    } else {
-        taylor_expansion.clear();
-        get_taylor_expansion_manual( th, tok, expr, mid, var, deg_poly, taylor_expansion );
-    }
+                                     PRINT("else -> simple polynomial_expansion");
+                                     if ( deg_poly < 8 ) {
+                                         polynomial_expansion( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
+                                     } else {
+                                         taylor_expansion.clear();
+                                         get_taylor_expansion_manual( th, tok, expr, mid, var, deg_poly, taylor_expansion );
+                                     }
     
-    //
-    Ex res( 0 );
-    for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
-        res = res + 2 * taylor_expansion[i] * (
-            pow( off, Ex( Rationnal( i + 1 ) ) )
-        ) * Rationnal( 1, i + 1 );
-    return res; 
-}
+                                     //
+                                     Ex res( 0 );
+                                     for(Int32 i=0;i<(Int32)taylor_expansion.size();i+=2)
+                                         res = res + 2 * taylor_expansion[i] * (
+                                                 pow( off, Ex( Rationnal( i + 1 ) ) )
+                                                                               ) * Rationnal( 1, i + 1 );
+                                     return res; 
+                                 }
 
