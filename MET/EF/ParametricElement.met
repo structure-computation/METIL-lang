@@ -174,7 +174,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         if dim == 3
             V1 := P.diff( var_inter[0] )
             V2 := P.diff( var_inter[1] )
-            V := Vec[Op]( vect_prod( V1, V2 ) )
+            V := Vec[Op,dim]( vect_prod( V1, V2 ) )
             V /= norm_2( V )
             return V
         #
