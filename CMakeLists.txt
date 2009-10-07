@@ -3,15 +3,6 @@ PROJECT( metil )
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-# test
-# SET( CTEST_COMMAND "/usr/local/bin/ctest -D Experimental" )
-# SET (DROP_SITE "localhost")
-# SET (DROP_LOCATION "/cgi-bin/UploadDart.cgi")
-# SET (DROP_SITE_USER "anonymous")
-# SET (DROP_SITE_PASSWORD "xxx")
-# SET (TRIGGER_SITE "http://${DROP_SITE}/cgi-bin/TriggerDart.cgi")
-# INCLUDE( Dart )
-
 # add definitions, compiler switches, etc.
 ADD_DEFINITIONS( -Wall )
 

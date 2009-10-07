@@ -1200,6 +1200,7 @@ class GlTransformation[ T = Float64 ]
         angle := norm_2( val_ )
         if assumed( angle == 0 )
             return identity()
+        info ( angle == 0 )
         val := val_ / ( angle + ( angle == 0 ) )
         sa := sin( angle )
         ca := cos( angle )

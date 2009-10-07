@@ -223,7 +223,13 @@ def diff( self, vec ) when self.tensor_order == 1 and vec.tensor_order == 1
             res[i,j] = self[i].diff( vec[j] )
     return res
 
-#
+#~
+a := symbol ("a")
+expr := a + 1
+info expr.interval( [a], [0], [1] )
+ -> expr.interval( [a], [0], [1] ) -> 1 2
+
+~#
 def interval( self, variables, begins, ends )
     variables_ := VarArgs()
     begins_    := VarArgs()

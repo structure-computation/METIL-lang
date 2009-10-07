@@ -113,6 +113,16 @@ ADD_LIBRARY( metil_thread STATIC
     symbolic/OpWithSeq.cpp
     symbolic/codewriteralt.cpp
     symbolic/AsmWriter.cpp
+    symbolic/series_func_1_acos.cpp
+    symbolic/series_func_1_atan.cpp
+    symbolic/series_func_1_log.cpp
+    symbolic/series_func_1_asin.cpp
+    symbolic/series_func_1_cos.cpp
+    symbolic/series_func_1_sin.cpp
+    symbolic/series_func_1_atan2.cpp
+    symbolic/series_func_1_exp.cpp
+    symbolic/series_func_1_tan.cpp
+    symbolic/series_pow.cpp
     thread.cpp
     variable.cpp
     type.cpp

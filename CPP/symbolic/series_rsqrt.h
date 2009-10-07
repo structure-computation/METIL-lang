@@ -92,6 +92,7 @@
                             R_0 = Rationnal(1,2)*R_0; r[1] = R_0; R_22 = sqrt(R_22); r[0] = R_22;
                             break;
                         }
+                        #ifdef WANT_SERIES_789
                         case 7: {
                             Ex R_0 = r_0[6]; R_0 = Rationnal(720,1)*R_0; Ex R_1 = r_0[5]; Ex R_2 = Rationnal(720,1)*R_1;
                             R_1 = Rationnal(120,1)*R_1; Ex R_3 = r_0[4]; Ex R_4 = Rationnal(336,1)*R_3; Ex R_5 = Rationnal(48,1)*R_3;
@@ -699,6 +700,7 @@
                             r[1] = R_11; R_104 = sqrt(R_104); r[0] = R_104; 
                             break;
                         }
+                        #endif // WANT_SERIES_789
                         default:
                             th->add_error( "TODO : PolynomialExpansion for type "+std::string(Nstring(a->type))+" and order > 8 -> see file 'ex.cpp'.", tok );
                     }
