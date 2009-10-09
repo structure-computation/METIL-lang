@@ -6,6 +6,7 @@ import "mechanical_tensors.met"
 class SymbolicElementAncestor
     virtual def grad( expr )                                                          abstract
     virtual def grad_sym( expr )                                                      abstract
+    virtual def grad_asym( expr )                                                      abstract
     virtual def div( expr )                                                           abstract
     virtual def var_inter_for_pos( p, nb_iterations = 1 )                             abstract
     virtual def point_is_inside( p, nb_iterations = 1, tolerance = 0 )                abstract
@@ -447,6 +448,15 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         res := Mat[ Op, Sym[Int32(tens.sizes[0])] ]()
         for ind, val in res
             val = ( tmp[ ind[0], ind[1] ] + tmp[ ind[1], ind[0] ] ) / 2
+        return res
+
+#
+    virtual def grad_asym( tens ) when tens.tensor_order == 1
+        assert( tens.sizes.size==1, "grad_sym works only with tensor_order==1 as input." )
+        tmp := self.grad( tens )
+        res := Mat[ Op ]( Int32(tens.sizes[0]), Int32(tens.sizes[0]) )
+        for ind, val in res
+            val = ( tmp[ ind[0], ind[1] ] - tmp[ ind[1], ind[0] ] ) / 2
         return res
 
     #
