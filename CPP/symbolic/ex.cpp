@@ -2599,7 +2599,7 @@ Ex integration ( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, co
         cut_val.push_back ( 1 );
 
         // polynomial_expansion
-        // PRINT ( "polynomial_expansion" );
+//         PRINT ( "polynomial_expansion" );
         if ( deg_poly < 7 ) {
             polynomial_expansion ( th, tok, expressions, var, deg_poly, taylor_expansion, var );
         } else {
