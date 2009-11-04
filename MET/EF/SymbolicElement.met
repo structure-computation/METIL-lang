@@ -554,7 +554,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 cpt_vertex_nodes++
         return node_numbers_to_vertex_node_numbers
         
-    def projection_on_base_pol( expr, p )
+    def projection_on_pol_base( expr, p )
         base := Vec[ Op ]()
         for order in 0 .. (p+1)
             for comb in ConstantSumList( sum = order, list_size = nvi )
@@ -563,5 +563,12 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         pol := dot( c, base )
         r := integration( ( expr - pol ) ^ 2, false )
         res := dot( newton_raphson_minimize_iteration( r, c ), base )
+        return res
+        
+    def projection_on_linear_FE_base( expr )
+        c := Vec[ Op, nb_vertex_nodes ]( function = x => symbol("c[$x]") )
+        pol := dot( c, shape_functions_vertex )
+        r := integration( ( expr - pol ) ^ 2, false )
+        res := dot( newton_raphson_minimize_iteration( r, c ), shape_functions_vertex )
         return res
         
