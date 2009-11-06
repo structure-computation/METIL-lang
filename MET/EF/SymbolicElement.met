@@ -212,11 +212,13 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return res
     
     # integration
-    def integration( expr, mul_by_jac = true, order_diff = 6, want_interval_assumptions = false )
+    def integration( expr, mul_by_jac = true, order_diff = 6, want_interval_assumptions = false, want_gauss_integration = false )
         res := scalar_conversion( Op, expr )
         if mul_by_jac
             res *= get_jac()
         
+        if want_gauss_integration
+            return TE::gauss_integration( expr, order_diff, var_inter )
         # interval_var_inter := pe.interval_var_inter( var_inter ) 
         # res = integration( res, var_inter[1], interval_var_inter[1][0], interval_var_inter[1][1], order_diff ) # res.display_tex()
         # info res
