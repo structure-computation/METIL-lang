@@ -2535,10 +2535,11 @@ Ex integration ( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, co
     taylor_expansion.get_room_for ( deg_poly + 1 );
 
     // look up for discontinuities
-    // PRINT ( "look up for discontinuities" );
+//     PRINT ( "look up for discontinuities" );
     SimpleVector<Op *> discontinuities_;
     expr.op->find_discontinuities ( var.op, discontinuities_ );
     if ( discontinuities_.size() ) {
+//         PRINT ( "discontinuities" );
         SEX discontinuities;
         for ( unsigned i=0;i<discontinuities_.size();++i ) {
             Ex d ( discontinuities_[i] );
@@ -2646,7 +2647,7 @@ Ex integration ( Thread *th, const void *tok, Ex expr, Ex var, const Ex &beg, co
     }
 
     // else -> simple polynomial_expansion
-    // PRINT ( "else -> simple polynomial_expansion" );
+//     PRINT ( "else -> simple polynomial_expansion" );
     if ( deg_poly < 7 ) {
         polynomial_expansion ( th, tok, expressions, var, deg_poly, taylor_expansion, mid );
     } else {

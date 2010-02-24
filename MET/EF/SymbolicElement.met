@@ -23,6 +23,8 @@ class SymbolicElementAncestor
     virtual def var_inter_for_node_nb( num_node )                                     abstract
     virtual def var_inter_                                                            abstract
     virtual def node_number_is_a_vertex( i )                                          abstract
+    virtual def point_is_a_vertex( p )                                                abstract
+    virtual def point_is_on_edge( p )                                                 abstract
 
 #~
 ~#
@@ -129,6 +131,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
+    def upper_degree_element(n)       return TE::get_upper_degree_element(n)
+    def upper_degree_points(n)        return TE::get_upper_degree_points(n)
     
     # Ex : triangle_6.set_pos_field_as_it_was_from_lower_degree_element() will set triangle_6.pos = standard pos for a Triangle
     def set_field_as_it_was_from_lower_degree_element( field )
@@ -212,13 +216,10 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return res
     
     # integration
-    def integration( expr, mul_by_jac = true, order_diff = 6, want_interval_assumptions = false, want_gauss_integration = false )
+    def integration( expr, mul_by_jac = true, order_diff = 6, want_interval_assumptions = false )
         res := scalar_conversion( Op, expr )
         if mul_by_jac
             res *= get_jac()
-        
-        if want_gauss_integration
-            return TE::gauss_integration( expr, order_diff, var_inter )
         # interval_var_inter := pe.interval_var_inter( var_inter ) 
         # res = integration( res, var_inter[1], interval_var_inter[1][0], interval_var_inter[1][1], order_diff ) # res.display_tex()
         # info res
@@ -258,7 +259,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
         return res
 
-    # numerical integration
+    # bestial numerical integration
     def bestial_num_integration( expr, mul_by_jac = true, div_ = 25 )
         res   := Op( 0 )
         expr_ := expr
@@ -269,10 +270,17 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if var_inter_is_inside( v )
                 res += expr_.subs( var_inter, v )
         return res / div_ ^ nvi
-        
+    
+    # gauss numerical integration
+    def gauss_num_integration( expr, mul_by_jac = true, order_diff = 6 )
+        res := scalar_conversion( Op, expr )
+        if mul_by_jac
+            res *= get_jac() 
+        return TE::gauss_integration( res, order_diff, var_inter )
+    
     # mean
     def mean( expr )
-        return integration( expr, false ) / integration( Op( 1 ), false )
+        return integration( expr, mul_by_jac = false ) / integration( Op( 1 ), mul_by_jac = false )
     
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "nodal", symm = false ) when interpolation_type == "nodal"
@@ -454,7 +462,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
 
 #
     virtual def grad_asym( tens ) when tens.tensor_order == 1
-        assert( tens.sizes.size==1, "grad_sym works only with tensor_order==1 as input." )
+        assert( tens.sizes.size==1, "grad_asym works only with tensor_order==1 as input." )
         tmp := self.grad( tens )
         res := Mat[ Op ]( Int32(tens.sizes[0]), Int32(tens.sizes[0]) )
         for ind, val in res
@@ -547,6 +555,25 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     virtual def node_number_is_a_vertex( node_number )
         return TE::node_number_is_a_vertex( node_number )
         
+    # return true if p is a vector of coordonates vertex in self
+    # Example : Bar 0 -- 1 -- 2 -- 3 return true false for respectively p = [ 0 ] and p = [ 0.5 ]
+    virtual def point_is_a_vertex( p )
+        return TE::point_is_a_vertex( p )
+        
+    # return true if p is a vector of coordonates on an edge of self
+    # Example : Quad_9 return true false for respectively p = [ 0, 0.5 ] and p = [ 0.5, 0.5 ]
+    #~
+            3    6    2
+            x----x----x
+            |         |
+            7x    x8   x5
+            |         |
+            x----x----x
+            0    4    1
+    ~#
+    virtual def point_is_on_edge( p )
+        return TE::point_is_on_edge( p )
+        
     def corr_cpp( num_node )
         return TE::corr_cpp( num_node )
         
@@ -566,21 +593,65 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 cpt_vertex_nodes++
         return node_numbers_to_vertex_node_numbers
         
-    def projection_on_pol_base( expr, p )
+    def projection_on_pol_base( expr, deg_poly, order_expr )
         base := Vec[ Op ]()
-        for order in 0 .. (p+1)
+        for order in 0 .. (deg_poly+1)
             for comb in ConstantSumList( sum = order, list_size = nvi )
                 base.push_back( product( var_inter ^ comb ) )
         c := Vec[ Op, base.size]( function = x => symbol("c[$x]") )
         pol := dot( c, base )
-        r := integration( ( expr - pol ) ^ 2, false )
+        r := gauss_num_integration( ( expr - pol ) ^ 2, mul_by_jac = false, order_diff = 2 * order_expr )
         res := dot( newton_raphson_minimize_iteration( r, c ), base )
         return res
         
-    def projection_on_linear_FE_base( expr )
+    def projection_on_linear_FE_base( expr, order_expr )
         c := Vec[ Op, nb_vertex_nodes ]( function = x => symbol("c[$x]") )
         pol := dot( c, shape_functions_vertex )
-        r := integration( ( expr - pol ) ^ 2, false )
+        r := gauss_num_integration( ( expr - pol ) ^ 2, mul_by_jac = false, order_diff = 2 * order_expr )
         res := dot( newton_raphson_minimize_iteration( r, c ), shape_functions_vertex )
         return res
+        
+    def construct_lagrange_FE_base_using_canonical_base_( nb_nodes, pos_nodes, var_inter, base, canonical_base )
+        if not var_inter.size
+            return true
+        sum_objective := Op( 0 )
+        bs := canonical_base.size
+        for n in 0 .. nb_nodes
+            shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_function := dot( shape_coeffs, canonical_base )
+            objective := Op( 0 )
+            for m in 0 .. nb_nodes
+                objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+            sol := newton_raphson_minimize_iteration( objective, shape_coeffs )
+            shape_function = shape_function.subs( shape_coeffs, sol )
+            sum_objective += abs( objective.subs( shape_coeffs, sol ) )
+            base[ n ] = shape_function
+        return assumed( sum_objective < 1e-6 )
+        
+    def construct_hierarchic_FE_base_using_canonical_base_( nb_vertex_nodes, nb_nodes, pos_nodes, var_inter, base, canonical_base )
+        if not var_inter.size
+            return true
+        sum_objective := Op( 0 )
+        bs := canonical_base.size
+        for n in 0 .. nb_nodes
+            shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_function := dot( shape_coeffs, canonical_base )
+            objective := Op( 0 )
+            if point_is_a_vertex( pos_nodes[ n ] )
+                for m in 0 .. nb_nodes
+                    if point_is_a_vertex( pos_nodes[ m ] )
+                        objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+            else 
+                if point_is_on_edge( pos_nodes[ n ] )
+                    for m in 0 .. nb_nodes
+                        if point_is_on_edge( pos_nodes[ m ] )
+                            objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+                else
+                    for m in 0 .. nb_nodes
+                        objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+            sol := newton_raphson_minimize_iteration( objective, shape_coeffs )
+            shape_function = shape_function.subs( shape_coeffs, sol )
+            sum_objective += abs( objective.subs( shape_coeffs, sol ) )
+            base[ n ] = shape_function
+        return assumed( sum_objective < 1e-6 )
         

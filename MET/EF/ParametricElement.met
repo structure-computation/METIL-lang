@@ -51,13 +51,13 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 for comb in ConstantSumList( sum = order, list_size = nvi )
                     base.push_back( product( var_inter ^ comb ) )
                 if base.size >= nb_nodes
-                    if construct_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, val, shape_functions, base )
+                    if construct_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, shape_functions, base )
                         break
             for order in 0...
                 for comb in ConstantSumList( sum = order, list_size = nvi )
                     base.push_back( product( var_inter ^ comb ) )
                 if base.size >= nb_nodes
-                    if construct_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, val_vertex, shape_functions_vertex, base )
+                    if construct_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, shape_functions_vertex, base )
                         break
             
             # interpolation
@@ -233,7 +233,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         return integration( Op( 1 ), var_inter, jac )
     
     #
-    def construct_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, val, shape_functions, base )
+    def construct_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions, base )
         if not var_inter.size
             return true
         # 
@@ -253,7 +253,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         return assumed( sum_objective < 1e-6 )
         
     #
-    def construct_shape_function_vertex_using_current_base_( nb_nodes, pos_nodes, var_inter, val, shape_functions_vertex, base )
+    def construct_shape_function_vertex_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions_vertex, base )
         if not var_inter.size
             return true
         # 
