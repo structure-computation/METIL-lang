@@ -1,12 +1,12 @@
 Pi := 2 * asin( Float64( 1 ) )
 
-## 
+##
     make an unknown variable of type T
 ##
 def symbol( cpp_name, tex_name = cpp_name )
     return symbol( String(cpp_name), String(tex_name) )
-    
-#~ 
+
+#~
     display symbolic graph of variable v with dependencies written in red
 ~#
 def display_graphviz( self, lst )
@@ -18,15 +18,15 @@ def display_graphviz( self, lst )
     f << self.graphviz_string( l )
     f <<< "}"
     f.close()
-    
+
     system( "dot -Tpdf res.dot > res.pdf; okular res.pdf" )
 
-#~ 
+#~
     display symbolic graph of variable v
 ~#
 def display_graphviz( self )
     self.display_graphviz( [] )
-    
+
 #~
 ~#
 def graphviz_string( self ) when self.tensor_order == 1
@@ -34,8 +34,8 @@ def graphviz_string( self ) when self.tensor_order == 1
     for i in self
         res <<< i.graphviz_string()
     return res
-    
-## 
+
+##
     make a .tex file and display corresponding .eps
 ##
 def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
@@ -57,7 +57,7 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
     if system( "dvips -O0in,11in -E -o $filename.eps $filename.dvi > /dev/null 2> /dev/null" )
         stderr <<< "Pb with dvips (command was dvips -O0in,11in -E -o $filename.eps $filename.dvi)."
     prg_found := false
-    
+
     #
     nb := " &" * (not blocking)
     if system( "okular $filename.eps $nb" ) == 0 #  > /dev/null 2> /dev/null
@@ -83,12 +83,12 @@ def launch_and_display_tex_with_str( str, filename="tmp", blocking = false )
 def tex_string( self )
     return String( self )
 
-## 
+##
     display symbolic formual of variable v
 ##
 def display_tex( self, filename="tmp", blocking = true )
     launch_and_display_tex_with_str( "\$\displaystyle{}" + self.tex_string() + "\$", filename, blocking )
-    
+
 def display_few_eqns(V, filename="tmp") when V.is_a_vector
     t:=V.size
     f:= File("$filename.tex","w")
@@ -110,11 +110,11 @@ def store_tex_file( str, filename="storage")
     f.close()
     if system( "latex --interaction=nonstopmode $filename.tex > /dev/null 2> /dev/null && dvips -o $filename.eps $filename.dvi > /dev/null 2> /dev/null " )
         stderr << "erroneous symbol in the formula.\n"
-    
+
 
 def store_tex( self, filename="storage")
     store_tex_file( "$\displaystyle" + self.tex_string() + "$", filename )
-    
+
 
 def store_few_eqns(V, filename="res") when V.is_a_vector
     t:=V.size
@@ -152,7 +152,7 @@ def display_few_eqns(V, RHS, filename="res") when V.is_a_vector and RHS.is_a_vec
         stderr << "erroneous symbol in the formula.\n"
 
 
-## 
+##
     display symbolic formual of variable v
 ##
 def tex_string( self ) when self.tensor_order == 1
@@ -163,7 +163,7 @@ def tex_string( self ) when self.tensor_order == 1
     str <<< "\\end{array}\\right]"
     return str
 
-## 
+##
     display symbolic formual of variable v
 ##
 def tex_string( self ) when self.tensor_order == 2
@@ -320,7 +320,7 @@ def asympt_dvp( self, with_regards_to, small_param, new_var order) when self.is_
     for r in 0 .. self.size
         res[r]=self[r].asympt_dvp(with_regards_to, small_param, new_var, order)
     return res
-        
+
 # return any( val.map( x => self.depends_on(x) ) )
 def depends_on( self, val ) when is_of_type_Op( self ) and val.tensor_order > 0
     for v in val
@@ -358,34 +358,34 @@ def greek_letter( num )
            "\\rho","\\varrho","\\sigma","\\varsigma","\\tau","\\upsilon","\\phi","\\varphi",
            "\\chi","\\psi","\\omega" )
     return l[num]
-    
+
 ##
 
 ##
 class CodeWriter
     cw ~= CodeWriter_
-    
+
     def init( T = "double" ) when T.is_a_String
         cw.init( T )
-        
+
     def destroy
         cw.destroy()
-    
+
     def add( str, expr, method=init ) pertinence 10
         cw.add_expr( String(str), Op(expr), method )
         return self
-    
+
     def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
         for cpt, val in 0... , expr
             self.add( "$str[$cpt]", val, method )
         return self
-    
+
     def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
         for i in 0 .. expr.nb_rows
-            for j in 0 .. expr.nb_cols 
+            for j in 0 .. expr.nb_cols
                 self.add( "$str($i,$j)", expr[i,j], method )
         return self
-    
+
     def to_string( nb_spaces = 4 )
         return cw.to_string( nb_spaces )
 
@@ -394,31 +394,32 @@ class CodeWriter
 ##
 class CodeWriterAlt
     cw ~= CodeWriterAlt_
-    
+
     def init( T = "double", TI = "int", S = "SimdVec<$T>", SI = "SimdVec<$TI>" ) when T.is_a_String
         cw.init( T, TI, S, SI )
-        
+
     def destroy
         cw.destroy()
-    
+
     def add( str, expr, method=init ) pertinence 10
-        cw.add_expr( String(str), Op(expr).a_posteriori_simplification(), method )
+        if ( method in [add,sub] ) and not assumed( expr == 0 )
+            cw.add_expr( String(str), Op(expr).a_posteriori_simplification(), method )
         return self
-    
+
     def add( str, expr, method=init ) when expr.tensor_order == 1 pertinence 11
         for cpt, val in 0... , expr
             self.add( "$str[$cpt]", val, method )
         return self
-    
+
     def add( str, expr, method=init ) when expr.tensor_order == 2 pertinence 11
         for i in 0 .. expr.nb_rows
-            for j in 0 .. expr.nb_cols 
+            for j in 0 .. expr.nb_cols
                 self.add( "$str($i,$j)", expr[i,j], method )
         return self
-    
+
     def to_string( nb_spaces = 4 )
         return cw.to_string( Int32( nb_spaces ) )
-    
+
     def graphviz_string()
         return cw.to_graphviz()
 
@@ -428,14 +429,14 @@ class CodeWriterAlt
         o <<< graphviz_string()
         o <<< "}"
         o.close()
-        
+
         system( "dot -Tps $f.dot > $f.eps; evince $f.eps" )
 
 
 # return true if cond is known_at_compile_time and is true
 def assumed( cond ) when is_of_type_Op( cond )
     return known_at_compile_time( cond ) and cond.value()
-    
+
 # return true if cond is known_at_compile_time and is true
 def assumed( cond ) when cond.is_a_VecOp and @cond.op == equal
     if cond.va[0].size != cond.va[1].size
@@ -447,12 +448,12 @@ def assumed( cond ) when cond.is_a_VecOp and @cond.op == equal
         if not i.value()
             return false
     return true
-    
-    
-# ------------------------------------------------- INTEGRATION ------------------------------------------------- 
-    
-    
-    
+
+
+# ------------------------------------------------- INTEGRATION -------------------------------------------------
+
+
+
 # f(x) -> [ v_0 V_1 ... ] which represents v_0 + v_1 x + ... + o( x**degree )
 def taylor_expansion( expr, var, center_value, degree )
     res := Vec[ Op, degree+1 ]()
@@ -482,7 +483,7 @@ def intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_z
     int := - a0 / ( a1 + (a1==0) )
     app_to_inter( res, ( a2 == 0 ) * ( a1 != 0 ) * ( end >= int ), ( a1 >= 0 ), max( beg, int ), end )
     app_to_inter( res, ( a2 == 0 ) * ( a1 != 0 ) * ( int >= beg ), ( a1 <  0 ), beg, min( int, end ) )
-   
+
     # a2 != 0
     delta := a1**2 - 4 * a0 * a2
     delta_pos := ( delta > 0 )
@@ -494,7 +495,7 @@ def intersection_of_beg_end_and_intervals_where_values_of_expr_are_positive_or_z
     app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r1 >= beg ), ( a2 >= 0 ), beg, min( r1, end ) )
     app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r1 <= end ) * ( r2 >= beg ), ( a2 < 0 ), max( beg, r1 ), min( r2, end ) )
     app_to_inter( res, ( a2 != 0 ) * ( delta >= 0 ) * ( r2 <= end ), ( a2 >= 0 ), max( beg, r2 ), end )
-        
+
     # info beg, min( r1, end )
     # info r1, r2
     # info max( beg, r2 ), end
@@ -543,7 +544,7 @@ def integration( expr, var, beg, end, deg_poly_max=5 ) when expr.tensor_order > 
     for i in 0 .. expr.size
         res[i] = integration( expr[i], var, beg, end, deg_poly_max )
     return res
-    
+
 ##
     f := lagrange( [10,11,12], [1,2,3], symbol("tx") )
     info f
@@ -568,7 +569,7 @@ def lagrange( points, values, variable )
                 den *= points[i] - points[j]
         res += num / den * values[i]
     return res
-        
+
 ##
     f := lagrange_nd( [[10],[11],[12]], [1,2,3], [symbol("tx")] )
     info f
@@ -598,13 +599,13 @@ def lagrange_nd( points, values, variables )
     return res
 
 ## ##
-def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name, 
-        initialisation = VecCst[0]( size = unknowns.values.size ), 
-        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
+        initialisation = VecCst[0]( size = unknowns.values.size ),
+        precision = VecCst[1e-6]( size = unknowns.values.size ),
         R = Vec[ Op ](),
         Tout = "double", nb_spaces = 4, declare_out = false )
     prel := " " * nb_spaces
-    assert( eqs.size == unknowns.size, "$(eqs.size) != $(unknowns.size)" )        
+    assert( eqs.size == unknowns.size, "$(eqs.size) != $(unknowns.size)" )
     unk := Vec[Op]( unknowns.values )
     #
     res_symbols := Vec[ Op ]( size = unk.size, function = symbol("$(symbol_base_name)[$_0]") )
@@ -624,7 +625,7 @@ def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
     if linear
         V = V.subs( unk, Vec[ Op ]( size = unk.size, function = ( x => 0 ) ) )
         R.init( m_lu * V )
-        
+
         cw := CodeWriter( T = Tout )
         cw.add( "$symbol_base_name", R, reassign )
         # cw.add( "M", M, __print__ )
@@ -632,7 +633,7 @@ def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         if declare_out
             output <<< "$prel$Tout $symbol_base_name[$(R.size)]; { // linear system"
         else
-            output <<< "$prel{" 
+            output <<< "$prel{"
         output <<< cw.to_string( nb_spaces = nb_spaces + 4 )
         output <<< "$prel}"
     else # non linear case
@@ -649,13 +650,13 @@ def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(precision[_0])" )
         output <<< "$prel    if ( $(join( cond," and " )) ) break;"
         output <<< "$prel}"
-        
+
     return res_symbols
 
 ## ##
-def code_writer_nl_min( value_to_minimize, unknowns, output, symbol_base_name, 
-        initialisation = VecCst[0]( size = unknowns.values.size ), 
-        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+def code_writer_nl_min( value_to_minimize, unknowns, output, symbol_base_name,
+        initialisation = VecCst[0]( size = unknowns.values.size ),
+        precision = VecCst[1e-6]( size = unknowns.values.size ),
         R = Vec[ Op ](),
         Tout = "double", nb_spaces = 4, declare_out = false )
     assert( value_to_minimize.tensor_order <= 0, "Pourte -> TODO" )
@@ -663,19 +664,19 @@ def code_writer_nl_min( value_to_minimize, unknowns, output, symbol_base_name,
     eqs := Vec[Op]( size = unk.size )
     for c in 0 .. unk.size
         eqs[c].init( value_to_minimize.diff( unk[c] ) )
-    return code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name, 
+    return code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         initialisation, precision, R, Tout, nb_spaces, declare_out )
-        
+
 ## ##
-def code_writer_nl_eqs_or_min( val, unknowns, output, symbol_base_name, 
-        initialisation = VecCst[0]( size = unknowns.values.size ), 
-        precision = VecCst[1e-6]( size = unknowns.values.size ), 
+def code_writer_nl_eqs_or_min( val, unknowns, output, symbol_base_name,
+        initialisation = VecCst[0]( size = unknowns.values.size ),
+        precision = VecCst[1e-6]( size = unknowns.values.size ),
         R = Vec[ Op ](),
         Tout = "double", nb_spaces = 4, declare_out = false )
     if val.tensor_order <= 0
-        return code_writer_nl_min( val, unknowns, output, symbol_base_name, 
+        return code_writer_nl_min( val, unknowns, output, symbol_base_name,
                 initialisation, precision, R, Tout )
-    return code_writer_nl_eqs( val, unknowns, output, symbol_base_name, 
+    return code_writer_nl_eqs( val, unknowns, output, symbol_base_name,
             initialisation, precision, R, Tout, nb_spaces, declare_out )
 
 
@@ -760,10 +761,10 @@ def newton_raphson_iteration( equations, unknowns, old_values = Vec[Op,unknowns.
             V[i] = V[i].subs( n, v )
             for j in 0 .. i+1
                 M[i,j] = M[i,j].subs( n, v )
-    
+
     return lu( M, assume_matrix_is_factorizable ) * V
 
-# 
+#
 def make_poly_fit( expr, var, beg, end, degre )
     return __make_poly_fit__( expr, Op( var ), Op( beg ), Op( end ), Int32( degre ) )
 
@@ -879,31 +880,31 @@ info b, Float64( expr.subs( sa, pa ) )
 class AsmWriter
     class Code
         p := UntypedPtr( NULL )
-        
+
         # def destroy
             # p.free()
-        
+
         def execute
             exec_untyped_ptr_function( p )
-    
+
     aw ~= AsmWriter_
-    
+
     def init()
         aw.init()
-    
+
     def add( ptr_res, expr, method )
         aw.add_expr( UntypedPtr(ptr_res), Op(expr), method )
         return self
 
     def add( ptr_res, expr, method ) when expr.tensor_order > 0
         for key,val in expr
-            add(&(@ptr_res)[key] , val , method) 
+            add(&(@ptr_res)[key] , val , method)
         return self
 
     def add_association( op_symbol, pointer )
         aw.add_association( op_symbol, UntypedPtr(pointer), pointer.T )
         return self
-        
+
     def add_association( vec_symbol, pointer ) when vec_symbol.tensor_order == 1
         cpt := 0
         for op_1 in vec_symbol
@@ -919,7 +920,7 @@ class AsmWriter
 
     def to_code
         return Code( p = aw.to_code() )
-        
+
     def graphviz_string()
         return aw.to_graphviz()
 
@@ -929,5 +930,5 @@ class AsmWriter
         o <<< graphviz_string()
         o <<< "}"
         o.close()
-        
+
         system( "dot -Tpdf $f.dot > $f.pdf; okular $f.pdf" )
