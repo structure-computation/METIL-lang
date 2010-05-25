@@ -402,7 +402,7 @@ class CodeWriterAlt
         cw.destroy()
 
     def add( str, expr, method=init ) pertinence 10
-        if ( method in [add,sub] ) and not assumed( expr == 0 )
+        if assumed( expr == 0 )==false or not ( method in [add,sub] )
             cw.add_expr( String(str), Op(expr).a_posteriori_simplification(), method )
         return self
 
