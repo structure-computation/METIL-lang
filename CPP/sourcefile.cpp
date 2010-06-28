@@ -19,6 +19,7 @@
 #include "scope.h"
 #include <sys/utsname.h>
 #include <sstream>
+#include <stdio.h>
 
 SourceFile::SourceFile(char *provenance_,ErrorList *error_list,const InterpreterBehavior *interpreter_behavior) : provenance(provenance_) {
     dont_free = false;

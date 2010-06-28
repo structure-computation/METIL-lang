@@ -43,37 +43,118 @@ class GenerateMethodForParametricElement[ TE, dim ]
             cvi := var_inter.map( self.integration( _0, var_inter, 1 ) / self.integration( 1, var_inter, 1 ) )
             f <<< "static const center_of_var_inter := [ $(join(cvi,", ")) ]"
             
-            # find shape functions
-            base            := Vec[ Op ]()
-            shape_functions := Vec[ Op, nb_nodes ]()
-            shape_functions_vertex := Vec[ Op, nb_vertex_nodes ]()
+            # find lagrange and hierarchical shape functions for nb_nodes
+            base := Vec[ Op ]()
+            lagrange_shape_functions := Vec[ Op, nb_nodes ]()
+            hierarchical_shape_functions := Vec[ Op, nb_nodes ]()
             for order in 0...
                 for comb in ConstantSumList( sum = order, list_size = nvi )
                     base.push_back( product( var_inter ^ comb ) )
                 if base.size >= nb_nodes
-                    if construct_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, shape_functions, base )
+                    if construct_lagrange_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, lagrange_shape_functions, base ) and construct_hierarchical_shape_function_using_current_base_( nb_nodes, TE::points, var_inter, hierarchical_shape_functions, base )
                         break
+
+            # find hierarchical shape functions for nb_vertex_nodes
+            base_for_vertex := Vec[ Op ]()
+            hierarchical_shape_functions_vertex := Vec[ Op, nb_vertex_nodes ]()
             for order in 0...
                 for comb in ConstantSumList( sum = order, list_size = nvi )
-                    base.push_back( product( var_inter ^ comb ) )
-                if base.size >= nb_nodes
-                    if construct_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, shape_functions_vertex, base )
+                    base_for_vertex.push_back( product( var_inter ^ comb ) )
+                if base_for_vertex.size >= nb_nodes
+                    if construct_hierarchical_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, hierarchical_shape_functions_vertex, base_for_vertex )
                         break
-            
+
+            deg_max := 3
+            # find lagrange and hierarchical shape functions for upper_degree_points
+            upper_degree_lagrange_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
+            upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
+
+            if nvi <= 2
+                for deg in 0 .. deg_max + 1
+                    upper_degree_base := Vec[ Op ]()
+                    upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
+                    upper_degree_lagrange_shape_functions[ deg ].resize( upper_degree_points.size )
+                    upper_degree_hierarchical_shape_functions[ deg ].resize( upper_degree_points.size )
+                    for order in 0...
+                        for comb in ConstantSumList( sum = order, list_size = nvi )
+                            upper_degree_base.push_back( product( var_inter ^ comb ) )
+                        if upper_degree_base.size >= upper_degree_points.size
+                            if construct_lagrange_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_lagrange_shape_functions[ deg ], upper_degree_base ) and construct_hierarchical_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_hierarchical_shape_functions[ deg ], upper_degree_base )
+                                break
+            else if nvi == 3
+                # lagrange and hierarchical shape functions calculated using children of sub_nvi=2 (Bar for Hexa) ones
+                class CE[ nvi ]
+                    first := MultiPtr()
+                    second := Vec[Vec[Rationnal,nvi]]()
+                    node_nb := Vec[Int32]()
+                children := Vec[ SplittedVec[ CE[ nvi ], 4 ], nvi + 1 ]()
+                get_children_rec_( children, 0, TE, TE::points, nvi, 0..TE::points.size )
+                ch := children[ 2 ][ 0 ]
+                child_var_inter := Vec[ Op, nvi-2 ]( x => symbol( "child_var_inter[$x]" ) )
+                TE_child := @ch.first
+                child_upper_degree_lagrange_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
+                child_upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
+                for deg in 0 .. deg_max + 1
+                    child_upper_degree_base := Vec[ Op ]()
+                    child_upper_degree_points := TE_child::get_upper_degree_points( TE_child::get_order_interpolation()[0] + deg )
+                    child_upper_degree_lagrange_shape_functions[ deg ].resize( child_upper_degree_points.size )
+                    child_upper_degree_hierarchical_shape_functions[ deg ].resize( child_upper_degree_points.size )
+                    for order in 0...
+                        for comb in ConstantSumList( sum = order, list_size = nvi-2 )
+                            child_upper_degree_base.push_back( product( child_var_inter ^ comb ) )
+                        if child_upper_degree_base.size >= child_upper_degree_points.size
+                            if construct_lagrange_shape_function_using_current_base_( child_upper_degree_points.size, child_upper_degree_points, child_var_inter, child_upper_degree_lagrange_shape_functions[ deg ], child_upper_degree_base ) and construct_hierarchical_shape_function_using_current_base_( child_upper_degree_points.size, child_upper_degree_points, child_var_inter, child_upper_degree_hierarchical_shape_functions[ deg ], child_upper_degree_base )
+                                break
+                    child_upper_degree_lagrange_shape_functions_0 := child_upper_degree_lagrange_shape_functions[ deg ].subs( child_var_inter, [ var_inter[0] ] )
+                    child_upper_degree_lagrange_shape_functions_1 := child_upper_degree_lagrange_shape_functions[ deg ].subs( child_var_inter, [ var_inter[1] ] )
+                    child_upper_degree_lagrange_shape_functions_2 := child_upper_degree_lagrange_shape_functions[ deg ].subs( child_var_inter, [ var_inter[2] ] )
+                    child_upper_degree_hierarchical_shape_functions_0 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[0] ] )
+                    child_upper_degree_hierarchical_shape_functions_1 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[1] ] )
+                    child_upper_degree_hierarchical_shape_functions_2 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[2] ] )
+                    n := TE_child::get_order_interpolation()[0]+deg
+                    for k in 0 .. n+1
+                        for j in 0 .. n+1
+                            for i in 0 .. n+1
+                                upper_degree_lagrange_shape_functions[ deg ].push_back( child_upper_degree_lagrange_shape_functions_0[ i ] * child_upper_degree_lagrange_shape_functions_1[ j ] * child_upper_degree_lagrange_shape_functions_2[ k ] )
+                                upper_degree_hierarchical_shape_functions[ deg ].push_back( child_upper_degree_hierarchical_shape_functions_0[ i ] * child_upper_degree_hierarchical_shape_functions_1[ j ] * child_upper_degree_hierarchical_shape_functions_2[ k ] )
+
             # interpolation
             f <<< "#"
-            f <<< "def interpolation( var_inter, val )"
-            interp := dot( shape_functions, val )
-            if assumed( interp == 0 )
+            f <<< "def interpolation( var_inter, val, interpolation_base )"
+            lagrange_interp := dot( lagrange_shape_functions, val )
+            hierarchical_interp := dot( hierarchical_shape_functions, val )
+            if assumed( lagrange_interp == 0 )
                 f <<< "    if val.tensor_order==1 and val.size  return val[ 0 ]"
                 f <<< "    return 0"
             else
-                f << "    return " <<< interp
+                f <<<<
+                        if interpolation_base == "lagrange"
+                            return $lagrange_interp
+                        else if interpolation_base == "hierarchical"
+                            return $hierarchical_interp
+            
+            # interpolation deg
+            for deg in 0 .. deg_max + 1
+                upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
+                upper_degree_val := Vec[ Op, upper_degree_points.size ]( function = symbol( "val[$_0]"      , "N_{$_0}"          ) )
+                f <<< "#"
+                f <<< "def interpolation_deg( var_inter, val, interpolation_base, deg ) when deg == $( TE::get_order_interpolation()[0] + deg )"
+                upper_degree_lagrange_interp := dot( upper_degree_lagrange_shape_functions[ deg ], upper_degree_val )
+                upper_degree_hierarchical_interp := dot( upper_degree_hierarchical_shape_functions[ deg ], upper_degree_val )
+                if assumed( upper_degree_lagrange_interp == 0 )
+                    f <<< "    if val.tensor_order==1 and val.size  return val[ 0 ]"
+                    f <<< "    return 0"
+                else
+                    f <<<<
+                            if interpolation_base == "lagrange"
+                                return $upper_degree_lagrange_interp
+                            else if interpolation_base == "hierarchical"
+                                return $upper_degree_hierarchical_interp
             
             # interpolation_vertex
             f <<< "#"
             f <<< "def interpolation_vertex( var_inter, val_vertex )"
-            interp_vertex := dot( shape_functions_vertex, val_vertex )
+            interp_vertex := dot( hierarchical_shape_functions_vertex, val_vertex )
             if assumed( interp_vertex == 0 )
                 f <<< "    if val_vertex.tensor_order==1 and val_vertex.size  return val_vertex[ 0 ]"
                 f <<< "    return 0"
@@ -81,7 +162,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 f << "    return " <<< interp_vertex
             
             # pos
-            P := dot( shape_functions, pos_nodes )
+            P := dot( lagrange_shape_functions, pos_nodes )
             
             # interpolation variables from children ones
             class CE[ nvi ]
@@ -106,7 +187,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 for ch, cpt in children[ n ], 0...
                     ce := ParametricElement[ @ch.first, dim ]()
                     child_var_inter := Vec[ Op, ce.nvi ]( x => symbol( "child_var_inter[$x]" ) )
-                    ch_P := ce.interpolation( child_var_inter, ch.second )
+                    ch_P := ce.interpolation( child_var_inter, ch.second, "lagrange" )
                     f <<< "def var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter ) when sub_nvi==$n and num_child==$cpt"
                     f <<< "    return [$(join(ch_P,","))]"
                     f <<< "def type_child( sub_nvi, num_child ) when sub_nvi==$n and num_child==$cpt"
@@ -233,16 +314,14 @@ class GenerateMethodForParametricElement[ TE, dim ]
         return integration( Op( 1 ), var_inter, jac )
     
     #
-    def construct_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions, base )
+    def construct_lagrange_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions, base )
         if not var_inter.size
             return true
-        # 
         sum_objective := Op( 0 )
         bs := base.size
         for n in 0 .. nb_nodes
             shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
             shape_function := dot( shape_coeffs, base )
-            #
             objective := Op( 0 )
             for m in 0 .. nb_nodes
                 objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
@@ -251,12 +330,39 @@ class GenerateMethodForParametricElement[ TE, dim ]
             sum_objective += abs( objective.subs( shape_coeffs, sol ) )
             shape_functions[ n ] = shape_function
         return assumed( sum_objective < 1e-6 )
-        
+    
     #
-    def construct_shape_function_vertex_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions_vertex, base )
+    def construct_hierarchical_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions, base )
         if not var_inter.size
             return true
-        # 
+        sum_objective := Op( 0 )
+        bs := base.size
+        for n in 0 .. nb_nodes
+            shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_function := dot( shape_coeffs, base )
+            objective := Op( 0 )
+            if TE::point_is_a_vertex( pos_nodes[ n ] )
+                for m in 0 .. nb_nodes
+                    if TE::point_is_a_vertex( pos_nodes[ m ] )
+                        objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+            else
+                if TE::point_is_on_edge( pos_nodes[ n ] )
+                    for m in 0 .. nb_nodes
+                        if TE::point_is_on_edge( pos_nodes[ m ] )
+                            objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+                else
+                    for m in 0 .. nb_nodes
+                        objective += ( shape_function.subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+            sol := newton_raphson_minimize_iteration( objective, shape_coeffs )
+            shape_function = shape_function.subs( shape_coeffs, sol )
+            sum_objective += abs( objective.subs( shape_coeffs, sol ) )
+            shape_functions[ n ] = shape_function
+        return assumed( sum_objective < 1e-6 )
+    
+    #
+    def construct_hierarchical_shape_function_vertex_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions_vertex, base )
+        if not var_inter.size
+            return true
         sum_objective := Op( 0 )
         bs := base.size
         l := 0
@@ -264,7 +370,6 @@ class GenerateMethodForParametricElement[ TE, dim ]
             if TE::node_number_is_a_vertex( n )
                 shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
                 shape_function := dot( shape_coeffs, base )
-                #
                 objective := Op( 0 )
                 for m in 0 .. nb_nodes
                     if TE::node_number_is_a_vertex( m )
