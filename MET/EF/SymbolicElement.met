@@ -96,6 +96,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     )
                     ns->num_child = num_child
                     ns->sub_nvi   = local_sub_nvi
+                    ns->pos_nodes = pos_nodes[ pe.node_number_child( local_sub_nvi, num_child ) ]
                     _children[ local_sub_nvi ].push_back( ns )
         return _children[ sub_nvi ]
 
