@@ -33,11 +33,14 @@ def eps_hooke_iso( sigma, young, poisson, type_stress_2D = "plane stress" )
   sigma from epsilon for an isotropic elastic material
 ~#
 def hooke_iso( E, nu, dim = 3 )
-    e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
-    s := sigma_hooke_iso( e, E, nu )
-    # -> sigma.diff( epsilon )
     H := Tensor[ Op, [dim,dim,dim,dim] ]( function = x => 0 )
-    for ind_s, val_s in s
-        for ind_e, val_e in e
-            H[ ind_s +++ ind_e ] = val_s.diff(val_e)
+    if dim == 1
+        H[0,0,0,0] = E
+    else
+        e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
+        s := sigma_hooke_iso( e, E, nu )
+        # -> sigma.diff( epsilon )
+        for ind_s, val_s in s
+            for ind_e, val_e in e
+                H[ ind_s +++ ind_e ] = val_s.diff(val_e)
     return H
