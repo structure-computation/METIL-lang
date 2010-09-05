@@ -52,7 +52,7 @@ void CodeWriterAlt::add_expr( Thread *th, const void *tok, Variable *str, const 
     Int32 si = *reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(str->data) + 1 );
     if ( b.def_data->name == STRING_init_NUM )
         has_init_methods = true;
-        
+
     if ( expr.op->type == Op::NUMBER ) {
         NumberToWrite *ow = nb_to_write.new_elem();
         init_arithmetic( ow->n, expr.op->number_data()->val );
@@ -94,6 +94,7 @@ OpWithSeq *CodeWriterAlt::make_seq() {
     ++Op::current_op;
     
     for(unsigned i=0;i<op_to_write.size();++i) {
+        std::cout << op_to_write[i].method << std::endl;
         seq->add_child( 
             new OpWithSeq( 
                 op_to_write[i].method.v,

@@ -77,6 +77,7 @@ Op *Op::new_function( int type, Op *a ) {
     FuncData *ds = res->func_data();
     ds->children[0] = a->inc_ref();
     ds->children[1] = NULL;
+    //ds->children[2] = NULL;
     
     if ( a->type != Op::NUMBER ) // should be ...
         a->parents.push_back( res );
@@ -98,6 +99,7 @@ Op *Op::new_function( int type, Op *a, Op *b ) {
     FuncData *ds = res->func_data();
     ds->children[0] = a->inc_ref();
     ds->children[1] = b->inc_ref();
+    //ds->children[2] = NULL;
     
     if ( a->type != Op::NUMBER )
         a->parents.push_back( res );
