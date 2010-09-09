@@ -30,57 +30,57 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     static const nb_nodes := pe.nb_nodes
     static const nb_vertex_nodes := pe.nb_vertex_nodes
     static const nvi      := pe.nvi # nb interpolation variables
-
+    
     pos_nodes := Vec[ Vec[ Op, dim ], nb_nodes ]()
     var_inter := Vec[ Op, nvi ]()
     name_elem := ""
     _children := Vec[ Vec[ Ptr[ SymbolicElementAncestor ] ], nvi + 1 ]()
     _alternate_pos := Vec[ Op, dim ]()
     _want_alternate_pos := 0
-
+    
     assume_const_jac := 0
     num_child        := -1 # if self is a child elem
     sub_nvi          := -1 # if self is a child elem
     tex_symbol_pos   := ""
     node_numbers_to_node_numbers_in_parent_cpp := Vec[Int32]()
-
+    
     # interval for integration
     def get_interval_var_inter
         return pe.interval_var_inter( var_inter )
-
+    
     #
     def destroy
         for i in 1 .. nvi + 1
             for c in _children[ i ]
                 delete c
-
+    
     #
     virtual def get_nb_nodes_
         return nb_nodes
-
+        
     #
     virtual def var_inter_
         return var_inter
-
+    
     virtual def get_bubble_function
         res := Op( 0 )
         for s in shape_functions
             res *= s
         res /= res.subs( var_inter, get_center_of_var_inter() ) # HUM !!!!
         return res
-
+    
     #
     virtual def var_inter_for_node_nb( num_node )
         return TE::points[ num_node ]
-
+    
     #
     virtual def get_name
         return String( TE )
-
+    
     #
     virtual def get_nb_dim
         return dim
-
+        
     # renvoie une liste de pointeurs vers éléments enfant de sub_nvi-ième génération.
     virtual def children( sub_nvi )
         if sub_nvi > nvi
@@ -91,19 +91,19 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 for num_child in 0 .. pe.nb_children( local_sub_nvi )
                     TC := pe.type_child( local_sub_nvi, num_child )
                     ns := new SymbolicElement[ TC, dim ](
-                        name_elem,
+                        name_elem, 
                         node_numbers_to_node_numbers_in_parent_cpp = node_numbers_to_node_numbers_in_parent_cpp[ pe.node_number_child( local_sub_nvi, num_child ) ]
                     )
                     ns->num_child = num_child
                     ns->sub_nvi   = local_sub_nvi
                     _children[ local_sub_nvi ].push_back( ns )
         return _children[ sub_nvi ]
-
+        
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
         return symbol( "$name_elem.node($num_node)->pos[$d]", tex_symbol_pos + "_{$num_node}^{$(letters[d])}" )
-
+        
     #
     def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P", node_numbers_to_node_numbers_in_parent_cpp = range(nb_nodes).map( TE::corr_cpp ) )
         init_using_default_values( self )
@@ -115,12 +115,12 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 pos_nodes[num_node][d] = pos_symbol_function( node_numbers_to_node_numbers_in_parent_cpp[ num_node ], d )
         #
         var_inter.init( x => symbol("var_inter[$x]",greek_letter(6+x)) )
-
+        
     def get_pos
         if _want_alternate_pos
             return _alternate_pos
         return Vec[ Op ]( pe.interpolation( var_inter, pos_nodes ) )
-
+    
     def interpolation( val_on_nodes ) return pe.interpolation( var_inter, val_on_nodes )
     def interpolation_vertex( val_on_vertex_nodes ) return pe.interpolation_vertex( var_inter, val_on_vertex_nodes )
     def get_normal                    return pe.normal( var_inter, pos_nodes )
@@ -128,7 +128,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
-
+    
     # Ex : triangle_6.set_pos_field_as_it_was_from_lower_degree_element() will set triangle_6.pos = standard pos for a Triangle
     def set_field_as_it_was_from_lower_degree_element( field )
         tmp_e := SymbolicElement[ TE::lower_degree_element ]()
@@ -137,7 +137,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             val_nodes.push_back( field.subs( var_inter, tmp_e.points[ num_node ] ) )
         field = tmp_e.interpolation( val_nodes ).subs( tmp_e.var_inter, var_inter )
         return field
-
+    
     # Ex : triangle_6.set_pos_field_as_it_was_from_lower_degree_element() will set triangle_6.pos = standard pos for a Triangle
     def set_pos_field_as_it_was_from_lower_degree_element
         tmp_e := SymbolicElement[ TE::lower_degree_element ]()
@@ -145,32 +145,32 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             tmp_e.pos_nodes[ num_node ] = pos.subs( var_inter, tmp_e.points[ num_node ] )
         _alternate_pos = tmp_e.pos.subs( tmp_e.var_inter, var_inter )
         _want_alternate_pos = true
-
+    
     def var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
         return pe.var_inter_from_child_var_inter( sub_nvi, num_child, child_var_inter )
-
+        
     #~
-
+    
     ~#
     def projection_on_child_elem( expression, child_elem )
         c := child_cast( child_elem )
         return expression.subs( var_inter, var_inter_from_child_var_inter( c->sub_nvi, c->num_child, c->var_inter ) )
-
+    
     def get_jac_mat
         if assume_const_jac
             return pe.jac_mat( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
         return pe.jac_mat( var_inter, pos_nodes )
-
+        
     def get_jac
         if assume_const_jac
             return pe.jac( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
         return pe.jac( var_inter, pos_nodes )
-
+        
     def get_inv_jac_mat
         if assume_const_jac
             return pe.inv_jac_mat( Vec[Op,nvi](pe.center_of_var_inter), pos_nodes )
         return pe.inv_jac_mat( var_inter, pos_nodes )
-
+    
     #
     def get_order_interpolation
         res := Vec[ Int32, nvi ]( 0 )
@@ -183,11 +183,11 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 tmp++
             res[ num_vi ] = tmp
         return res
-
-    #
+    
+    # 
     def dot_prod_( p0, p1 )
         return integration( p0 * p1, mul_by_jac = false )
-
+    
     #
     def pol_inde_( lst_pol )
         si := lst_pol.size
@@ -195,7 +195,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         for ind, val in m
             val = dot_prod_( lst_pol[ ind[0] ], lst_pol[ ind[1] ] ).value()
         return m.det
-
+    
     #
     def shape_functions_der( variable, sym )
         res := Vec[ Op ]()
@@ -209,16 +209,16 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                         d /= ds
                     res.push_back( d )
         return res
-
+    
     # integration
     def integration( expr, mul_by_jac = true, order_diff = 6, want_interval_assumptions = false, want_gauss_integration = false )
         res := scalar_conversion( Op, expr )
         if mul_by_jac
             res *= get_jac()
-
+        
         if want_gauss_integration
             return TE::gauss_integration( expr, order_diff, var_inter )
-        # interval_var_inter := pe.interval_var_inter( var_inter )
+        # interval_var_inter := pe.interval_var_inter( var_inter ) 
         # res = integration( res, var_inter[1], interval_var_inter[1][0], interval_var_inter[1][1], order_diff ) # res.display_tex()
         # info res
         # res.display_tex()
@@ -227,7 +227,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         # for i in 0..101
             # res += tmp.subs( var_inter[0], interval_var_inter[0][0] + ( interval_var_inter[0][1] - interval_var_inter[0][0] ) * i / 100 )
         # return res
-
+        
         #
         if want_interval_assumptions
             my_var_inter := Vec[Op]()
@@ -247,14 +247,14 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 subs_e.push_back( my_var_inter[i] )
             res = res.subs( subs_b, subs_e )
             #
-            interval_var_inter := pe.interval_var_inter( my_var_inter )
+            interval_var_inter := pe.interval_var_inter( my_var_inter ) 
             for i in ( 0 .. nvi ).reversed
-                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
+                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
             return res
         # else
-        interval_var_inter := pe.interval_var_inter( var_inter )
+        interval_var_inter := pe.interval_var_inter( var_inter ) 
         for i in ( 0 .. nvi ).reversed
-            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max = order_diff )
+            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
         return res
 
     # numerical integration
@@ -268,11 +268,11 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if var_inter_is_inside( v )
                 res += expr_.subs( var_inter, v )
         return res / div_ ^ nvi
-
+        
     # mean
     def mean( expr )
         return integration( expr, false ) / integration( Op( 1 ), false )
-
+    
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, nb_dim=[], sym = Vec[Op](), interpolation_type = "nodal", symm = false ) when interpolation_type == "nodal"
         if nb_dim.size == 0
@@ -315,7 +315,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                             mat[i][j,k] = mat[i][k,j]
             return TR( pe.interpolation( var_inter, mat ) )
         assert( 0, "TODO" )
-
+    
      # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type == "vertex_nodal"
         nb_vertex_nodes := 0
@@ -370,7 +370,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     l++
             return TR( pe.interpolation_vertex( var_inter, mat ) )
         assert( 0, "TODO" )
-
+    
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type in [ "global", "elementary" ]
         bn := [ "elem", "f" ][ interpolation_type == "global" ]
@@ -398,7 +398,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     mat[j,k] = s
             return mat
         assert( 0, "TODO" )
-
+        
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, symbol_function, sym = Vec[Op]() ) when interpolation_type.ends_by( "_minus_1" )
         wanted_interpolation := interpolation_type[ 0 .. interpolation_type.size - "_minus_1".size ]
@@ -412,7 +412,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             sym.push_back( s )
             res += b * s
         return res
-
+        
     #
     def make_interpolation( res, interpolation_type, met_name, tex_name ) when interpolation_type == "nodal"
         val_on_nodes := Vec[ type_of( res.val ), nb_nodes ]()
@@ -426,7 +426,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 res.sym.push_back( val )
         # interpolation
         res.val = interpolation( val_on_nodes )
-
+        
     #
     virtual def grad( tens )
         assert( dim == nvi, "TODO : grad with nb_var_inter != dim ( $nvi != $dim )" )
@@ -454,16 +454,15 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     #
     virtual def div( tens ) when tens.tensor_order == 1
         return sum( grad( tens ).diag )
-
+    
     #
-    virtual def div( tens_ ) when tens_.tensor_order == 2
-        tens := Mat[Op]( tens_ )
+    virtual def div( tens ) when tens.tensor_order == 2
         assert( tens.sizes[0] == tens.sizes[1], "TODO -> mettre la bonne formule" )
         res := Vec[Op,tens.sizes[0]]()
         for i in 0 .. tens.sizes[0]
             res[i] = div( tens.row( i ) )
         return res
-
+    
     #~
         returns var_inter of self for a position p
         meaning that p is a vector of size e.dim
@@ -484,35 +483,35 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             return var_inter_is_inside( vi, tolerance )
         d := p - pos.subs( var_inter, vi )
         return var_inter_is_inside( vi, tolerance ) * ( dot( d, d ) < z_tolerance ^ 2 * measure ^ ( 2 / nvi ) )
-
+        
     #
     virtual def var_inter_is_inside( vi, tolerance = 0 )
         if TE::has_a_var_inter_is_inside_method
             return TE::var_inter_is_inside( vi, tolerance )
         # -> generic case (not optimized)
-        interval_var_inter := pe.interval_var_inter( vi )
+        interval_var_inter := pe.interval_var_inter( vi ) 
         res := Op( 1 )
         for interval, var_inter in interval_var_inter, vi
             res *= heaviside( tolerance + var_inter - interval[0] )
             res *= heaviside( tolerance + interval[1] - var_inter )
         return res
-
+        
     #
     virtual def extrusion_with_normals( normals, alpha )
         return pos + alpha * interpolation( normals )
-
-    #
+        
+    # 
     virtual def var_inter_and_alpha_with_normals( normals, point, nb_iterations = 1 )
         alpha := symbol( "alpha" )
         proj := extrusion_with_normals( normals, alpha )
         d := point - proj
         return newton_raphson_minimize_iteration_rec( dot(d,d), var_inter +++ [ alpha ], nb_iterations, old_values = get_center_of_var_inter() +++ [ 0 ] )
-
+    
     #
     virtual def projection_with_normals( normals, point, nb_iterations = 1 )
         vi := var_inter_with_normals( normals, point, nb_iterations )
         return extrusion_with_normals( normals, 0 ).subs( var_inter, vi[ 0 .. var_inter.size ] )
-
+    
     # return shape functions for nb_nodes
     virtual def get_shape_functions
         res := Vec[ Op, nb_nodes ]()
@@ -520,7 +519,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             val_on_nodes := Vec[ Op, nb_nodes ]( function = _0 == i )
             res[ i ] = interpolation( val_on_nodes )
         return res
-
+        
     # return shape functions for nb_vertex_nodes
     virtual def get_shape_functions_vertex
         res := Vec[ Op, nb_vertex_nodes ]()
@@ -528,26 +527,26 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             val_on_vertex_nodes := Vec[ Op, nb_vertex_nodes ]( function = _0 == i )
             res[ i ] = interpolation_vertex( val_on_vertex_nodes )
         return res
-
+    
     # return a function != 0 if self and e may have a common area
     def area_intersection( e, mul_by_jac = true )
         return integration( e.point_is_inside( pos ), mul_by_jac )
-
+    
     # return true if node number $node_number is a vertex in self
     # Example : Bar 0 -- 1 -- 2 -- 3 return true false false true for respectively 0 1 2 3
     virtual def node_number_is_a_vertex( node_number )
         return TE::node_number_is_a_vertex( node_number )
-
+        
     def corr_cpp( num_node )
         return TE::corr_cpp( num_node )
-
+        
     def get_vertex_node_numbers_to_node_numbers_in_parent_cpp
         vertex_node_numbers_to_node_numbers_in_parent_cpp := Vec[ Int32 ]()
         for i in 0 .. nb_nodes
             if node_number_is_a_vertex( i )
                 vertex_node_numbers_to_node_numbers_in_parent_cpp.push_back( node_numbers_to_node_numbers_in_parent_cpp[i] )
         return vertex_node_numbers_to_node_numbers_in_parent_cpp
-
+        
     def get_node_numbers_to_vertex_node_numbers
         node_numbers_to_vertex_node_numbers := Vec[ Int32 ]()
         cpt_vertex_nodes := 0
@@ -556,7 +555,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if node_number_is_a_vertex( i )
                 cpt_vertex_nodes++
         return node_numbers_to_vertex_node_numbers
-
+        
     def projection_on_pol_base( expr, p )
         base := Vec[ Op ]()
         for order in 0 .. (p+1)
@@ -567,10 +566,11 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         r := integration( ( expr - pol ) ^ 2, false )
         res := dot( newton_raphson_minimize_iteration( r, c ), base )
         return res
-
+        
     def projection_on_linear_FE_base( expr )
         c := Vec[ Op, nb_vertex_nodes ]( function = x => symbol("c[$x]") )
         pol := dot( c, shape_functions_vertex )
         r := integration( ( expr - pol ) ^ 2, false )
         res := dot( newton_raphson_minimize_iteration( r, c ), shape_functions_vertex )
         return res
+        

@@ -24,6 +24,7 @@
 #endif
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 static Thread *current_thread;
 #ifdef HAVE_READLINE
