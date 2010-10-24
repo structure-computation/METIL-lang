@@ -150,8 +150,6 @@ class Split
         cpt := 0
         for j in self
             if cpt++ == i
-                info j
-                info cpt
                 return j
         return None
 

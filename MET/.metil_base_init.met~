@@ -194,6 +194,8 @@ def name_attribute_nb( self, n )
     return name_attribute_nb_of( self, n )
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
+def sizeof( T )
+    return ( size_of( T ) + 7 ) // 8
 
 const null_ptr := UntypedPtr( 0 )
 
@@ -503,7 +505,7 @@ def __str_partial_instanciations__  s ~= String
 __str_partial_instanciations__()
 
 def stack_info( n = 200 )
-    for i in 2 .. min( n, __nb_stack_level__() )
+    for i in 3 .. min( n + 4, __nb_stack_level__() )
         print __file_at_stack_level__(i), __line_at_stack_level__(i)
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
