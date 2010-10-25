@@ -94,7 +94,6 @@ OpWithSeq *CodeWriterAlt::make_seq() {
     ++Op::current_op;
     
     for(unsigned i=0;i<op_to_write.size();++i) {
-        std::cout << op_to_write[i].method << std::endl;
         seq->add_child( 
             new OpWithSeq( 
                 op_to_write[i].method.v,

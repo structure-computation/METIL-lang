@@ -39,7 +39,7 @@ class NodalElement inherits NameElement
     static points   := [[]]
     static children := []
     static def interval_var_inter( vi )
-        return [ [], [] ]
+        return [ [] ]
     static def get_order_interpolation
         return [ 0 ]
     static def get_upper_degree_points( n )

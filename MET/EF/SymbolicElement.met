@@ -101,7 +101,6 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     )
                     ns->num_child = num_child
                     ns->sub_nvi   = local_sub_nvi
-                    ns->pos_nodes = pos_nodes[ pe.node_number_child( local_sub_nvi, num_child ) ]
                     _children[ local_sub_nvi ].push_back( ns )
         return _children[ sub_nvi ]
         
@@ -132,7 +131,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def interpolation_vertex( val_on_vertex_nodes ) return pe.interpolation_vertex( var_inter, val_on_vertex_nodes )
     def get_normal                    return pe.normal( var_inter, pos_nodes )
     def get_measure                   return pe.measure( var_inter, pos_nodes )
-    def get_inertia_operator          return pe.inertia_operator( var_inter, pos_nodes )
+    def get_barycenter                return pe.barycenter( var_inter, pos_nodes )
+    def get_inertia_operator_for_barycenter          return pe.inertia_operator_for_barycenter( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
@@ -256,12 +256,12 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             #
             interval_var_inter := pe.interval_var_inter( my_var_inter ) 
             for i in ( 0 .. nvi ).reversed
-                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
+                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
             return res
         # else
         interval_var_inter := pe.interval_var_inter( var_inter ) 
         for i in ( 0 .. nvi ).reversed
-            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
+            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
         return res
 
     # bestial numerical integration
@@ -292,9 +292,9 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return integration( expr, mul_by_jac = false ) / integration( Op( 1 ), mul_by_jac = false )
 
     # inertia operator for barycenter
-    def get_inertia_operator_for_barycenter( nb_iterations = 1 )
+    def get_inertia_operator_for_G( nb_iterations = 1 )
         P := pos
-        G := get_barycenter( nb_iterations )
+        G := get_G( nb_iterations )
         GP := Vec[ Op, dim ]( P - G )
         #
         if nvi == 3
@@ -520,9 +520,9 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         return Vec[ Op ]( newton_raphson_minimize_iteration_rec( dot( d, d ), var_inter, nb_iterations, get_center_of_var_inter() ) )
 
     #~
-        returns barycenter G such that integration( GM ) = 0 with GM = OM - OG = pos - barycenter
+        returns barycenter G such that integration( GM ) = 0 with GM = OM - OG = pos - G
     ~#
-    def get_barycenter( nb_iterations = 1 )
+    def get_G( nb_iterations = 1 )
         c := Vec[ Op, dim ]( function = x => symbol("c[$x]") )
         d := pos - c
         r := integration( dot( d, d ), order_diff = 2 )

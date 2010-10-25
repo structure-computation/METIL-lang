@@ -238,10 +238,17 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f << CodeWriter("").add( "res", make_measure( var_inter, jac ), init ).to_string()
             f <<< "    return res"
             
-            # inertia_operator
-            G := P.subs( var_inter, cvi )
+            # barycenter
+            G := make_barycenter( P, var_inter, jac, cvi )
             f <<< "#"
-            f <<< "def inertia_operator( var_inter, pos_nodes )"
+            f <<< "def barycenter( var_inter, pos_nodes )"
+            f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
+            f << CodeWriter("").add( "res", G, reassign ).to_string()
+            f <<< "    return res"
+
+            # inertia_operator
+            f <<< "#"
+            f <<< "def inertia_operator_for_barycenter( var_inter, pos_nodes )"
             if nvi == 3
                 f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
                 f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), reassign ).to_string()
@@ -323,6 +330,14 @@ class GenerateMethodForParametricElement[ TE, dim ]
     #
     def make_measure( var_inter, jac )
         return integration( Op( 1 ), var_inter, jac )
+
+    #
+    def make_barycenter( P, var_inter, jac, cvi )
+        c := Vec[ Op, dim ]( function = x => symbol("c[$x]") )
+        barycenter_eqs := Vec[Op,dim]()
+        for d in 0 .. dim
+            barycenter_eqs[ d ] = integration( P[ d ] - c[ d ], var_inter, jac )
+        return Vec[ Op ]( newton_raphson_iteration( barycenter_eqs, c, P.subs( var_inter, cvi ) ) )
     
     #
     def make_inertia_operator( P, O, var_inter, jac )
