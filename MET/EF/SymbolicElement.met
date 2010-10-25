@@ -18,6 +18,7 @@ class SymbolicElementAncestor
     virtual def get_shape_functions_vertex                                            abstract
     virtual def get_upper_degree_shape_functions( interpolation_base, deg )           abstract
     virtual def get_name                                                              abstract
+    virtual def get_name_for_gauss_point                                              abstract
     virtual def get_nb_dim                                                            abstract
     virtual def get_nb_nodes_                                                         abstract
     virtual def children( nvi )                                                       abstract
@@ -130,6 +131,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     def interpolation_vertex( val_on_vertex_nodes ) return pe.interpolation_vertex( var_inter, val_on_vertex_nodes )
     def get_normal                    return pe.normal( var_inter, pos_nodes )
     def get_measure                   return pe.measure( var_inter, pos_nodes )
+    def get_inertia_operator          return pe.inertia_operator( var_inter, pos_nodes )
     def get_center_of_var_inter       return pe.center_of_var_inter # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def get_points                    return TE::points # Ex : Bar -> [1/2]; Triangle -> [1/3 1/3]; ...
     def val_nodes_from_lower_degre(l) return TE::val_nodes_from_lower_degre(l)
@@ -272,7 +274,11 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             if var_inter_is_inside( v )
                 res += expr_.subs( var_inter, v )
         return res / div_ ^ nvi
-    
+
+    #
+    virtual def get_name_for_gauss_point
+        return TE::name_for_gauss_point
+
     # gauss numerical integration
     def gauss_num_integration( expr, mul_by_jac = true, order_diff = 6 )
         res := scalar_conversion( Op, expr )
@@ -283,6 +289,25 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     # mean
     def mean( expr )
         return integration( expr, mul_by_jac = false ) / integration( Op( 1 ), mul_by_jac = false )
+
+    # inertia operator for barycenter
+    def get_inertia_operator_for_barycenter( nb_iterations = 1 )
+        P := pos
+        G := get_barycenter( nb_iterations )
+        GP := Vec[ Op, dim ]( P - G )
+        #
+        if nvi == 3
+            mat := Mat[ Op, Gen[dim,dim] ]()
+            u := Vec[ Op, dim ]( function = x => symbol("u_$x") )
+            V := vect_prod( GP, vect_prod( u, GP ) )
+            for d_i in 0 .. dim
+                for d_j in 0 .. dim
+                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), mul_by_jac = true, order_diff = sum( get_order_interpolation() ) )
+            return mat
+        #
+        else
+            res := gauss_num_integration( dot( GP, GP ), mul_by_jac = true, order_diff = sum( get_order_interpolation() ) )
+            return res
     
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), interpolation_base = "lagrange", symm = false ) when interpolation_type == "nodal"
@@ -490,8 +515,17 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     virtual def var_inter_for_pos( p, nb_iterations = 1 )
         d := p - pos
         # if nvi == dim
-            # return Vec[ Op ]( newton_raphson_iteration( d, var_inter, assume_matrix_is_factorizable = true ) )
-        return Vec[ Op ]( newton_raphson_minimize_iteration( dot( d, d ), var_inter, assume_matrix_is_factorizable = true ) )
+            # return Vec[ Op ]( newton_raphson_iteration( d, var_inter, get_center_of_var_inter(), assume_matrix_is_factorizable = true ) )
+        return Vec[ Op ]( newton_raphson_minimize_iteration_rec( dot( d, d ), var_inter, nb_iterations, get_center_of_var_inter() ) )
+
+    #~
+        returns barycenter G such that integration( GM ) = 0 with GM = OM - OG = pos - barycenter
+    ~#
+    def get_barycenter( nb_iterations = 1 )
+        c := Vec[ Op, dim ]( function = x => symbol("c[$x]") )
+        d := pos - c
+        r := integration( dot( d, d ), order_diff = 2 )
+        return Vec[ Op ]( newton_raphson_minimize_iteration_rec( r, c, nb_iterations, pos.subs( var_inter, get_center_of_var_inter() ) ) )
 
     #~
         returns a symbolic function = 1 if position p is inside self
@@ -618,9 +652,9 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     # projection on lagrange or hierarchical shape functions
     def projection_on_shape_functions( expr, order_expr, interpolation_base = "lagrange" )
         c := Vec[ Op, nb_nodes ]( function = x => symbol("c[$x]") )
-        pol := dot( c, shape_functions( interpolation_base ) )
+        pol := dot( c, get_shape_functions( interpolation_base ) )
         r := gauss_num_integration( ( expr - pol ) ^ 2, mul_by_jac = false, order_diff = 2 * order_expr )
-        res := dot( newton_raphson_minimize_iteration( r, c ), shape_functions( interpolation_base ) )
+        res := dot( newton_raphson_minimize_iteration( r, c ), get_shape_functions( interpolation_base ) )
         return res
         
     # projection on hierarchical vertex shape functions

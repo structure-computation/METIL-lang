@@ -69,19 +69,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
             upper_degree_lagrange_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
             upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
 
-            if nvi <= 2
-                for deg in 0 .. deg_max + 1
-                    upper_degree_base := Vec[ Op ]()
-                    upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
-                    upper_degree_lagrange_shape_functions[ deg ].resize( upper_degree_points.size )
-                    upper_degree_hierarchical_shape_functions[ deg ].resize( upper_degree_points.size )
-                    for order in 0...
-                        for comb in ConstantSumList( sum = order, list_size = nvi )
-                            upper_degree_base.push_back( product( var_inter ^ comb ) )
-                        if upper_degree_base.size >= upper_degree_points.size
-                            if construct_lagrange_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_lagrange_shape_functions[ deg ], upper_degree_base ) and construct_hierarchical_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_hierarchical_shape_functions[ deg ], upper_degree_base )
-                                break
-            else if nvi == 3
+            if nvi == 3 and String( TE ) == "Hexa"
                 # lagrange and hierarchical shape functions calculated using children of sub_nvi=2 (Bar for Hexa) ones
                 class CE[ nvi ]
                     first := MultiPtr()
@@ -117,6 +105,19 @@ class GenerateMethodForParametricElement[ TE, dim ]
                             for i in 0 .. n+1
                                 upper_degree_lagrange_shape_functions[ deg ].push_back( child_upper_degree_lagrange_shape_functions_0[ i ] * child_upper_degree_lagrange_shape_functions_1[ j ] * child_upper_degree_lagrange_shape_functions_2[ k ] )
                                 upper_degree_hierarchical_shape_functions[ deg ].push_back( child_upper_degree_hierarchical_shape_functions_0[ i ] * child_upper_degree_hierarchical_shape_functions_1[ j ] * child_upper_degree_hierarchical_shape_functions_2[ k ] )
+
+            else
+                for deg in 0 .. deg_max + 1
+                    upper_degree_base := Vec[ Op ]()
+                    upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
+                    upper_degree_lagrange_shape_functions[ deg ].resize( upper_degree_points.size )
+                    upper_degree_hierarchical_shape_functions[ deg ].resize( upper_degree_points.size )
+                    for order in 0...
+                        for comb in ConstantSumList( sum = order, list_size = nvi )
+                            upper_degree_base.push_back( product( var_inter ^ comb ) )
+                        if upper_degree_base.size >= upper_degree_points.size
+                            if construct_lagrange_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_lagrange_shape_functions[ deg ], upper_degree_base ) and construct_hierarchical_shape_function_using_current_base_( upper_degree_points.size, upper_degree_points, var_inter, upper_degree_hierarchical_shape_functions[ deg ], upper_degree_base )
+                                break
 
             # interpolation
             f <<< "#"
@@ -236,6 +237,17 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f <<< "def measure( var_inter, pos_nodes )"
             f << CodeWriter("").add( "res", make_measure( var_inter, jac ), init ).to_string()
             f <<< "    return res"
+            
+            # inertia_operator
+            G := P.subs( var_inter, cvi )
+            f <<< "#"
+            f <<< "def inertia_operator( var_inter, pos_nodes )"
+            if nvi == 3
+                f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
+                f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), reassign ).to_string()
+            else
+                f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), init ).to_string()
+            f <<< "    return res"
         
         
     #
@@ -269,9 +281,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
             normal_eqs.push_back( dot( V, normal ) )
             mat.row( nvi ) = V
         mat.row( nvi ) = normal
-        
         normal_eqs.push_back( mat.det - 1 )
-            
         res := newton_raphson_iteration( normal_eqs, normal )
         return res / norm_2( res )
     
@@ -303,15 +313,34 @@ class GenerateMethodForParametricElement[ TE, dim ]
     
     # integration
     def integration( expr, var_inter, jac )
+        nvi := var_inter.size
         interval_var_inter := TE::interval_var_inter( var_inter ) 
         res := jac * scalar_conversion( Op, expr )
-        for i in ( 0 .. var_inter.size ).reversed
+        for i in ( 0 .. nvi ).reversed
             res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1] )
         return res
-        
+    
     #
     def make_measure( var_inter, jac )
         return integration( Op( 1 ), var_inter, jac )
+    
+    #
+    def make_inertia_operator( P, O, var_inter, jac )
+        nvi := var_inter.size
+        OP := Vec[ Op, dim ]( P - O )
+        #
+        if nvi == 3
+            mat := Mat[ Op, Gen[dim,dim] ]()
+            u := Vec[ Op, dim ]( function = x => symbol("u_$x") )
+            V := vect_prod( OP, vect_prod( u, OP ) )
+            for d_i in 0 .. dim
+                for d_j in 0 .. dim
+                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), var_inter, jac )
+            return mat
+        #
+        else
+            res := integration( dot( OP, OP ), var_inter, jac )
+            return res
     
     #
     def construct_lagrange_shape_function_using_current_base_( nb_nodes, pos_nodes, var_inter, shape_functions, base )
@@ -380,6 +409,36 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 shape_functions_vertex[ l++ ] = shape_function
         return assumed( sum_objective < 1e-6 )
         
+    def construct_lagrange_shape_function_using_current_base_with_PUM( nb_nodes, pos_nodes, var_inter, shape_functions, base )
+        if not var_inter.size
+            return true
+        sum_objective := Op( 0 )
+        bs := base.size
+        shape_coeffs := Vec[ Vec[Op,bs], nb_nodes ]()
+        shape_coeffs_flat := Vec[Op]( reservation = base.size * nb_nodes )
+        for n in 0 .. nb_nodes
+            shape_coeffs[ n ].init( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_coeffs_flat.append( shape_coeffs[n] )
+            shape_functions[ n ] = dot( shape_coeffs[ n ], base )
+        # objective function
+        objective := Op( 0 )
+        # 1 or 0 in pos_node
+        for n in 0 .. nb_nodes
+            for m in 0 .. nb_nodes
+                objective += ( shape_functions[ n ].subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+        # partition of unity
+        objective += integration( ( sum( shape_functions ) - 1 ) ^ 2, var_inter, 1 )
+        # solve
+        sol := newton_raphson_minimize_iteration( objective, shape_coeffs_flat )
+        sum_objective += abs( objective.subs( shape_coeffs_flat, sol ) )
+        for n in 0 .. nb_nodes
+            # info n
+            shape_functions[ n ] = shape_functions[ n ].subs( shape_coeffs[ n ], sol[ n*bs .. (n+1)*bs ] )
+            # for m in 0 .. nb_nodes
+                # info m
+                # info shape_functions[ n ].subs( var_inter, pos_nodes[m] )
+        return assumed( sum_objective < 1e-6 )
+
         #
         # bs := base.size
         # shape_coeffs := Vec[ Vec[Op,bs], nb_nodes ]()

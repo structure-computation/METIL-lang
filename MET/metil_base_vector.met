@@ -250,7 +250,10 @@ def dot( v1, v2, default_value = 0 )   return sum( v1 * v2, default_value )
 ## sum( make_varargs( 1, 2, 3 ) ) -> 6 ##
 def vect_prod( v1, v2 ) when v1.size==3 and v2.size==3
    return Vec[ type_promote( partial_instanciation v1.T, partial_instanciation v2.T, mul ) ]( [ v1[1]*v2[2]-v1[2]*v2[1], v1[2]*v2[0]-v1[0]*v2[2], v1[0]*v2[1]-v1[1]*v2[0] ] )
-    
+
+##  ##
+def vect_prod( v1, v2 ) when v1.size==2 and v2.size==2
+   return v1[0]*v2[1]-v1[1]*v2[0]
 ##  ##
 def product( vec, default_value = 1 )  return reduction( vec, mul, default_value )
 
