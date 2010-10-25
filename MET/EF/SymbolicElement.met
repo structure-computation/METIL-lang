@@ -101,6 +101,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     )
                     ns->num_child = num_child
                     ns->sub_nvi   = local_sub_nvi
+                    ns->pos_nodes = pos_nodes[ pe.node_number_child( local_sub_nvi, num_child ) ]
                     _children[ local_sub_nvi ].push_back( ns )
         return _children[ sub_nvi ]
         
@@ -255,12 +256,12 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             #
             interval_var_inter := pe.interval_var_inter( my_var_inter ) 
             for i in ( 0 .. nvi ).reversed
-                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
+                res = integration( res, my_var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
             return res
         # else
         interval_var_inter := pe.interval_var_inter( var_inter ) 
         for i in ( 0 .. nvi ).reversed
-            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], order_diff )
+            res = integration( res, var_inter[i], interval_var_inter[i][0], interval_var_inter[i][1], deg_poly_max=order_diff )
         return res
 
     # bestial numerical integration

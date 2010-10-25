@@ -9,6 +9,7 @@
 // Copyright: See COPYING file that comes with this distribution
 //
 //
+#include <string.h>
 #include "metil_interactive.h"
 #include "thread.h"
 #include "autorestore.h"
@@ -23,6 +24,7 @@
 #endif
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 static Thread *current_thread;
 #ifdef HAVE_READLINE

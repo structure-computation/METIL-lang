@@ -194,6 +194,8 @@ def name_attribute_nb( self, n )
     return name_attribute_nb_of( self, n )
 
 # # ---------------------------------------------------------------------------------------------------------------------------------------------
+def sizeof( T )
+    return ( size_of( partial_instanciation T ) + 7 ) // 8
 
 const null_ptr := UntypedPtr( 0 )
 

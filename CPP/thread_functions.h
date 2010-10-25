@@ -778,9 +778,9 @@ template<int compile_mode> const void *exec_tok_definition(const N<compile_mode>
     dd->next_with_same_name = NULL;
     dd->cpp_thread_try_func = NULL;
     for(unsigned i=0;i<tok->nb_args;++i) {
-        if ( tok->args[i].v < 0 )
-            std::cout << "TODO : calculated args" << std::endl;
-        else
+        if ( tok->args[i].v < 0 ) {
+            th->add_error( "TODO : calculated args.", tok );
+        } else
             dd->args[i] = tok->args[i];
     }
     if ( dd->has_varargs() )

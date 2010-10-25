@@ -12,6 +12,7 @@ def sigma_hooke_iso( eps, young, poisson, type_stress_2D = "plane stress" )
             return young / ( 1 + poisson ) * ( eps + poisson / ( 1 - poisson ) * trace( eps ) * Id )
         if type_stress_2D == "plane strain"
             return young / ( 1 + poisson ) * ( eps + poisson / ( 1 - 2 * poisson ) * trace( eps ) * Id )
+        assert( 0, "Unknown type stress $type_stress_2D" )
 
 #~
   epsilon from sigma for an isotropic elastic material
@@ -26,16 +27,20 @@ def eps_hooke_iso( sigma, young, poisson, type_stress_2D = "plane stress" )
             return ( 1 + poisson ) / young * sigma - poisson / young  * trace( sigma ) * Id
         if type_stress_2D == "plane strain"
             return ( 1 + poisson ) / young * sigma - ( 1 + poisson ) * poisson / young  * trace( sigma ) * Id
+        assert( 0, "Unknown type stress $type_stress_2D" )
 
 #~
   sigma from epsilon for an isotropic elastic material
 ~#
 def hooke_iso( E, nu, dim = 3 )
-    e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
-    s := sigma_hooke_iso( e, E, nu )
-    # -> sigma.diff( epsilon )
     H := Tensor[ Op, [dim,dim,dim,dim] ]( function = x => 0 )
-    for ind_s, val_s in s
-        for ind_e, val_e in e
-            H[ ind_s +++ ind_e ] = val_s.diff(val_e)
+    if dim == 1
+        H[0,0,0,0] = E
+    else
+        e := Mat[ Op, Gen[dim,dim] ]( function = x => symbol("e_{$(x)}") )
+        s := sigma_hooke_iso( e, E, nu )
+        # -> sigma.diff( epsilon )
+        for ind_s, val_s in s
+            for ind_e, val_e in e
+                H[ ind_s +++ ind_e ] = val_s.diff(val_e)
     return H

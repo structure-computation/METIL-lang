@@ -33,7 +33,7 @@ def get_real( self ) when self.is_a_number
     return self
         
 def get_imag( self ) when self.is_a_number
-    return self
+    return 0
 
 def get_scalar_type( self ) when self.is_a_number
     return type_of( self )

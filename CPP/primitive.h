@@ -212,6 +212,7 @@ inline void get_primitives_UntypedPtr( std::vector<PrimitiveClass> &primitive_cl
     primitive_functions.push_back( PrimitiveFunction( "__uninitialised_vec_using_partial_instanciation__", "uninitialised_vec_using_partial_instanciation( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "__get_data_in_static_vec__", "return __get_data_in_static_vec__( th, tok, sp, return_var, a, b );", /*ret*/"manual" ).A("any").A("Int32") );
     
+    primitive_functions.push_back( PrimitiveFunction( "malloc", "ret = malloc( a );", /*ret*/"UntypedPtr" ).A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "allocate", "Int32 s = (a+7)/8 * b; if ( c ) ret = memalign( std::max( (c+7)/8, 4 ), s ); else ret = malloc( s );", /*ret*/"UntypedPtr" ).A("Int32").A("Int32").A("Int32") );
     //  if(s==48) th->display_stack(tok);
