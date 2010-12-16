@@ -64,7 +64,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                     if construct_hierarchical_shape_function_vertex_using_current_base_( nb_nodes, TE::points, var_inter, hierarchical_shape_functions_vertex, base_for_vertex )
                         break
 
-            deg_max := 3
+            deg_max := 0
             # find lagrange and hierarchical shape functions for upper_degree_points
             upper_degree_lagrange_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
             upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()

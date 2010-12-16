@@ -1,3 +1,6 @@
+def memcpy( dst, src, n )
+    memcpy( UntypedPtr( dst ), UntypedPtr( src ), 8, n )
+
 # TODO -> hum
 def can_contain( self, v )
     return self.tensor_order > v.tensor_order
