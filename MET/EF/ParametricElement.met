@@ -1,3 +1,5 @@
+generate_err_func := false
+
 #~
 ~#
 class GenerateMethodForParametricElement[ TE, dim ]
@@ -238,23 +240,24 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f << CodeWriter("").add( "res", make_measure( var_inter, jac ), init ).to_string()
             f <<< "    return res"
             
-            # barycenter
-            G := make_barycenter( P, var_inter, jac, cvi )
-            f <<< "#"
-            f <<< "def barycenter( var_inter, pos_nodes )"
-            f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
-            f << CodeWriter("").add( "res", G, reassign ).to_string()
-            f <<< "    return res"
+            if generate_err_func
+                # barycenter
+                G := make_barycenter( P, var_inter, jac, cvi )
+                f <<< "#"
+                f <<< "def barycenter( var_inter, pos_nodes )"
+                f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
+                f << CodeWriter("").add( "res", G, reassign ).to_string()
+                f <<< "    return res"
 
-            # inertia_operator
-            f <<< "#"
-            f <<< "def inertia_operator_for_barycenter( var_inter, pos_nodes )"
-            if nvi == 3
-                f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
-                f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), reassign ).to_string()
-            else
-                f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), init ).to_string()
-            f <<< "    return res"
+                # inertia_operator
+                f <<< "#"
+                f <<< "def inertia_operator_for_barycenter( var_inter, pos_nodes )"
+                if nvi == 3
+                    f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
+                    f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), reassign ).to_string()
+                else
+                    f << CodeWriter("").add( "res", make_inertia_operator( P, G, var_inter, jac ), init ).to_string()
+                f <<< "    return res"
         
         
     #
