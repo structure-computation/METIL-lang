@@ -9,7 +9,7 @@ class Map[ K, V, default_value = V() ]
 
     def select( key ) when type_of( key ) == K
         for i in 0 .. keys.size
-            if key == keys[i]
+            if assumed( key == keys[i] )
                 return values[i]
         # creation of a new pair
         keys.push_back( key )

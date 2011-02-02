@@ -361,7 +361,7 @@ def mul( a, b ) when a.is_an_indexed_tensor and b.is_an_indexed_tensor
 ## tensor_id(  ) ##
 # def tensor_id( varargs )
 def identity_tensor( n )
-    return Tensor[ Int32, [n,n] ]( x => x[0]==x[1] )
+    return Tensor[ Int32, [n,n] ]( function = x => x[0]==x[1] )
 
 def trace( a ) when a.tensor_order >= 2
     res := a.T(0)
