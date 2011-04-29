@@ -598,7 +598,9 @@ def lagrange_nd( points, values, variables )
         res += num / den * val
     return res
 
-## ##
+#~
+  R is the resulting delta vec...
+~#
 def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         initialisation = VecCst[0]( size = unknowns.values.size ),
         precision = VecCst[1e-6]( size = unknowns.values.size ),
@@ -647,7 +649,7 @@ def code_writer_nl_eqs( eqs, unknowns, output, symbol_base_name,
         output <<< cw.to_string( nb_spaces = nb_spaces + 4 )
         for i in 0 .. R.size
             output <<< "$prel    $symbol_base_name[$i] += $(symbol_base_name)_delta_$i;"
-        cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(precision[_0])" )
+        cond := ( 0 .. R.size ).map( "fabs( $(symbol_base_name)_delta_$_0 ) <= $(Float64( precision[_0] ))" )
         output <<< "$prel    if ( $(join( cond," and " )) ) break;"
         output <<< "$prel}"
 

@@ -69,8 +69,14 @@ struct OpWithSeqGenerator {
         
         //
         if ( op->type == OpWithSeq::NUMBER ) {
-            os.precision(16);
-            os << op->num / op->den;
+            double n = op->num / op->den;
+            if ( numbers.count( n ) )
+                os << "R" << numbers[ n ];
+            else {
+                os.precision( 16 );
+                os << n;
+                numbers[ n ] = op->reg;
+            }
         } else if ( op->type == OpWithSeq::SYMBOL ) {
             os << op->cpp_name_str;
         } else if ( op->type == OpWithSeq::INV ) {
@@ -112,6 +118,7 @@ struct OpWithSeqGenerator {
     const char *T, *TI, *S, *SI;
     unsigned num_instr, nb_ops;
     int nb_reg;
+    std::map<double,int> numbers;
 };
 
 #endif // OPWITHSEQGENERATOR_H
