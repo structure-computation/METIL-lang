@@ -126,6 +126,24 @@ Ex atan2( const Ex &a, const Ex &b );
 Ex min  ( const Ex &a, const Ex &b );
 Ex max  ( const Ex &a, const Ex &b );
 
+//  function pour  enrichissement
+// 3D (x,y,z,id_enr_group,id_enr,dir)
+Ex Fun_enr_3D(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f );
+Ex Fun_enr_3D_dx(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f);
+Ex Fun_enr_3D_dy(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f);
+Ex Fun_enr_3D_dz(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f);
+
+Ex Young_enr_3D(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f);
+Ex Poisson_enr_3D(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e, const Ex &f);
+
+// 2D (x,y,id_group_enr,id_enr,dir)
+Ex Fun_enr(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e );
+Ex Fun_enr_dx(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e );
+Ex Fun_enr_dy(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e );
+
+Ex Young_enr(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e );
+Ex Poisson_enr(const Ex &a,const Ex &b,const Ex &c, const Ex &d, const Ex &e );
+
 Ex abs      ( const Ex &a );
 Ex log      ( const Ex &a );
 Ex heaviside( const Ex &a );

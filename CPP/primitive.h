@@ -490,6 +490,8 @@ void get_primitives_CodeWriterAlt( std::vector<PrimitiveClass> &primitive_classe
     primitive_functions.push_back( PrimitiveFunction( "to_string", "if ( return_var ) { std::string s=self.to_string(th,tok,a); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_").A("Int32") );
     primitive_functions.push_back( PrimitiveFunction( "to_graphviz", "if ( return_var ) { std::string s=self.to_graphviz(th,tok); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_") );
     primitive_functions.push_back( PrimitiveFunction( "invariant", "if ( return_var ) { std::string s=self.invariant(th,tok,a,b); assign_string(th,tok,return_var,&s[0],s.size()); }", /*ret*/"manual" ).M("CodeWriterAlt_").A("Int32").A("VarArgs") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "make_cw_parallele", "self.make_cw_parallele( a );" ).A("Bool").M("CodeWriterAlt_",/*modify*/"true")  );
 }
     
 void get_primitives_AsmWriter( std::vector<PrimitiveClass> &primitive_classes, std::vector<PrimitiveFunction> &primitive_functions ) {
@@ -878,6 +880,22 @@ inline void get_primitives( std::vector<PrimitiveClass> &primitive_classes, std:
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float64" ).A("Float64").A("Float64") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret = atan2(a,b);", /*ret*/"Float96" ).A("Float96").A("Float96") );
     primitive_functions.push_back( PrimitiveFunction( "atan2", "ret.init( atan2( a, b ) );", /*ret*/"Op" ).A("Op").A("Op") );
+    
+    // enrichissemnt
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_3D", "ret.init( Fun_enr_3D(a, b, c, d, e, f ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_3D_dx", "ret.init( Fun_enr_3D_dx(a, b, c, d, e, f ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_3D_dy", "ret.init( Fun_enr_3D_dy(a, b, c, d, e, f ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_3D_dz", "ret.init( Fun_enr_3D_dz(a, b, c, d, e, f ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "Young_enr_3D", "ret.init( Young_enr_3D(a, b, c, d, e, f ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Poisson_enr_3D", "ret.init( Poisson_enr_3D(a, b, c, d, e, f) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op").A("Op") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr", "ret.init( Fun_enr(a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_dx", "ret.init( Fun_enr_dx(a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Fun_enr_dy", "ret.init( Fun_enr_dy(a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op") );
+    
+    primitive_functions.push_back( PrimitiveFunction( "Young_enr", "ret.init( Young_enr(a, b, c, d, e ) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op") );
+    primitive_functions.push_back( PrimitiveFunction( "Poisson_enr", "ret.init( Poisson_enr(a, b, c, d, e) );", /*ret*/"Op" ).A("Op").A("Op").A("Op").A("Op").A("Op") );
     
     // heaviside, pos_part, eqz
     for(unsigned i=0;i<primitive_classes.size();++i) {

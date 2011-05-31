@@ -67,6 +67,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
                         break
 
             deg_max := 0
+            if generate_err_func
+                deg_max = 3
             # find lagrange and hierarchical shape functions for upper_degree_points
             upper_degree_lagrange_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
             upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()

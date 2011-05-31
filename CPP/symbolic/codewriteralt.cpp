@@ -10,7 +10,7 @@
 #include "OpWithSeqGenerator.h"
 #include <iostream>
 
-void CodeWriterAlt::init( const char *a, Int32 ai, const char *b, Int32 bi, const char *c, Int32 ci, const char *d, Int32 di ) {
+void CodeWriterAlt::init( const char *a, Int32 ai, const char *b, Int32 bi, const char *c, Int32 ci, const char *d, Int32 di) {
     if ( ai )
         basic_type = strdupp0( a, ai );
     else
@@ -34,7 +34,8 @@ void CodeWriterAlt::init( const char *a, Int32 ai, const char *b, Int32 bi, cons
     //
     op_to_write.init();
     nb_to_write.init();
-    has_init_methods = false;    
+    has_init_methods = false;
+    is_parallele = false;
     
     want_float = ( basic_type ? strcmp( basic_type, "float" ) == 0 : 0 );
 }
@@ -47,12 +48,16 @@ void CodeWriterAlt::reassign(  Thread *th, const void *tok, CodeWriterAlt &c ) {
     std::cout << "TODO " << __FILE__ << " " << __LINE__ << std::endl;
 }
 
+void CodeWriterAlt::make_cw_parallele( bool is_para ) {
+    is_parallele = is_para;
+}
+
 void CodeWriterAlt::add_expr( Thread *th, const void *tok, Variable *str, const Ex &expr, Definition &b ) {
     const char *s = *reinterpret_cast<const char **>(str->data);
     Int32 si = *reinterpret_cast<const Int32 *>( reinterpret_cast<const char **>(str->data) + 1 );
     if ( b.def_data->name == STRING_init_NUM )
         has_init_methods = true;
-
+        
     if ( expr.op->type == Op::NUMBER ) {
         NumberToWrite *ow = nb_to_write.new_elem();
         init_arithmetic( ow->n, expr.op->number_data()->val );
@@ -120,7 +125,7 @@ OpWithSeq *CodeWriterAlt::make_seq() {
     return seq;
 }
 
-std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spaces ) {
+std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spaces) {
     if ( op_to_write.size() + nb_to_write.size() == 0 )
         return "";
     
@@ -138,7 +143,7 @@ std::string CodeWriterAlt::to_string( Thread *th, const void *tok, Int32 nb_spac
     //
     OpWithSeqGenerator g( nb_spaces, basic_type, basic_integer_type, basic_simd, basic_integer_simd );
     for(unsigned i=0;i<ordering.size();++i)
-        g.write_instr( ordering[i] );
+        g.write_instr( ordering[i] , is_parallele);
     g.os << " /* " << g.nb_ops << " instructions */";
     
     //

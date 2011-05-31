@@ -77,7 +77,10 @@ Op *Op::new_function( int type, Op *a ) {
     FuncData *ds = res->func_data();
     ds->children[0] = a->inc_ref();
     ds->children[1] = NULL;
-    //ds->children[2] = NULL;
+    ds->children[2] = NULL;
+    ds->children[3] = NULL;
+    ds->children[4] = NULL;
+    ds->children[5] = NULL;
     
     if ( a->type != Op::NUMBER ) // should be ...
         a->parents.push_back( res );
@@ -99,12 +102,93 @@ Op *Op::new_function( int type, Op *a, Op *b ) {
     FuncData *ds = res->func_data();
     ds->children[0] = a->inc_ref();
     ds->children[1] = b->inc_ref();
-    //ds->children[2] = NULL;
+    ds->children[2] = NULL;
+    ds->children[3] = NULL;
+    ds->children[4] = NULL;
+    ds->children[5] = NULL;
     
     if ( a->type != Op::NUMBER )
         a->parents.push_back( res );
     if ( b->type != Op::NUMBER )
         b->parents.push_back( res );
+        
+    if ( type == STRING_add_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
+    if ( type == STRING_mul_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
+    
+    return res;
+}
+
+Op *Op::new_function( int type, Op *a, Op *b, Op *d, Op *e, Op *f, Op *g ) {
+    // look in parents of a or b if function already created somewhere
+    Op *c = ( a->type == Op::NUMBER ? b : a );
+    for(unsigned i=0;i<c->parents.size();++i) {
+        Op *p = c->parents[ i ];
+        if ( p->type == type and same_op( a, p->func_data()->children[0] ) and same_op( b, p->func_data()->children[1] ) and same_op( d, p->func_data()->children[2] ) and same_op( e, p->func_data()->children[3]) and same_op( f, p->func_data()->children[4]) and same_op( g, p->func_data()->children[5]) )
+            return p->inc_ref();
+    }
+    //
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->init( type );
+    
+    FuncData *ds = res->func_data();
+    ds->children[0] = a->inc_ref();
+    ds->children[1] = b->inc_ref();
+    ds->children[2] = d->inc_ref();
+    ds->children[3] = e->inc_ref();
+    ds->children[4] = f->inc_ref();
+    ds->children[5] = g->inc_ref();
+    
+    if ( a->type != Op::NUMBER )
+        a->parents.push_back( res );
+    if ( b->type != Op::NUMBER )
+        b->parents.push_back( res );
+    if ( d->type != Op::NUMBER )
+        d->parents.push_back( res );
+    if ( e->type != Op::NUMBER )
+        e->parents.push_back( res );
+    if ( f->type != Op::NUMBER )
+        f->parents.push_back( res );
+    if ( g->type != Op::NUMBER )
+        g->parents.push_back( res );    
+        
+    if ( type == STRING_add_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
+    if ( type == STRING_mul_NUM )
+        res->integer_type = a->integer_type and b->integer_type;
+    
+    return res;
+}
+
+Op *Op::new_function( int type, Op *a, Op *b, Op *d, Op *e, Op *f ) {
+    // look in parents of a or b if function already created somewhere
+    Op *c = ( a->type == Op::NUMBER ? b : a );
+    for(unsigned i=0;i<c->parents.size();++i) {
+        Op *p = c->parents[ i ];
+        if ( p->type == type and same_op( a, p->func_data()->children[0] ) and same_op( b, p->func_data()->children[1] ) and same_op( d, p->func_data()->children[2] ) and same_op( e, p->func_data()->children[3]) and same_op( f, p->func_data()->children[4]))
+            return p->inc_ref();
+    }
+    //
+    Op *res = (Op *)malloc( sizeof(Op) + sizeof(FuncData) ); res->init( type );
+    
+    FuncData *ds = res->func_data();
+    ds->children[0] = a->inc_ref();
+    ds->children[1] = b->inc_ref();
+    ds->children[2] = d->inc_ref();
+    ds->children[3] = e->inc_ref();
+    ds->children[4] = f->inc_ref();
+    ds->children[5] = NULL;
+    
+    if ( a->type != Op::NUMBER )
+        a->parents.push_back( res );
+    if ( b->type != Op::NUMBER )
+        b->parents.push_back( res );
+    if ( d->type != Op::NUMBER )
+        d->parents.push_back( res );
+    if ( e->type != Op::NUMBER )
+        e->parents.push_back( res );
+    if ( f->type != Op::NUMBER )
+        f->parents.push_back( res );
         
     if ( type == STRING_add_NUM )
         res->integer_type = a->integer_type and b->integer_type;

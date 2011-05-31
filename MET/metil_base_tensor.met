@@ -370,13 +370,17 @@ def trace( a ) when a.tensor_order >= 2
         res += a[ v ]
     return res
 
-def dev( a ) when a.is_a_tensor and a.tensor_order==2 and a.sizes==[3,3]
-    return a - identity_tensor( a.nb_rows ) * trace( a ) / 3
+def dev( a ) when a.is_a_tensor and a.tensor_order==2
+    id  := identity_tensor( a.nb_rows )
+    return a - id * trace( a ) / trace( id )
 
 def von_mises( a ) when a.tensor_order==2
+    dim := a.nb_rows
     d := dev( a )
-    return sqrt( 3 / 2 * d : d )
-
+    if dim == 3
+        return sqrt( 3 / 2 * d : d )
+    if dim == 2
+        return sqrt( 2 * d : d )
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 class DiagFromTensor

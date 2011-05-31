@@ -416,7 +416,10 @@ class CodeWriterAlt
             for j in 0 .. expr.nb_cols
                 self.add( "$str($i,$j)", expr[i,j], method )
         return self
-
+    
+    def make_cw_parallele (a)
+        cw.make_cw_parallele (a)
+    
     def to_string( nb_spaces = 4 )
         return cw.to_string( Int32( nb_spaces ) )
 

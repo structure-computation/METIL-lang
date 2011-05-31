@@ -23,7 +23,7 @@ struct Op {
         int nb_simd_terms;
     };
     struct FuncData { /// if type >= 0
-        static const unsigned max_nb_children = 2;
+        static const unsigned max_nb_children = 6;
         Op *children[max_nb_children];
     };
     
@@ -32,6 +32,8 @@ struct Op {
     static Op *new_symbol( const char *cpp_name_str, unsigned cpp_name_si, const char *tex_name_str, unsigned tex_name_si );
     static Op *new_function( int type, Op *a );
     static Op *new_function( int type, Op *a, Op *b );
+    static Op *new_function( int type, Op *a, Op *b, Op *c, Op *d, Op *e );
+    static Op *new_function( int type, Op *a, Op *b, Op *c, Op *d, Op *e, Op *f );
     
     void init( int type_ );
     void destroy();
