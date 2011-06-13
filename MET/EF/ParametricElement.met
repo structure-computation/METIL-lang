@@ -88,7 +88,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 child_upper_degree_hierarchical_shape_functions := Vec[ Vec[ Op ], deg_max + 1 ]()
                 for deg in 0 .. deg_max + 1
                     child_upper_degree_base := Vec[ Op ]()
-                    child_upper_degree_points := TE_child::get_upper_degree_points( TE_child::get_order_interpolation()[0] + deg )
+                    child_upper_degree_points := TE_child::get_upper_degree_points( max( TE_child::get_order_interpolation() ) + deg )
                     child_upper_degree_lagrange_shape_functions[ deg ].resize( child_upper_degree_points.size )
                     child_upper_degree_hierarchical_shape_functions[ deg ].resize( child_upper_degree_points.size )
                     for order in 0...
@@ -103,7 +103,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
                     child_upper_degree_hierarchical_shape_functions_0 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[0] ] )
                     child_upper_degree_hierarchical_shape_functions_1 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[1] ] )
                     child_upper_degree_hierarchical_shape_functions_2 := child_upper_degree_hierarchical_shape_functions[ deg ].subs( child_var_inter, [ var_inter[2] ] )
-                    n := TE_child::get_order_interpolation()[0]+deg
+                    n := max( TE_child::get_order_interpolation() ) + deg
                     for k in 0 .. n+1
                         for j in 0 .. n+1
                             for i in 0 .. n+1
@@ -113,7 +113,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
             else
                 for deg in 0 .. deg_max + 1
                     upper_degree_base := Vec[ Op ]()
-                    upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
+                    upper_degree_points := TE::get_upper_degree_points( max( TE::get_order_interpolation() ) + deg )
                     upper_degree_lagrange_shape_functions[ deg ].resize( upper_degree_points.size )
                     upper_degree_hierarchical_shape_functions[ deg ].resize( upper_degree_points.size )
                     for order in 0...
@@ -140,10 +140,10 @@ class GenerateMethodForParametricElement[ TE, dim ]
             
             # interpolation deg
             for deg in 0 .. deg_max + 1
-                upper_degree_points := TE::get_upper_degree_points( TE::get_order_interpolation()[0] + deg )
+                upper_degree_points := TE::get_upper_degree_points( max( TE::get_order_interpolation() ) + deg )
                 upper_degree_val := Vec[ Op, upper_degree_points.size ]( function = symbol( "val[$_0]"      , "N_{$_0}"          ) )
                 f <<< "#"
-                f <<< "def interpolation_deg( var_inter, val, interpolation_base, deg ) when deg == $( TE::get_order_interpolation()[0] + deg )"
+                f <<< "def interpolation_deg( var_inter, val, interpolation_base, deg ) when deg == $( max( TE::get_order_interpolation() ) + deg )"
                 upper_degree_lagrange_interp := dot( upper_degree_lagrange_shape_functions[ deg ], upper_degree_val )
                 upper_degree_hierarchical_interp := dot( upper_degree_hierarchical_shape_functions[ deg ], upper_degree_val )
                 if assumed( upper_degree_lagrange_interp == 0 )

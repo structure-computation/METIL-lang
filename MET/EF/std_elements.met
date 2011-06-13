@@ -621,7 +621,7 @@ class Quad inherits NameElement
         return points_new
     static def gauss_integration( expr, order, var_inter )
         # order = 2 * nb_pts_gauss - 1
-        if order <= 0 # nb_pts_gauss = 1
+        if order <= 1 # nb_pts_gauss = 1
             nb_pts_gauss := 1
             # val := [ 1/2 ]
             # pond := [ 1 ]
@@ -632,7 +632,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else if order <= 6 # nb_pts_gauss = 2
+        else if order <= 3 # nb_pts_gauss = 2
             nb_pts_gauss := 2
             # val := [ ( 1 - sqrt( Float96(1/3) ) ) / 2, ( 1 + sqrt( Float96(1/3) ) ) / 2 ]
             # pond := [ 1/2, 1/2 ]
@@ -643,7 +643,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else if order <= 10 # nb_pts_gauss = 3
+        else if order <= 5 # nb_pts_gauss = 3
             nb_pts_gauss := 3
             # val := [ ( 1 - sqrt( Float96(3/5) ) ) / 2, 1/2, ( 1 + sqrt( Float96(3/5) ) ) / 2 ]
             # pond := [ (5/9) / 2, (8/9) / 2, (5/9) / 2 ]
@@ -654,7 +654,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else if order <= 14 # nb_pts_gauss = 4
+        else if order <= 7 # nb_pts_gauss = 4
             nb_pts_gauss := 4
             # val := [ ( 1 - sqrt( Float96( ( 3+2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 - sqrt( Float96( ( 3-2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 + sqrt( Float96( ( 3-2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 + sqrt( Float96( ( 3+2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2 ]
             # pond := [ ((18 - sqrt(Float96(30)))/36) / 2, ((18 + sqrt(Float96(30)))/36) / 2, ((18 + sqrt(Float96(30)))/36) / 2, ((18 - sqrt(Float96(30)))/36) / 2 ]
@@ -665,7 +665,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else if order <= 18 # nb_pts_gauss = 5
+        else if order <= 9 # nb_pts_gauss = 5
             nb_pts_gauss := 5
             # val := [ ( 1 - 1/3 * sqrt( Float96( 5+2*sqrt( Float96(10/7) ) ) ) ) / 2, ( 1 - 1/3 * sqrt( Float96( 5-2*sqrt( Float96(10/7) ) ) ) ) / 2, 1/2, ( 1 + 1/3 * sqrt( Float96( 5-2*sqrt( Float96(10/7) ) ) ) ) / 2, ( 1 + 1/3 * sqrt( Float96( 5+2*sqrt( Float96(10/7) ) ) ) ) / 2 ]
             # pond := [ ((322 - 13 * sqrt(Float96(70)))/900) / 2, ((322 + 13 * sqrt(Float96(70)))/900 ) / 2, (128/225) / 2, ((322 + 13 * sqrt(Float96(70)))/900) / 2, ((322 - 13 * sqrt(Float96(70)))/900) / 2 ]
@@ -676,7 +676,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else if order <= 22 # nb_pts_gauss = 6
+        else if order <= 11 # nb_pts_gauss = 6
             nb_pts_gauss := 6
             # val := [ ( 1 - 0.932469514203152 ) / 2, ( 1 - 0.661209386466265 ) / 2, ( 1 - 0.238619186083197 ) / 2, ( 1 + 0.238619186083197 ) / 2, ( 1 + 0.661209386466265 ) / 2,  ( 1 + 0.932469514203152 ) / 2 ]
             # pond := [ 0.171324492379170 / 2, 0.360761573048139 / 2, 0.467913934572691 / 2, 0.467913934572691 / 2, 0.360761573048139 / 2, 0.171324492379170 / 2 ]
@@ -687,7 +687,7 @@ class Quad inherits NameElement
                 for j in 0 .. nb_pts_gauss
                     res += pond[i] * pond[j] * expr.subs( var_inter, [ val[i], val[j] ] )
             return res
-        else # if order <= 26 # nb_pts_gauss = 7
+        else # if order <= 13 # nb_pts_gauss = 7
             nb_pts_gauss := 7
             # val := [ ( 1 - 0.949107912342759 ) / 2, ( 1 - 0.741531185599394 ) / 2, ( 1 - 0.405845151377397 ) / 2, 1/2, ( 1 + 0.0.405845151377397 ) / 2, ( 1 + 0.0.741531185599394 ) / 2,  ( 1 + 0.949107912342759 ) / 2 ]
             # pond := [ 0.129484966168870 / 2, 0.279705391489277 / 2, 0.381830050505119 / 2, 0.417959183673469 / 2, 0.381830050505119 / 2, 0.279705391489277 / 2, 0.129484966168870 / 2 ]
@@ -1060,7 +1060,7 @@ class Hexa inherits NameElement
         return points_new
     static def gauss_integration( expr, order, var_inter )
         # order = 2 * nb_pts_gauss - 1
-        if order <= 0 # nb_pts_gauss = 1
+        if order <= 1 # nb_pts_gauss = 1
             nb_pts_gauss := 1
             # val := [ 1/2 ]
             # pond := [ 1 ]
@@ -1072,7 +1072,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else if order <= 9 # nb_pts_gauss = 2
+        else if order <= 3 # nb_pts_gauss = 2
             nb_pts_gauss := 2
             # val := [ ( 1 - sqrt( Float96(1/3) ) ) / 2, ( 1 + sqrt( Float96(1/3) ) ) / 2 ]
             # pond := [ 1/2, 1/2 ]
@@ -1084,7 +1084,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else if order <= 15 # nb_pts_gauss = 3
+        else if order <= 5 # nb_pts_gauss = 3
             nb_pts_gauss := 3
             # val := [ ( 1 - sqrt( Float96(3/5) ) ) / 2, 1/2, ( 1 + sqrt( Float96(3/5) ) ) / 2 ]
             # pond := [ (5/9) / 2, (8/9) / 2, (5/9) / 2 ]
@@ -1096,7 +1096,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else if order <= 21 # nb_pts_gauss = 4
+        else if order <= 7 # nb_pts_gauss = 4
             nb_pts_gauss := 4
             # val := [ ( 1 - sqrt( Float96( ( 3+2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 - sqrt( Float96( ( 3-2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 + sqrt( Float96( ( 3-2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2, ( 1 + sqrt( Float96( ( 3+2*sqrt( Float96(6/5)) ) / 7 ) ) ) / 2 ]
             # pond := [ ((18 - sqrt(Float96(30)))/36) / 2, ((18 + sqrt(Float96(30)))/36) / 2, ((18 + sqrt(Float96(30)))/36) / 2, ((18 - sqrt(Float96(30)))/36) / 2 ]
@@ -1108,7 +1108,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else if order <= 27 # nb_pts_gauss = 5
+        else if order <= 9 # nb_pts_gauss = 5
             nb_pts_gauss := 5
             # val := [ ( 1 - 1/3 * sqrt( Float96( 5+2*sqrt( Float96(10/7) ) ) ) ) / 2, ( 1 - 1/3 * sqrt( Float96( 5-2*sqrt( Float96(10/7) ) ) ) ) / 2, 1/2, ( 1 + 1/3 * sqrt( Float96( 5-2*sqrt( Float96(10/7) ) ) ) ) / 2, ( 1 + 1/3 * sqrt( Float96( 5+2*sqrt( Float96(10/7) ) ) ) ) / 2 ]
             # pond := [ ((322 - 13 * sqrt(Float96(70)))/900) / 2, ((322 + 13 * sqrt(Float96(70)))/900 ) / 2, (128/225) / 2, ((322 + 13 * sqrt(Float96(70)))/900) / 2, ((322 - 13 * sqrt(Float96(70)))/900) / 2 ]
@@ -1120,7 +1120,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else if order <= 33 # nb_pts_gauss = 6
+        else if order <= 11 # nb_pts_gauss = 6
             nb_pts_gauss := 6
             # val := [ ( 1 - 0.932469514203152 ) / 2, ( 1 - 0.661209386466265 ) / 2, ( 1 - 0.238619186083197 ) / 2, ( 1 + 0.238619186083197 ) / 2, ( 1 + 0.661209386466265 ) / 2,  ( 1 + 0.932469514203152 ) / 2 ]
             # pond := [ 0.171324492379170 / 2, 0.360761573048139 / 2, 0.467913934572691 / 2, 0.467913934572691 / 2, 0.360761573048139 / 2, 0.171324492379170 / 2 ]
@@ -1132,7 +1132,7 @@ class Hexa inherits NameElement
                     for k in 0 .. nb_pts_gauss
                         res += pond[i] * pond[j] * pond[k] * expr.subs( var_inter, [ val[i], val[j], val[k] ] )
             return res
-        else # if order <= 39 # nb_pts_gauss = 7
+        else # if order <= 13 # nb_pts_gauss = 7
             nb_pts_gauss := 7
             # val := [ ( 1 - 0.949107912342759 ) / 2, ( 1 - 0.741531185599394 ) / 2, ( 1 - 0.405845151377397 ) / 2, 1/2, ( 1 + 0.0.405845151377397 ) / 2, ( 1 + 0.0.741531185599394 ) / 2,  ( 1 + 0.949107912342759 ) / 2 ]
             # pond := [ 0.129484966168870 / 2, 0.279705391489277 / 2, 0.381830050505119 / 2, 0.417959183673469 / 2, 0.381830050505119 / 2, 0.279705391489277 / 2, 0.129484966168870 / 2 ]

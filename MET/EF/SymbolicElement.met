@@ -306,6 +306,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     # mean
     def mean( expr )
         degre_poly := expr.poly_deg( var_inter )
+        if degre_poly < 0
+            degre_poly = 2 * max( get_order_interpolation() )
         return integration( expr, mul_by_jac = false ) / integration( Op( 1 ), mul_by_jac = false, order_diff = degre_poly )
 
     # inertia operator for barycenter
@@ -320,11 +322,11 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             V := vect_prod( GP, vect_prod( u, GP ) )
             for d_i in 0 .. dim
                 for d_j in 0 .. dim
-                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), mul_by_jac = true, order_diff = sum( get_order_interpolation() ) )
+                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), mul_by_jac = true, order_diff = 2 * max( get_order_interpolation() ) )
             return mat
         #
         else
-            res := gauss_num_integration( dot( GP, GP ), mul_by_jac = true, order_diff = sum( get_order_interpolation() ) )
+            res := gauss_num_integration( dot( GP, GP ), mul_by_jac = true, order_diff = 2 * max( get_order_interpolation() ) )
             return res
     
     # helper function -> give a new "field" based on "canonical" interpolation
@@ -543,6 +545,8 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
         c := Vec[ Op, dim ]( function = x => symbol("c[$x]") )
         d := pos - c
         degre_poly := dot( d, d ).poly_deg( var_inter )
+        if degre_poly < 0
+            degre_poly = 2 * max( get_order_interpolation() )
         r := integration( dot( d, d ), order_diff = degre_poly )
         return Vec[ Op ]( newton_raphson_minimize_iteration_rec( r, c, nb_iterations, pos.subs( var_inter, get_center_of_var_inter() ) ) )
 
