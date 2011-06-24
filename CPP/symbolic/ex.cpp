@@ -707,6 +707,91 @@ Ex atan2 ( const Ex &a_, const Ex &b_ ) {
     return Op::new_function ( STRING_atan2_NUM, a.op, b.op );
 }
 
+// function pour enrichissement 
+// 3D (x,y,z,id_enr,dir)
+Ex Fun_enr_3D ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d , const Ex &e , const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+    
+    return Op::new_function ( STRING_Fun_enr_3D_NUM, a.op, b.op, c.op, d.op, e.op, f.op);
+}
+
+Ex Fun_enr_3D_dx ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d, const Ex &e, const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+
+    return Op::new_function ( STRING_Fun_enr_3D_dx_NUM, a.op, b.op, c.op, d.op, e.op, f.op);
+}
+
+Ex Fun_enr_3D_dy ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d, const Ex &e, const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+
+    return Op::new_function ( STRING_Fun_enr_3D_dy_NUM, a.op, b.op, c.op, d.op, e.op, f.op );
+}
+
+Ex Fun_enr_3D_dz ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d, const Ex &e, const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+
+    return Op::new_function ( STRING_Fun_enr_3D_dz_NUM, a.op, b.op, c.op, d.op, e.op, f.op );
+}
+
+Ex Young_enr_3D ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d, const Ex &e, const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+
+    return Op::new_function ( STRING_Young_enr_3D_NUM, a.op, b.op, c.op, d.op, e.op, f.op );
+}
+
+Ex Poisson_enr_3D ( const Ex &a_, const Ex &b_, const Ex &c_ , const Ex &d, const Ex &e, const Ex &f) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+    Ex c = a_posteriori_simplification ( c_ );
+
+    return Op::new_function ( STRING_Poisson_enr_3D_NUM, a.op, b.op, c.op, d.op, e.op, f.op );
+}
+// 2D (x,y,id_enr,dir)
+Ex Fun_enr ( const Ex &a_, const Ex &b_, const Ex &c , const Ex &d, const Ex &e ) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+
+    return Op::new_function ( STRING_Fun_enr_NUM, a.op, b.op, c.op, d.op, e.op );
+}
+
+Ex Fun_enr_dx( const Ex &a_, const Ex &b_, const Ex &c , const Ex &d, const Ex &e) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+
+    return Op::new_function ( STRING_Fun_enr_dx_NUM, a.op, b.op, c.op, d.op, e.op );
+}
+
+Ex Fun_enr_dy ( const Ex &a_, const Ex &b_, const Ex &c , const Ex &d, const Ex &e) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+
+    return Op::new_function ( STRING_Fun_enr_dy_NUM, a.op, b.op, c.op, d.op, e.op );
+}
+
+Ex Young_enr ( const Ex &a_, const Ex &b_, const Ex &c , const Ex &d, const Ex &e) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+
+    return Op::new_function ( STRING_Young_enr_NUM, a.op, b.op, c.op, d.op, e.op );
+}
+
+Ex Poisson_enr ( const Ex &a_, const Ex &b_, const Ex &c , const Ex &d, const Ex &e ) {
+    Ex a = a_posteriori_simplification ( a_ );
+    Ex b = a_posteriori_simplification ( b_ );
+
+    return Op::new_function ( STRING_Poisson_enr_NUM, a.op, b.op, c.op, d.op, e.op );
+}
+
 Ex abs ( const Ex &a_ ) {
     Ex a = a_posteriori_simplification ( a_ );
 
@@ -1124,6 +1209,18 @@ DiffRec ( Thread *th, const void *tok, const Ex &a ) : th ( th ), tok ( tok ), z
             Op *d0 = c0->additional_info; Op *d1 = c1->additional_info; \
             a->additional_info = to_inc_op( res ); \
         }
+        #define MAKE_D0D1_name( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; Op *c1 = a->func_data()->children[1]; Op *c2 = a->func_data()->children[2]; Op *c3 = a->func_data()->children[3]; Op *c4 = a->func_data()->children[4]; diff_rec( c0 ); diff_rec( c1 ); \
+        Op *d0 = c0->additional_info; Op *d1 = c1->additional_info; \
+        a->additional_info = to_inc_op( res ); \
+        }
+        #define MAKE_D0D1D2_name( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; Op *c1 = a->func_data()->children[1]; Op *c2 = a->func_data()->children[2]; Op *c3 = a->func_data()->children[3]; Op *c4 = a->func_data()->children[4]; Op *c5 = a->func_data()->children[5]; diff_rec( c0 ); diff_rec( c1 ); diff_rec( c2 ); \
+        Op *d0 = c0->additional_info; Op *d1 = c1->additional_info; Op *d2 = c2->additional_info; \
+        a->additional_info = to_inc_op( res ); \
+        }
         switch ( a->type ) {
         case Op::NUMBER:
             a->additional_info = zero.op->inc_ref();
@@ -1202,6 +1299,39 @@ DiffRec ( Thread *th, const void *tok, const Ex &a ) : th ( th ), tok ( tok ), z
                 break;
             }
             MAKE_D0D1 ( Ex ( d0 ) * Ex ( c1 ) * pow ( Ex ( c0 ), Ex ( c1 ) - Rationnal ( 1 ) ) + /* dx * x ^ ( y - 1 ) */ Ex ( d1 ) * log ( Ex ( c0 ) ) * Ex ( a ) /*dy * log( x ) * x ^ y*/ );
+            break;
+        case STRING_Fun_enr_3D_NUM:     
+            MAKE_D0D1D2_name ( Ex ( d0 ) * Fun_enr_3D_dx( Ex (c0), Ex (c1), Ex(c2) , Ex(c3), Ex(c4), Ex(c5)) + Ex (d1) * Fun_enr_3D_dy( Ex (c0) , Ex(c1), Ex(c2) , Ex(c3), Ex(c4), Ex(c5) ) + Ex (d2) * Fun_enr_3D_dz( Ex (c0) , Ex(c1), Ex(c2) , Ex(c3), Ex(c4), Ex(c5) ) );
+            break;
+        case STRING_Fun_enr_3D_dx_NUM:     
+            MAKE_D0D1D2_name ( Ex ( 0 ) );
+            break;
+        case STRING_Fun_enr_3D_dy_NUM:     
+            MAKE_D0D1D2_name ( Ex ( 0 ) );
+            break;
+        case STRING_Fun_enr_3D_dz_NUM:     
+            MAKE_D0D1D2_name ( Ex ( 0 ) );
+            break;            
+        case STRING_Young_enr_3D_NUM:     
+            MAKE_D0D1D2_name ( Ex ( 0 ) );
+            break;
+        case STRING_Poisson_enr_3D_NUM:     
+            MAKE_D0D1D2_name ( Ex ( 0 ) );
+            break;
+        case STRING_Fun_enr_NUM:     
+            MAKE_D0D1_name ( Ex ( d0 ) * Fun_enr_dx( Ex (c0), Ex (c1), Ex(c2) , Ex(c3), Ex(c4)) + Ex (d1) * Fun_enr_dy( Ex (c0) , Ex(c1), Ex(c2) , Ex(c3), Ex(c4) ) );
+            break;
+        case STRING_Fun_enr_dx_NUM:     
+            MAKE_D0D1_name ( Ex ( 0 ) );
+            break;
+        case STRING_Fun_enr_dy_NUM:     
+            MAKE_D0D1_name ( Ex ( 0 ) );
+            break;
+        case STRING_Young_enr_NUM:     
+            MAKE_D0D1_name ( Ex ( 0 ) );
+            break;
+        case STRING_Poisson_enr_NUM:     
+            MAKE_D0D1_name ( Ex ( 0 ) );
             break;
         default:
             th->add_error ( "for now, no rules to differentiate function of type '"+std::string ( Nstring ( a->type ) ) +"'.", tok );
@@ -1434,6 +1564,36 @@ SubsRec ( Thread *th, const void *tok, const Ex &expr, const Func &func = Func()
             Ex e1 = c1->additional_info; \
             a->additional_info = to_inc_op( func( res ) ); \
         }
+        #define MAKE_S0S1_name( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
+        Op *c1 = a->func_data()->children[1]; subs_rec( c1, func ); \
+        Op *c2 = a->func_data()->children[2]; subs_rec( c2, func );\
+        Op *c3 = a->func_data()->children[3]; subs_rec( c3, func );\
+        Op *c4 = a->func_data()->children[4]; subs_rec( c4, func );\
+        Op *c5 = a->func_data()->children[5]; subs_rec( c5, func );\
+        Ex e0 = c0->additional_info; \
+        Ex e1 = c1->additional_info; \
+        Ex e2 = c2->additional_info; \
+        Ex e3 = c3->additional_info; \
+        Ex e4 = c4->additional_info; \
+        Ex e5 = c5->additional_info; \ 
+        a->additional_info = to_inc_op( func( res ) ); \
+        }
+        #define MAKE_S0S1_name_( res ) \
+        { \
+        Op *c0 = a->func_data()->children[0]; subs_rec( c0, func ); \
+        Op *c1 = a->func_data()->children[1]; subs_rec( c1, func ); \
+        Op *c2 = a->func_data()->children[2]; subs_rec( c2, func );\
+        Op *c3 = a->func_data()->children[3]; subs_rec( c3, func );\
+        Op *c4 = a->func_data()->children[4]; subs_rec( c4, func );\
+        Ex e0 = c0->additional_info; \
+        Ex e1 = c1->additional_info; \
+        Ex e2 = c2->additional_info; \
+        Ex e3 = c3->additional_info; \
+        Ex e4 = c4->additional_info; \
+        a->additional_info = to_inc_op( func( res ) ); \
+        }
 
         switch ( a->type ) {
         case Op::NUMBER:
@@ -1504,7 +1664,39 @@ SubsRec ( Thread *th, const void *tok, const Ex &expr, const Func &func = Func()
         case STRING_atan_NUM:
             MAKE_S0 ( atan ( e0 ) );
             break;
-
+        case STRING_Fun_enr_3D_NUM:
+            MAKE_S0S1_name ( Fun_enr_3D( e0, e1, e2, e3, e4, e5 ) );
+            break;
+        case STRING_Fun_enr_3D_dx_NUM:
+            MAKE_S0S1_name ( Fun_enr_3D_dx( e0, e1, e2, e3, e4, e5 ) );
+            break;
+        case STRING_Fun_enr_3D_dy_NUM:
+            MAKE_S0S1_name ( Fun_enr_3D_dy( e0, e1, e2, e3, e4, e5 ) );
+            break;
+        case STRING_Fun_enr_3D_dz_NUM:
+            MAKE_S0S1_name ( Fun_enr_3D_dz( e0, e1, e2, e3, e4, e5 ) );
+            break;            
+        case STRING_Young_enr_3D_NUM:
+            MAKE_S0S1_name ( Young_enr_3D( e0, e1, e2, e3, e4, e5 ) );
+            break;
+        case STRING_Poisson_enr_3D_NUM:
+            MAKE_S0S1_name ( Poisson_enr_3D( e0, e1, e2, e3, e4, e5 ) );
+            break;
+        case STRING_Fun_enr_NUM:
+            MAKE_S0S1_name_ ( Fun_enr( e0, e1, e2, e3, e4 ) );
+            break;
+        case STRING_Fun_enr_dx_NUM:
+            MAKE_S0S1_name_ ( Fun_enr_dx( e0, e1, e2, e3, e4 ) );
+            break;
+        case STRING_Fun_enr_dy_NUM:
+            MAKE_S0S1_name_ ( Fun_enr_dy( e0, e1, e2, e3, e4 ) );
+            break;
+        case STRING_Young_enr_NUM:
+            MAKE_S0S1_name_ ( Young_enr( e0, e1, e2, e3, e4 ) );
+            break;
+        case STRING_Poisson_enr_NUM:
+            MAKE_S0S1_name_ ( Poisson_enr( e0, e1, e2, e3, e4 ) );
+            break;
         default:
             th->add_error ( "for now, no rules to subs function of type '"+std::string ( Nstring ( a->type ) ) +"'.", tok );
         }

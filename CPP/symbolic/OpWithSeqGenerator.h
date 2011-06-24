@@ -42,7 +42,7 @@ struct OpWithSeqGenerator {
         return T;
     }
     
-    void write_instr( OpWithSeq *op ) {
+    void write_instr( OpWithSeq *op , bool is_parallele) {
         if ( op->type == OpWithSeq::SEQ )
             return;
         //if ( op->type == OpWithSeq::NUMBER )
@@ -58,7 +58,10 @@ struct OpWithSeqGenerator {
         nb_ops += op->nb_instr();
         
         //
-        if ( op->type == OpWithSeq::WRITE_ADD      ) { os                               << op->cpp_name_str << " += R" << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_ADD  and not ( is_parallele )   ) 
+	    { os     << op->cpp_name_str << " += R" << op->children[0]->reg << "; "; return; }
+        if ( op->type == OpWithSeq::WRITE_ADD  and ( is_parallele )   ) 
+	    { os     <<      "pthread_mutex_lock(mutex);"     << op->cpp_name_str << " += R" << op->children[0]->reg << "; pthread_mutex_unlock(mutex);"; return; }	    
         if ( op->type == OpWithSeq::WRITE_REASSIGN ) { os                               << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
         if ( op->type == OpWithSeq::WRITE_RET      ) { os << "return R"                                                << op->children[0]->reg << "; "; return; }
         if ( op->type == OpWithSeq::WRITE_INIT     ) { os << ty(op->children[0]) << " " << op->cpp_name_str <<  " = R" << op->children[0]->reg << "; "; return; }
