@@ -107,10 +107,10 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     #
     def std_pos_symbol_function( num_node, d )
         letters := "xyztuvw"
-        return symbol( "$name_elem.node($num_node)->pos[$d]", tex_symbol_pos + "_{$num_node}^{$(letters[d])}" )
+        return symbol( "$name_node($num_node)->pos[$d]", tex_symbol_pos + "_{$num_node}^{$(letters[d])}" )
         
     #
-    def init( name_elem = "elem", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P", node_numbers_to_node_numbers_in_parent_cpp = range(nb_nodes).map( TE::corr_cpp ) )
+    def init( name_elem = "elem", name_node = name_elem + ".node", pos_symbol_function = std_pos_symbol_function, tex_symbol_pos = "P", node_numbers_to_node_numbers_in_parent_cpp = range(nb_nodes).map( TE::corr_cpp ) )
         init_using_default_values( self )
         self.tex_symbol_pos = tex_symbol_pos
         self.name_elem = name_elem
@@ -320,7 +320,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 if name.type != String
                     s = name( i )
                 else
-                    s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
+                    s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
                 sym.push_back( s )
                 vec[i] = s
             # info vec
@@ -331,7 +331,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             for i in 0 .. nb_nodes
                 for j in 0 .. d
                     s := Op()
-                    s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
+                    s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
                     sym.push_back( s )
                     vec[i][j] = s
             return Vec[Op,d]( pe.interpolation( var_inter, vec, interpolation_base ) )
@@ -344,7 +344,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                         if symm and k > j
                             continue
                         s := Op()
-                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
+                        s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
                         sym.push_back( s )
                         mat[i][j,k] = s
                 if symm
@@ -369,7 +369,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                     if name.type != String
                         s = name( i )
                     else
-                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
+                        s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}") # $name_elem.ind[$i].index
                     sym.push_back( s )
                     vec[l] = s
                     l++
@@ -382,7 +382,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 if node_number_is_a_vertex( i )
                     for j in 0 .. d
                         s := Op()
-                        s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
+                        s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name[$j]","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j}") # $name_elem.ind[$i].index
                         sym.push_back( s )
                         vec[l][j] = s
                     l++
@@ -398,7 +398,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                             if symm and k > j
                                 continue
                             s := Op()
-                            s = symbol("$name_elem.node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
+                            s = symbol("$name_node($(node_numbers_to_node_numbers_in_parent_cpp[i]))->$name($j,$k)","$name^{N$(node_numbers_to_node_numbers_in_parent_cpp[i])}_{$j,$k}") # $name_elem.ind[$i].index
                             sym.push_back( s )
                             mat[l][j,k] = s
                     if symm
@@ -411,7 +411,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     
     # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type in [ "global", "elementary" ]
-        bn := [ "elem", "f" ][ interpolation_type == "global" ]
+        bn := [ name_elem, "f" ][ interpolation_type == "global" ]
         if nb_dim.size == 0
             s := symbol("$bn.$name","$name")
             sym.push_back( s )
