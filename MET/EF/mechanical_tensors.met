@@ -83,3 +83,15 @@ def lame_coeff_lambda( young, poisson, dim = 3, type_stress_2D = "plane stress" 
 def lame_coeff_mu( young, poisson )
     return young / ( 2 * ( 1 + poisson ) )
 
+#~
+  parameter kappa for an isotropic elastic material
+~#
+def parameter_kappa( poisson, dim = 2, type_stress_2D = "plane stress" )
+    if dim == 2
+        if type_stress_2D == "plane stress"
+            return ( 3 - poisson ) / ( 1 + poisson )
+        if type_stress_2D == "plane strain"
+            return 3 - 4 * poisson
+        assert( 0, "Unknown type stress $type_stress_2D" )
+    if dim == 3
+        assert( 0, "kappa not implemented for dim $dim" )
