@@ -373,6 +373,50 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                             mat[i][j,k] = mat[i][k,j]
             return TR( pe.interpolation( var_inter, mat, interpolation_base ) )
         assert( 0, "TODO" )
+
+    # helper function -> give a new "field" based on "canonical" interpolation
+    def new_variable( name, interpolation_type, deg, nb_dim=[], sym = Vec[Op](), interpolation_base = "lagrange", symm = false ) when interpolation_type == "enriched_nodal"
+        nb_points := upper_degree_points(deg).size
+        if nb_dim.size == 0
+            vec := Vec[ Op, nb_points ]()
+            for i in 0 .. vec.size
+                s := Op()
+                if name.type != String
+                    s = name( i )
+                else
+                    s = symbol("$name_node($i))->$name","$name^{N$(i)}") # $name_node.ind[$i].index
+                sym.push_back( s )
+                vec[i] = s
+            # info vec
+            return pe.interpolation_deg( var_inter, vec, interpolation_base, deg )
+        if nb_dim.size == 1
+            d := nb_dim[0]
+            vec := Vec[ Vec[Op,d], nb_points ]()
+            for i in 0 .. nb_points
+                for j in 0 .. d
+                    s := Op()
+                    s = symbol("$name_node($(i))->$name[$j]","$name^{N$(i)}_{$j}") # $name_node.ind[$i].index
+                    sym.push_back( s )
+                    vec[i][j] = s
+            return Vec[Op,d]( pe.interpolation_deg( var_inter, vec, interpolation_base, deg ) )
+        if nb_dim.size == 2
+            TR := [ Mat[Op,Gen[nb_dim[0],nb_dim[1]]], Mat[Op,Sym[nb_dim[0]]] ][ symm ]
+            mat := Vec[ TR, nb_points ]()
+            for i in 0 .. nb_points
+                for j in 0 .. nb_dim[0]
+                    for k in 0 .. nb_dim[1]
+                        if symm and k > j
+                            continue
+                        s := Op()
+                        s = symbol("$name_node($(i))->$name($j,$k)","$name^{N$(i)}_{$j,$k}") # $name_node.ind[$i].index
+                        sym.push_back( s )
+                        mat[i][j,k] = s
+                if symm
+                    for j in 0 .. nb_dim[0]
+                        for k in j+1 .. nb_dim[1]
+                            mat[i][j,k] = mat[i][k,j]
+            return TR( pe.interpolation_deg( var_inter, mat, interpolation_base, deg ) )
+        assert( 0, "TODO" )
     
      # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim=[], sym = Vec[Op](), symm = false ) when interpolation_type == "vertex_nodal"
