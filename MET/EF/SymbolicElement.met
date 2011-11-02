@@ -324,11 +324,13 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             V := vect_prod( GP, vect_prod( u, GP ) )
             for d_i in 0 .. dim
                 for d_j in 0 .. dim
-                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), mul_by_jac = true, order_diff = 2 * max( get_order_interpolation() ) )
+                    degre_poly := ( V[d_i].diff( u[d_j] ) ).poly_deg( var_inter )
+                    mat[d_i,d_j] = integration( V[d_i].diff( u[d_j] ), mul_by_jac = true, order_diff = degre_poly )
             return mat
         #
         else
-            res := gauss_num_integration( dot( GP, GP ), mul_by_jac = true, order_diff = 2 * max( get_order_interpolation() ) )
+            degre_poly := ( dot( GP, GP ) ).poly_deg( var_inter )
+            res := integration( dot( GP, GP ), mul_by_jac = true, order_diff = degre_poly )
             return res
     
     # helper function -> give a new "field" based on "canonical" interpolation
