@@ -688,10 +688,10 @@ def code_writer_nl_eqs_or_min( val, unknowns, output, symbol_base_name,
 # -----------------------------------------------------------------------------------------------------------------------------------------------
 
 #~
-    Cette fonction retourne l'expression d'une itératoin de l'algorithme de Newton pour la recherche d'une minimum d'une fonctionelle.
+    Cette fonction retourne l'expression d'une itération de l'algorithme de Newton pour la recherche d'une minimum d'une fonctionelle.
     entrées :
         * exp est une expression "scalaire" en ue ou plusieurs inconnues X, Y, Z, W , A , X[0], X[1], etc...
-        * unknows est une varaible ou la liste des variables
+        * unknows est une variable ou la liste des variables
         * old_values est une valeur initiale ou une liste de valeurs initiales
 
     newton_raphson_minimize_iteration( (a-1)^4, [a] )
