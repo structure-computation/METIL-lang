@@ -77,8 +77,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 # lagrange and hierarchical shape functions calculated using children of sub_nvi=2 (Bar for Hexa) ones
                 class CE[ nvi ]
                     first := MultiPtr()
-                    second := Vec[Vec[Rationnal,nvi]]()
-                    node_nb := Vec[Int32]()
+                    second := Vec[ Vec[ Rationnal, nvi ] ]()
+                    node_nb := Vec[ Int32 ]()
                 children := Vec[ SplittedVec[ CE[ nvi ], 4 ], nvi + 1 ]()
                 get_children_rec_( children, 0, TE, TE::points, nvi, 0..TE::points.size )
                 ch := children[ 2 ][ 0 ]
@@ -172,8 +172,8 @@ class GenerateMethodForParametricElement[ TE, dim ]
             # interpolation variables from children ones
             class CE[ nvi ]
                 first := MultiPtr()
-                second := Vec[Vec[Rationnal,nvi]]()
-                node_nb := Vec[Int32]()
+                second := Vec[ Vec[ Rationnal, nvi ] ]()
+                node_nb := Vec[ Int32 ]()
             children := Vec[ SplittedVec[ CE[ nvi ], 4 ], nvi + 1 ]()
             get_children_rec_( children, 0, TE, TE::points, nvi, 0..TE::points.size )
             f <<< "#"
@@ -269,7 +269,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
             return Void
         #
         if dim == 2
-            V := Vec[Op,dim]([
+            V := Vec[ Op, dim ]([
                 P[1].diff( var_inter[0] ),
                 - P[0].diff( var_inter[0] )
             ])
@@ -279,15 +279,15 @@ class GenerateMethodForParametricElement[ TE, dim ]
         if dim == 3
             V1 := P.diff( var_inter[0] )
             V2 := P.diff( var_inter[1] )
-            V := Vec[Op,dim]( vect_prod( V1, V2 ) )
+            V := Vec[ Op, dim ]( vect_prod( V1, V2 ) )
             V /= norm_2( V )
             return V
         #
-        normal := Vec[Op,dim]( x => symbol("N_$x") )
-        normal_eqs := Vec[Op]()
-        mat := Mat[ Op, Gen[dim,dim] ]()
+        normal := Vec[ Op, dim ]( x => symbol("N_$x") )
+        normal_eqs := Vec[ Op ]()
+        mat := Mat[ Op, Gen[ dim, dim ] ]()
         for nvi in 0 .. nvi
-            V := Vec[Op,dim]()
+            V := Vec[ Op, dim ]()
             for d in 0 .. dim
                 V[d] = P[d].diff( var_inter[nvi] ) 
             normal_eqs.push_back( dot( V, normal ) )
@@ -339,7 +339,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
     #
     def make_barycenter( P, var_inter, jac, cvi )
         c := Vec[ Op, dim ]( function = x => symbol("c[$x]") )
-        barycenter_eqs := Vec[Op,dim]()
+        barycenter_eqs := Vec[ Op, dim ]()
         for d in 0 .. dim
             barycenter_eqs[ d ] = integration( P[ d ] - c[ d ], var_inter, jac )
         return Vec[ Op ]( newton_raphson_iteration( barycenter_eqs, c, P.subs( var_inter, cvi ) ) )
@@ -350,7 +350,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         OP := Vec[ Op, dim ]( P - O )
         #
         if nvi == 3
-            mat := Mat[ Op, Gen[dim,dim] ]()
+            mat := Mat[ Op, Gen[ dim, dim ] ]()
             u := Vec[ Op, dim ]( function = x => symbol("u_$x") )
             V := vect_prod( OP, vect_prod( u, OP ) )
             for d_i in 0 .. dim
@@ -369,7 +369,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         sum_objective := Op( 0 )
         bs := base.size
         for n in 0 .. nb_nodes
-            shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_coeffs := Vec[ Op, bs ]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
             shape_function := dot( shape_coeffs, base )
             objective := Op( 0 )
             for m in 0 .. nb_nodes
@@ -387,7 +387,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         sum_objective := Op( 0 )
         bs := base.size
         for n in 0 .. nb_nodes
-            shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            shape_coeffs := Vec[ Op, bs ]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
             shape_function := dot( shape_coeffs, base )
             objective := Op( 0 )
             if TE::point_is_a_vertex( pos_nodes[ n ] )
@@ -417,7 +417,7 @@ class GenerateMethodForParametricElement[ TE, dim ]
         l := 0
         for n in 0 .. nb_nodes
             if TE::node_number_is_a_vertex( n )
-                shape_coeffs := Vec[Op,bs]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+                shape_coeffs := Vec[ Op, bs ]( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
                 shape_function := dot( shape_coeffs, base )
                 objective := Op( 0 )
                 for m in 0 .. nb_nodes
@@ -434,18 +434,18 @@ class GenerateMethodForParametricElement[ TE, dim ]
             return true
         sum_objective := Op( 0 )
         bs := base.size
-        shape_coeffs := Vec[ Vec[Op,bs], nb_nodes ]()
-        shape_coeffs_flat := Vec[Op]( reservation = base.size * nb_nodes )
+        shape_coeffs := Vec[ Vec[ Op, bs ], nb_nodes ]()
+        shape_coeffs_flat := Vec[ Op ]( reservation = base.size * nb_nodes )
         for n in 0 .. nb_nodes
             shape_coeffs[ n ].init( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
-            shape_coeffs_flat.append( shape_coeffs[n] )
+            shape_coeffs_flat.append( shape_coeffs[ n ] )
             shape_functions[ n ] = dot( shape_coeffs[ n ], base )
         # objective function
         objective := Op( 0 )
         # 1 or 0 in pos_node
         for n in 0 .. nb_nodes
             for m in 0 .. nb_nodes
-                objective += ( shape_functions[ n ].subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+                objective += ( shape_functions[ n ].subs( var_inter, pos_nodes[ m ] ) - (n==m) ) ^ 2
         # partition of unity
         objective += integration( ( sum( shape_functions ) - 1 ) ^ 2, var_inter, 1 )
         # solve
@@ -461,24 +461,24 @@ class GenerateMethodForParametricElement[ TE, dim ]
 
         #
         # bs := base.size
-        # shape_coeffs := Vec[ Vec[Op,bs], nb_nodes ]()
-        # shape_coeffs_flat := Vec[Op]( reservation = base.size * nb_nodes ) # TODO -> generic flatten function
+        # shape_coeffs := Vec[ Vec[ Op, bs ], nb_nodes ]()
+        # shape_coeffs_flat := Vec[ Op ]( reservation = base.size * nb_nodes ) # TODO -> generic flatten function
         # for n in 0 .. nb_nodes
-            # shape_coeffs[n].init( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
-            # shape_coeffs_flat.append( shape_coeffs[n] )
-            # shape_functions[n] = dot( shape_coeffs[n], base )
+            # shape_coeffs[ n ].init( function = symbol("coeff[$n,$_0]","C_{$n,$_0}") )
+            # shape_coeffs_flat.append( shape_coeffs[ n ] )
+            # shape_functions[ n ] = dot( shape_coeffs[ n ], base )
             
         # # objective function
         # objective := Op()
         # # 1 or 0 in pos_node
         # for n in 0 .. nb_nodes
             # for m in 0 .. nb_nodes
-                # objective += ( shape_functions[n].subs( var_inter, pos_nodes[m] ) - (n==m) ) ^ 2
+                # objective += ( shape_functions[ n ].subs( var_inter, pos_nodes[ m ] ) - (n==m) ) ^ 2
         # # independance on subparts of skin from exterior points
         # child_var_inter := Vec[ Op, var_inter.size - 1 ]( function = symbol("child_var_inter[$_0]",greek_letter(6+_0)+"^{C}") )
         # # for child in ref_elem.children( child_var_inter )
             # # for n in 0 .. nb_nodes
-                # # if not ref_elem.point_is_in_children( child_var_inter, child, pos_nodes[n] )
+                # # if not ref_elem.point_is_in_children( child_var_inter, child, pos_nodes[ n ] )
                     # # err := shape_functions[n].subs( var_inter, child.var_inter )
                     # # objective += child.elem.integration( err ^ 2, child_var_inter )
         # # partition of unity
