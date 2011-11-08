@@ -739,7 +739,7 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 if order < 0
                     GM_vect_prod_w := vect_prod( GM, w )
                     order_w := ( projection_on_child_elem( GM_vect_prod_w, c ) ).poly_deg( c->var_inter )
-                    order = max( order_w, order_v )
+                    order = max( order_w, order_integration )
                 objective += ( c->gauss_num_integration( projection_on_child_elem( GM_vect_prod_v_minus_w, c ), order_diff = order ) ) ^ 2
             else if dim == 3
                 for d in 0 .. dim
