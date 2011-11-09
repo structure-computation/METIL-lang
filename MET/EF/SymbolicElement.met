@@ -718,39 +718,21 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
                 cpt_vertex_nodes++
         return node_numbers_to_vertex_node_numbers
     
-    # projection of vector v (of size e.dim) over child_elem on hierarchical vertex shape functions (linear shape functions) such that linear part w of v is in equilibrium with v over element e
-    # meaning that integration( v - w ) = 0 and integration( GM ^ ( v - w ) ) = 0 with G being barycenter of element e and M being any point of child_elem
-    def projection_on_vertex_shape_functions_with_equilibrium( v, order_integration, child_elem )
+    # projection w of vector v (of size e.dim) over child_elem on shape functions such that w and v are in equilibrium over child_elem
+    def projection_on_shape_functions_with_equilibrium( v, order_integration, child_elem, interpolation_base = "lagrange" )
         c := child_cast( child_elem )
         v = projection_on_child_elem( v, c )
         sym_w := Vec[ Op ]()
-        w := c->new_variable( "w",  interpolation_type = "vertex_nodal", nb_dim = [ dim ], sym = sym_w )
+        w := c->new_variable( "w",  interpolation_type = "nodal", nb_dim = [ dim ], sym = sym_w, interpolation_base = interpolation_base )
         objective := Op( 0 )
-        for d in 0 .. dim
-            order := ( w[ d ] - v[ d ] ).poly_deg( c->var_inter )
-            if order < 0
-                order = order_integration
-            objective += ( c->gauss_num_integration( w[ d ] - v[ d ], order_diff = order ) ) ^ 2
-        if dim >= 2
-            GM := pos - barycenter
-            GM_vect_prod_v_minus_w := vect_prod( GM, v - w )
-            if dim == 2
-                order := ( projection_on_child_elem( GM_vect_prod_v_minus_w, c ) ).poly_deg( c->var_inter )
+        for n in 0 .. c->nb_nodes
+            phi_n := c->get_shape_functions( interpolation_base )[ n ]
+            for d in 0 .. dim
+                order := ( phi_n * ( w[ d ] - v[ d ] ) ).poly_deg( c->var_inter )
+                order_ := ( phi_n * w[ d ] ).poly_deg( c->var_inter )
                 if order < 0
-                    GM_vect_prod_w := vect_prod( GM, w )
-                    order_w := ( projection_on_child_elem( GM_vect_prod_w, c ) ).poly_deg( c->var_inter )
-                    order = max( order_w, order_integration )
-                objective += ( c->gauss_num_integration( projection_on_child_elem( GM_vect_prod_v_minus_w, c ), order_diff = order ) ) ^ 2
-            else if dim == 3
-                for d in 0 .. dim
-                    order := ( projection_on_child_elem( GM_vect_prod_v_minus_w[ d ], c ) ).poly_deg( c->var_inter )
-                    if order < 0
-                        GM_vect_prod_w := vect_prod( GM, w )
-                        order = ( projection_on_child_elem( GM_vect_prod_w[ d ], c ) ).poly_deg( c->var_inter )
-                        order = max( order, order_integration )
-                    objective += ( c->gauss_num_integration( projection_on_child_elem( GM_vect_prod_v_minus_w[ d ], c ), order_diff = order ) ) ^ 2
-            else
-                assert( 0, "TODO : projection_on_vertex_shape_functions_with_equilibrium with dim > 3 ( dim == $dim )." )
+                    order = max( order_, order_integration )
+                objective += ( c->gauss_num_integration( phi_n * ( w[ d ] - v[ d ] ), order_diff = order ) ) ^ 2
         sym_sol := newton_raphson_minimize_iteration( objective, sym_w )
         res := w.subs( sym_w, sym_sol )
         return res
