@@ -283,11 +283,6 @@ for f in [ sin cos tan asin acos atan ]
             Ex dy2 = (-2)*q_1.scal()*q_0.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
             Ex dx2 = 2*q_1.scal()*q_0.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
             Ex dydx = (pow(q_1.scal(),2)-pow(q_0.scal(),2))*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
-            std::cout << dy << std::endl;
-            std::cout << dx << std::endl;
-            std::cout << dy2 << std::endl;
-            std::cout << dx2 << std::endl;
-            std::cout << dydx << std::endl;
             q.scal() = atan2( q_0.scal(), q_1.scal() );
             for(unsigned i=0;i<nb_variables;++i)
                 q.vec(i) = dy * q_0.vec(i) + dx * q_1.scal();

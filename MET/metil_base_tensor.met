@@ -363,7 +363,7 @@ def mul( a, b ) when a.is_an_indexed_tensor and b.is_an_indexed_tensor
 def identity_tensor( n )
     return Tensor[ Int32, [n,n] ]( function = x => x[0]==x[1] )
 
-def trace( a ) when a.tensor_order >= 2
+def trace( a ) when a.is_a_tensor and a.tensor_order >= 2
     res := a.T(0)
     for i in 0 .. min( a.sizes )
         v := vec_cst( size = a.tensor_order, val = i )
@@ -374,13 +374,25 @@ def dev( a ) when a.is_a_tensor and a.tensor_order==2
     id  := identity_tensor( a.nb_rows )
     return a - id * trace( a ) / trace( id )
 
-def von_mises( a ) when a.tensor_order==2
+def von_mises( a ) when a.is_a_tensor and a.tensor_order==2
     dim := a.nb_rows
     d := dev( a )
     if dim == 3
         return sqrt( 3 / 2 * d : d )
     if dim == 2
         return sqrt( 2 * d : d )
+
+def sym_part( a ) when a.is_a_tensor and a.tensor_order==2
+    res := Tensor[a.T,a.s,a.ST]()
+    for ind, val in res
+        val = ( a[ ind[0], ind[1] ] + a[ ind[1], ind[0] ] ) / 2
+    return res
+
+def asym_part( a ) when a.is_a_tensor and a.tensor_order==2
+    res := Tensor[a.T,a.s,a.ST]()
+    for ind, val in res
+        val = ( a[ ind[0], ind[1] ] - a[ ind[1], ind[0] ] ) / 2
+    return res_sizes
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
 class DiagFromTensor
