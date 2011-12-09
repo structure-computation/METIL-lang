@@ -1017,6 +1017,15 @@ def trans( m ) when m.is_a_matrix pertinence 4
             res[ c, r ] = m[ r, c ]
     return res
 
+# sym part of m
+def sym_part( m ) when m.is_a_matrix pertinence 4
+    res := ( m + trans( m ) ) / 2
+    return res
+
+# anti sym part of m
+def asym_part( m ) when m.is_a_matrix pertinence 4
+    res := ( m - trans( m ) ) / 2
+    return res
 
 # ----------------------------------------------- ----------------------------------------------- -----------------------------------------------
 class MatDiag inherits MatAncestor

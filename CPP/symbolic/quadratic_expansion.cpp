@@ -267,6 +267,30 @@ for f in [ sin cos tan asin acos atan ]
                     q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
         }
     }
+    
+    void exp_rec_atan2( Op *a ) {
+        Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
+        Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
+        if ( r_0==NULL and r_1==NULL ) {
+            a->additional_info = NULL;
+        } else {
+            r_0 = complete_if_necessary( r_0, ch_0 ); CQI q_0( r_0, nb_variables );
+            r_1 = complete_if_necessary( r_1, ch_1 ); CQI q_1( r_1, nb_variables );
+            Ex *r = tmp_vec.get_room_for( nb_elements ); QI q( r  , nb_variables );
+            a->additional_info = reinterpret_cast<Op *>( r );
+            Ex dy = q_1.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-1);
+            Ex dx = -q_0.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-1);
+            Ex dy2 = (-2)*q_1.scal()*q_0.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
+            Ex dx2 = 2*q_1.scal()*q_0.scal()*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
+            Ex dydx = (pow(q_1.scal(),2)-pow(q_0.scal(),2))*pow(pow(q_0.scal(),2)+pow(q_1.scal(),2),-2);
+            q.scal() = atan2( q_0.scal(), q_1.scal() );
+            for(unsigned i=0;i<nb_variables;++i)
+                q.vec(i) = dy * q_0.vec(i) + dx * q_1.scal();
+            for(unsigned i=0;i<nb_variables;++i)
+                for(unsigned j=0;j<=i;++j)
+                    q.mat(i,j) = dy * q_0.mat(i,j) + dx * q_1.mat(i,j) + dy2 * q_0.vec(i) * q_0.vec(j) + dx2 * q_1.vec(i) * q_1.vec(j) + dydx * ( q_0.vec(i) * q_1.vec(j) + q_0.vec(j) * q_1.vec(i) );
+        }
+    }
 
     // ********************************************************************************
     void exp_rec_pow( Op *a ) {
@@ -321,9 +345,10 @@ for f in [ sin cos tan asin acos atan ]
             case STRING_asin_NUM:      exp_rec_asin( a ); break;
             case STRING_acos_NUM:      exp_rec_acos( a ); break;
             case STRING_atan_NUM:      exp_rec_atan( a ); break;
+            case STRING_atan2_NUM:     exp_rec_atan2( a ); break;
             case STRING_pow_NUM:       exp_rec_pow( a ); break;
             default:
-                th->add_error( "for now, no rules for PolynomialExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
+                th->add_error( "for now, no rules for QuadraticExpansion for functions of type '"+std::string(Nstring(a->type))+"'. -> see file 'ex.cpp'.", tok );
         }
     }
     

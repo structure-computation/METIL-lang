@@ -1,6 +1,6 @@
 #include "polynomial_expansion.h"
 
-void PolynomialExpansion::exp_rec_atan2( Op *a) {
+void PolynomialExpansion::exp_rec_atan2( Op *a ) {
     Op *ch_0 = a->func_data()->children[0]; exp_rec( ch_0 ); const Ex *r_0 = reinterpret_cast<const Ex *>( ch_0->additional_info );
     Op *ch_1 = a->func_data()->children[1]; exp_rec( ch_1 ); const Ex *r_1 = reinterpret_cast<const Ex *>( ch_1->additional_info );
     if ( ch_0==NULL ) {
