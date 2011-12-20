@@ -194,7 +194,7 @@ def div( a, b ) when a.is_a_tensor and b.tensor_order<=0
     for ind, val in res.data val.init( a[ind] / b )
     return res
 
-def doubledot( a, b ) when a.tensor_order > 0 and b.tensor_order > 0
+def doubledot( a, b ) when a.tensor_order >= 2 and b.tensor_order >= 2
     T := type_promote( partial_instanciation a.T, partial_instanciation b.T, mul )
     # -> scalar
     if a.tensor_order==2 and b.tensor_order==2
@@ -363,18 +363,18 @@ def mul( a, b ) when a.is_an_indexed_tensor and b.is_an_indexed_tensor
 def identity_tensor( n )
     return Tensor[ Int32, [n,n] ]( function = x => x[0]==x[1] )
 
-def trace( a ) when a.is_a_tensor and a.tensor_order >= 2
+def trace( a ) when a.tensor_order >= 2
     res := a.T(0)
     for i in 0 .. min( a.sizes )
         v := vec_cst( size = a.tensor_order, val = i )
         res += a[ v ]
     return res
 
-def dev( a ) when a.is_a_tensor and a.tensor_order==2
+def dev( a ) when a.tensor_order==2
     id  := identity_tensor( a.nb_rows )
     return a - id * trace( a ) / trace( id )
 
-def von_mises( a ) when a.is_a_tensor and a.tensor_order==2
+def von_mises( a ) when a.tensor_order==2
     dim := a.nb_rows
     d := dev( a )
     if dim == 3

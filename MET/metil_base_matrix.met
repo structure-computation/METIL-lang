@@ -953,8 +953,8 @@ class IdentityMatrix[ T = Void, ST = SizeType ] inherits MatAncestor
     static const Structure := Diag[ST=ST]
     
     size := ST(0)
-    def det
-        assert(0,"TODO")
+    # def det
+        # assert(0,"TODO")
     def solve( vec )
         assert(0,"TODO")
     def select( r, c ) return T( r == c )
