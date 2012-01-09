@@ -579,8 +579,10 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     virtual def div( tens ) when tens.tensor_order == 2
         assert( tens.sizes[0] == tens.sizes[1], "TODO -> put the right formulae for div( tens ) with $(tens.sizes[0]) != $(tens.sizes[1])." )
         res := Vec[ Op, tens.sizes[0] ]()
+        mat := Mat[ Op ]( Int32(tens.sizes[0]), Int32(tens.sizes[0]) )
+        mat = tens
         for i in 0 .. tens.sizes[0]
-            res[i] = div( tens.row( i ) )
+            res[i] = div( mat.row( i ) )
         return res
     
     #~
