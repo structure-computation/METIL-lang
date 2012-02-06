@@ -723,18 +723,18 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
     # projection w of vector v (of size e.dim) over child_elem on shape functions such that w and v are in equilibrium over child_elem
     def projection_on_shape_functions_with_equilibrium( v, order_integration, child_elem, interpolation_base = "lagrange" )
         c := child_cast( child_elem )
-        v = projection_on_child_elem( v, c )
+        v_child := projection_on_child_elem( v, c )
         sym_w := Vec[ Op ]()
         w := c->new_variable( "w",  interpolation_type = "nodal", nb_dim = [ dim ], sym = sym_w, interpolation_base = interpolation_base )
         objective := Op( 0 )
         for n in 0 .. c->nb_nodes
             phi_n := c->get_shape_functions( interpolation_base )[ n ]
             for d in 0 .. dim
-                order := ( phi_n * ( w[ d ] - v[ d ] ) ).poly_deg( c->var_inter )
+                order := ( phi_n * ( w[ d ] - v_child[ d ] ) ).poly_deg( c->var_inter )
                 order_ := ( phi_n * w[ d ] ).poly_deg( c->var_inter )
                 if order < 0
                     order = max( order_, order_integration )
-                objective += ( c->gauss_num_integration( phi_n * ( w[ d ] - v[ d ] ), order_diff = order ) ) ^ 2
+                objective += ( c->gauss_num_integration( phi_n * ( w[ d ] - v_child[ d ] ), order_diff = order ) ) ^ 2
         sym_sol := newton_raphson_minimize_iteration( objective, sym_w )
         res := w.subs( sym_w, sym_sol )
         return res
