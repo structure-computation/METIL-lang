@@ -210,7 +210,7 @@ class MatPartSparseMatVecCompiledFunction[ RD, T1, T, ST, br, bc, nr, nc ]
         stream <<< "}"
         
     
-    def get_src( stream ) 
+    def get_src( stream )
         stream <<< "#include <iostream>"
         make_mat_mult_vec_kern( stream, false )
         make_mat_mult_vec_kern( stream, true  )
@@ -269,7 +269,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
         resize( M.nb_rows, M.nb_cols )
         exec_ccode_function( func, rows, M.rows, M.get_nb_rows() )
         
-    def get_src( stream )
+    def get_src( stream ) pertinence 3
         # assert( incomp, "TODO : not incomplete" )
         assert( nr * nc == 1, "TODO : chol with several blocks" )
         #
@@ -402,7 +402,7 @@ class CholMatSparse[ T, br = 1, bc = 1, nr = 1, nc = 1, ST = SizeType, incomp = 
                 }
             }
     #
-    def get_wanted_functions
+    def get_wanted_functions pertinence 3
         return [
             CppFunctionDescription( "chol", [ Ptr[ RD ], Ptr[ RD ], ST ] )
         ]
