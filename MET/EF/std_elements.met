@@ -45,6 +45,9 @@ class NodalElement inherits NameElement
     static def get_upper_degree_points( n )
         points_new   := [[]]
         return points_new
+    static def gauss_integration( expr, order, var_inter )
+        res  := Op( 0 )
+        return res
 
 # 0 -- 1
 class Bar inherits NameElement

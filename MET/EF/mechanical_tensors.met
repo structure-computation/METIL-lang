@@ -13,6 +13,8 @@ def sigma_hooke_iso( eps, young, poisson, type_stress_2D = "plane stress" )
         if type_stress_2D == "plane strain"
             return young / ( 1 + poisson ) * ( eps + poisson / ( 1 - 2 * poisson ) * trace( eps ) * Id )
         assert( 0, "Unknown type stress $type_stress_2D" )
+    if dim == 1
+        return young * eps
 
 #~
   epsilon from sigma for an isotropic elastic material
@@ -28,6 +30,8 @@ def eps_hooke_iso( sigma, young, poisson, type_stress_2D = "plane stress" )
         if type_stress_2D == "plane strain"
             return ( 1 + poisson ) / young * sigma - ( 1 + poisson ) * poisson / young  * trace( sigma ) * Id
         assert( 0, "Unknown type stress $type_stress_2D" )
+    if dim == 1
+        return 1 / young * sigma
 
 #~
   sigma from epsilon for an isotropic elastic material
@@ -63,6 +67,8 @@ def von_mises( sigma ) when sigma.is_a_matrix pertinence 10
         return sqrt( 3 / 2 * d : d )
     if dim == 2
         return sqrt( 2 * d : d )
+    if dim == 1
+        return sqrt( d : d )
 
 #~
   lame coeff lambda for an isotropic elastic material
@@ -76,6 +82,8 @@ def lame_coeff_lambda( young, poisson, dim = 3, type_stress_2D = "plane stress" 
         if type_stress_2D == "plane strain"
             return young * poisson / ( ( 1 - 2 * poisson ) * ( 1 + poisson ) )
         assert( 0, "Unknown type stress $type_stress_2D" )
+    if dim == 1
+        return young * poisson / ( 1 + poisson )
 
 #~
   lame coeff mu for an isotropic elastic material
