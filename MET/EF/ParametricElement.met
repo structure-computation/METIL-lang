@@ -204,7 +204,10 @@ class GenerateMethodForParametricElement[ TE, dim ]
             normal := make_normal( P, var_inter )
             f <<< "def normal( var_inter, pos_nodes )"
             if dim == nvi + 1
-                f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
+                if nvi == 0
+                    f <<< "    res := Vec[ Op, $dim ]()"
+                else
+                    f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
                 f << CodeWriter("").add( "res", normal, reassign ).to_string()
                 f <<< "    return res"
             else
@@ -214,7 +217,10 @@ class GenerateMethodForParametricElement[ TE, dim ]
             jac_mat := make_jac_mat( P, var_inter )
             f <<< "#"
             f <<< "def jac_mat( var_inter, pos_nodes )"
-            f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $nvi, $dim ] ]()"
+            if nvi == 0
+                f <<< "    res := Mat[ Op, Gen[ $nvi, $dim ] ]()"
+            else
+                f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $nvi, $dim ] ]()"
             f << CodeWriter("").add( "res", jac_mat, reassign ).to_string()
             f <<< "    return res"
             
@@ -230,7 +236,10 @@ class GenerateMethodForParametricElement[ TE, dim ]
             f <<< "def inv_jac_mat( var_inter, pos_nodes )"
             if nvi == dim
                 inv_jac_mat := inv_tiny( jac_mat )
-                f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
+                if nvi == 0
+                    f <<< "    res := Mat[ Op, Gen[ $dim, $dim ] ]()"
+                else
+                    f <<< "    res := Mat[ type_promote(var_inter[0],pos_nodes[0][0],mul), Gen[ $dim, $dim ] ]()"
                 f << CodeWriter("").add( "res", inv_jac_mat, reassign ).to_string()
                 f <<< "    return res"
             else
@@ -247,7 +256,10 @@ class GenerateMethodForParametricElement[ TE, dim ]
                 G := make_barycenter( P, var_inter, jac, cvi )
                 f <<< "#"
                 f <<< "def barycenter( var_inter, pos_nodes )"
-                f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
+                if nvi == 0
+                    f <<< "    res := Vec[ Op, $dim ]()"
+                else
+                    f <<< "    res := Vec[ type_promote(var_inter[0],pos_nodes[0][0],mul), $dim ]()"
                 f << CodeWriter("").add( "res", G, reassign ).to_string()
                 f <<< "    return res"
 

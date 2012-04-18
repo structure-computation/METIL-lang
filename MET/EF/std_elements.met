@@ -42,6 +42,8 @@ class NodalElement inherits NameElement
         return [ [] ]
     static def get_order_interpolation
         return [ 0 ]
+    static def get_name_for_gauss_point
+        return NodalElement
     static def get_upper_degree_points( n )
         points_new   := [[]]
         return points_new
