@@ -2,6 +2,7 @@
 #define OPWITHSEQASMGENERATOR_H
 
 #include "splittedvec.h"
+#include <unistd.h>
 #include <sys/mman.h>
 // #define DEBUG_ASM
 

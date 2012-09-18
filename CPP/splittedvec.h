@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <limits.h>
-
+#include <string.h>
 //ULONG_MAX
 #ifndef SIZE_MAX
 #define SIZE_MAX INT_MAX
