@@ -341,6 +341,54 @@ class SymbolicElement[ TE, dim = Int32( TE::nvi ) ] inherits SymbolicElementAnce
             return res
     
     # helper function -> give a new "field" based on "canonical" interpolation
+    def new_variable( name, interpolation_type, deg, nb_dim = [], sym = Vec[ Op ](), symm = false ) when interpolation_type == "canonical"
+        base := Vec[ Op ]()
+        for order in 0 .. (deg+1)
+            for comb in ConstantSumList( sum = order, list_size = nvi )
+                base.push_back( product( var_inter ^ comb ) )
+        bs := base.size
+        if nb_dim.size == 0
+            vec := Vec[ Op, bs ]()
+            for i in 0 .. vec.size
+                s := Op()
+                if name.type != String
+                    s = name( i )
+                else
+                    s = symbol("$name[$i]","$name^{N$i}")
+                sym.push_back( s )
+                vec[i] = s
+            # info vec
+            return pe.interpolation( dot( vec, base ) )
+        if nb_dim.size == 1
+            d := nb_dim[0]
+            vec := Vec[ Vec[ Op, d ], bs ]()
+            for i in 0 .. bs
+                for j in 0 .. d
+                    s := Op()
+                    s = symbol("$name[$i][$j]","$name^{N$i}_{$j}")
+                    sym.push_back( s )
+                    vec[i][j] = s
+            return Vec[ Op, d ]( dot( vec, base ) )
+        if nb_dim.size == 2
+            TR := [ Mat[ Op, Gen[ nb_dim[0], nb_dim[1] ] ], Mat[ Op, Sym[ nb_dim[0] ] ] ][ symm ]
+            mat := Vec[ TR, bs ]()
+            for i in 0 .. bs
+                for j in 0 .. nb_dim[0]
+                    for k in 0 .. nb_dim[1]
+                        if symm and k > j
+                            continue
+                        s := Op()
+                        s = symbol("$name[$i]($j,$k)","$name^{N$i}_{$j,$k}")
+                        sym.push_back( s )
+                        mat[i][j,k] = s
+                if symm
+                    for j in 0 .. nb_dim[0]
+                        for k in j+1 .. nb_dim[1]
+                            mat[i][j,k] = mat[i][k,j]
+            return TR( dot( vec, base ) )
+        assert( 0, "TODO" )
+    
+    # helper function -> give a new "field" based on "canonical" interpolation
     def new_variable( name, interpolation_type, nb_dim = [], sym = Vec[ Op ](), interpolation_base = "lagrange", symm = false ) when interpolation_type == "nodal"
         if nb_dim.size == 0
             vec := Vec[ Op, nb_nodes ]()
