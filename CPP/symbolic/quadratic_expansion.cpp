@@ -305,15 +305,15 @@ for f in [ sin cos tan asin acos atan ]
             a->additional_info = reinterpret_cast<Op *>( r );
             bool r_1_is_a_cst = true; for(unsigned i=1;i<nb_elements;++i) r_1_is_a_cst &= r_1[i].op->is_zero();
             if ( r_1_is_a_cst ) {
-                Rationnal n = r_1[0].op->number_data()->val;
+                // Rationnal n = r_1[0].op->number_data()->val;
                 Ex d = q_1.scal() * pow( q_0.scal(), q_1.scal() - 1 );
                 Ex d2 = ( q_1.scal() - 1 ) * q_1.scal() * pow( q_0.scal(), q_1.scal() - 2 );
                 q.scal() = pow( q_0.scal(), q_1.scal() );
-                for(unsigned i=0;i<nb_variables;++i)
+                for( unsigned i = 0; i < nb_variables; ++i )
                     q.vec(i) = d * q_0.vec(i);
-                for(unsigned i=0;i<nb_variables;++i)
-                    for(unsigned j=0;j<=i;++j)
-                        q.mat(i,j) = d * q_0.mat(i,j) + d2 * q_0.vec(i) * q_0.vec(j);
+                for( unsigned i = 0; i < nb_variables; ++i )
+                    for( unsigned j = 0; j <= i; ++j )
+                        q.mat(i,j) = d * q_0.mat( i, j ) + d2 * q_0.vec( i ) * q_0.vec( j );
             } else {
                 th->add_error( "TODO : quadratic expansion for x^y when y contains a variable.", tok );
                 assert( 0 );
